@@ -5295,7 +5295,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.14.3";
+  const VERSION = "0.14.4";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6111,11 +6111,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const { X, Y, k, s0, s1, ctx, person, poly, seg, I, hsh, mix } = D;
       const t = performance.now() / 1000;
       // Zuschauer: Abschnitte im Stadion und an der Strecke
-      for (let s = Math.floor(s0); s < s1; s += 0.9) {
+      for (let s = Math.floor(s0); s < s1; s += 1.1) {
         const q = ((s % L.L) + L.L) % L.L;
         const cr = pen || inStadium(s) || (!hunt && crowd.some(([a, b]) => q >= a && q <= b));
         if (!cr) continue;
-        const x = X(s), y = Y(s) - 26 * k, hh = (15 + 4 * hsh(Math.round(s * 11))) * k;
+        // Zuschauer stehen auf dem Schnee direkt hinter der Spur (im Stadion hinter der Bande) und sind fast so groß wie die Läufer
+        const stad = inStadium(s);
+        if (!stad && hsh(Math.round(s * 7) + 3) < 0.35) continue;   // an der Strecke in Grüppchen, nicht als Mauer
+        if (stad && !pen && !hunt && q > L.L - 25 && q < L.L - 7) continue;   // den Schießstand frei lassen
+        const x = X(s), y = Y(s) - (stad ? 12 : 4) * k, hh = (stad ? 30 : 36) * k + 7 * hsh(Math.round(s * 11)) * k;
+        if (!stad) { ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = I.tief; ctx.beginPath(); ctx.ellipse(x + 2 * k, y + 1 * k, hh * 0.22, 2.2 * k, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
         person(x, y, hh, PEOPLE[Math.floor(hsh(Math.round(s * 3)) * PEOPLE.length)], PEOPLE[Math.floor(hsh(Math.round(s * 17)) * PEOPLE.length)], hsh(Math.round(s * 5)) > 0.7, t);
       }
       // Bande im Stadion
