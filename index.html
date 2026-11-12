@@ -4542,29 +4542,31 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         ctx.moveTo(c.x - 8 * s, c.y - f * 4 * s); ctx.quadraticCurveTo(c.x - 3 * s, c.y - 3 * s, c.x, c.y); ctx.quadraticCurveTo(c.x + 3 * s, c.y - 3 * s, c.x + 8 * s, c.y - f * 4 * s); ctx.stroke();
       }
     }
-    // zwei Reihen: weit (klein, langsam) und mittel
+    // zwei Reihen: weit (klein, langsam) und mittel; PM = Bildpunkte je Meter (× Reihenmaßstab): Wild, Jäger, Häuser im selben Maßstab
+    const PM = 11;
     function drawMid(V, hor, ppm, t) {
       if (V.pen) return;
       for (const row of [{ par: 0.22, y: hor + 30 * k, s: 0.55 * k, sp: 110, seed: 101 }, { par: 0.4, y: hor + 64 * k, s: 0.85 * k, sp: 150, seed: 202 }]) {
         const off = V.s * ppm * row.par, sp = row.sp * k;
         for (let i = Math.floor((off - 80 * k) / sp); i * sp - off < W + 80 * k; i++) {
           const q = hsh(i * 31 + row.seed), x = i * sp - off + (hsh(i * 17 + row.seed) - 0.5) * sp * 0.5, y = row.y + (hsh(i * 5 + row.seed) - 0.5) * 8 * k, s = row.s;
-          if (q < 0.26) { const n = 2 + Math.floor(hsh(i + row.seed) * 3); for (let j = 0; j < n; j++) bareTree(x + j * 16 * s, y + j * 2 * s, (60 + 40 * hsh(i * 9 + j)) * s, i * 13 + j); }
+          if (q < 0.26) { const n = 2 + Math.floor(hsh(i + row.seed) * 3); for (let j = 0; j < n; j++) bareTree(x + j * 16 * s, y + j * 2 * s, (80 + 50 * hsh(i * 9 + j)) * s, i * 13 + j); }
           else if (q < 0.38) { // Wild: Rehe, Hirsch, Gams grasen
             const kinds = ["hirsch", "gams", "gams", "hirsch"], n = 2 + Math.floor(hsh(i * 3 + row.seed) * 3);
-            for (let j = 0; j < n; j++) { const kd = kinds[(((i + j) % 4) + 4) % 4], A = BIPhysAnimals()[kd]; animal(kd, x + j * 22 * s, y + (j % 2) * 3 * s, 24 * s, hsh(i * 11 + j) < 0.5 ? -1 : 1, A, 0); }
+            for (let j = 0; j < n; j++) { const kd = kinds[(((i + j) % 4) + 4) % 4], A = BIPhysAnimals()[kd]; animal(kd, x + j * 15 * s, y + (j % 2) * 2 * s, PM * s, hsh(i * 11 + j) < 0.5 ? -1 : 1, A, 0); }
           }
           else if (q < 0.46) { // Jäger mit Hunden auf dem Heimweg
-            const dir = hsh(i * 7 + row.seed) < 0.5 ? -1 : 1, wx = x + dir * t * 3 * s;
-            for (let j = 0; j < 2; j++) hunter(wx - dir * j * 18 * s, y, s, t, dir, i * 5 + j);
-            for (let j = 0; j < 3; j++) dog(wx + dir * (14 + j * 9) * s, y + (j % 2) * 2 * s, s * 0.8, t, dir, i * 7 + j);
+            // Figur 37 Einheiten ≈ 1,8 m, im selben Maßstab wie das Wild
+            const dir = hsh(i * 7 + row.seed) < 0.5 ? -1 : 1, hs = PM * s * 1.8 / 37, wx = x + dir * t * 3 * s;
+            for (let j = 0; j < 2; j++) hunter(wx - dir * j * 12 * s, y, hs, t, dir, i * 5 + j);
+            for (let j = 0; j < 3; j++) dog(wx + dir * (10 + j * 7) * s, y + (j % 2) * 1.5 * s, hs * 0.75, t, dir, i * 7 + j);
           }
-          else if (q < 0.58) heustadel(x, y, s);
-          else if (q < 0.67) farmhouse(x, y, s, t);
+          else if (q < 0.58) heustadel(x, y, s * 1.4);
+          else if (q < 0.67) farmhouse(x, y, s * 2, t);
           else if (q < 0.76) pond(x, y + 6 * s, (60 + 50 * hsh(i + 3)) * s, s);
           else if (q < 0.85) fence(x - 30 * s, y, 70 * s, s);
           else if (q < 0.92) { // Fuchs oder Hase
-            const kd = hsh(i * 3) < 0.5 ? "fuchs" : "hase"; animal(kd, x, y, 24 * s, hsh(i * 11) < 0.5 ? -1 : 1, BIPhysAnimals()[kd], 0);
+            const kd = hsh(i * 3) < 0.5 ? "fuchs" : "hase"; animal(kd, x, y, PM * s, hsh(i * 11) < 0.5 ? -1 : 1, BIPhysAnimals()[kd], 0);
           }
         }
       }
@@ -4591,13 +4593,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         poly([[xs - ww, yb], [xs + lean * 0.3, yt], [xs + ww, yb]], g);
         if (snow > 0.4 || i % 2 === 0) poly([[xs - ww * (0.35 + 0.35 * snow), yb - h * 0.06 * snow - h * 0.04], [xs + lean * 0.3, yt], [xs + ww * (0.15 + 0.3 * snow), yb - h * 0.1 * snow - h * 0.04]], I.papier);
       }
-    }
-    // Birke: weißer Stamm mit dunklen Flecken, feine kahle Krone
-    function birch(x, y, h, seed) {
-      const sw = Math.max(1.4, h * 0.035);
-      seg([x, y], [x + h * 0.03, y - h * 0.8], "#F2EEE6", sw);
-      for (let i = 0; i < 5; i++) { const f = 0.15 + i * 0.14; seg([x + h * 0.03 * f - sw * 0.4, y - h * 0.8 * f], [x + h * 0.03 * f + sw * 0.3, y - h * 0.8 * f], I.tinte, sw * 0.35); }
-      for (let i = 0; i < 7; i++) { const q = hsh(seed * 5 + i), yy = y - h * (0.45 + 0.07 * i), a = (q - 0.5) * 1.6; seg([x + h * 0.02, yy], [x + h * 0.02 + Math.sin(a) * h * 0.25, yy - Math.cos(a) * h * 0.22], mix(I.dach, I.tinte, 0.3), Math.max(0.5, h * 0.008)); }
     }
     function person(x, y, h, col, hat, wave, t) {
       seg([x - h * 0.08, y], [x - h * 0.05, y - h * 0.45], I.tinte, h * 0.12);
@@ -4672,10 +4667,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         const q = hsh(Math.round(s * 7) + (V.pen ? 999 : 0));
         if (V.stadium && V.stadium(s)) continue;
         if (q < 0.62) continue;   // lichter: Gruppen und Lücken statt einer Wand gleicher Bäume
-        const x = X(s + q * 2), y = Y(s + q * 2) - (10 + 34 * hsh(Math.round(s * 13))) * k, hh = (36 + 52 * hsh(Math.round(s * 5))) * k, v = hsh(Math.round(s * 3) + 55);
-        if (v < 0.16) bareTree(x, y, hh * 1.1, Math.round(s * 11));
-        else if (v < 0.27) birch(x, y, hh, Math.round(s * 7));
-        else spruce(x, y, hh, q > 0.85, (v - 0.27) / 0.73);
+        // direkt hinter der Loipe auf dem Schnee (nicht darüber schwebend); etwas weiter hinten = etwas kleiner
+        const back = hsh(Math.round(s * 13)), x = X(s + q * 2), y = Y(s + q * 2) - (5 + 12 * back) * k, hh = (40 + 44 * hsh(Math.round(s * 5))) * k * (1 - 0.25 * back), v = hsh(Math.round(s * 3) + 55);
+        if (v < 0.18) bareTree(x, y, hh * 1.1, Math.round(s * 11));
+        else spruce(x, y, hh, q > 0.85, (v - 0.18) / 0.82);
       }
       // Schneekörper unter der Loipe
       ctx.beginPath(); ctx.moveTo(X(s0), H + 2);
@@ -5294,7 +5289,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.14.0";
+  const VERSION = "0.14.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
