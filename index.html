@@ -4365,7 +4365,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   "use strict";
   const PK = root.TMPlakat, I = PK.INK, mix = PK.mix;
   const TAU = Math.PI * 2;
-  const EX = 3.4;   // Überhöhung der Steigungen (Höhen sind wie die Strecke 1 : 12 kleiner)
+  const flakes = [];
+  const GW = [-4, -3, -2, -1, 0, 1, 2, 3, 4].map((i) => Math.exp(-i * i / 8));   // Glättung des gezeichneten Geländes
+  const EX = 2.6;   // Überhöhung der Steigungen (Höhen sind wie die Strecke 1 : 12 kleiner); gezeichnet geglättet, siehe hDraw
 
   // Hochfilzen: Kalkwände der Steinberge über dem Tal, davor bewaldete Rücken, Dorf mit Spitzturm, im Talboden eine Loipe
   const PLAKAT = {
@@ -4518,8 +4520,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // Ruck weich: steigt in ~60 ms an, klingt in ~200 ms ab
       kick += (kickV - kick) * (1 - Math.exp(-dt / 0.06)); kickV *= Math.exp(-dt / 0.2);
       zoom += ((1.05 - 0.13 * Math.min(1, (V.run.v || 0) / 13)) - zoom) * Math.min(1, dt * 1.5);
-      const ppm = 12.5 * k * zoom, xr = W * 0.36 + kick * 6 * k;
-      const hAt = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
+      // Maßstab: die Figur ist viel größer als die Strecke (1 : 12). Damit die Ski in Mulden und über Kuppen passen,
+      // wird das Gelände breiter gezeichnet und weich geglättet (Mulde breiter als ein Ski), die Physik bleibt unverändert.
+      const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 6 * k;
+      const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
+      const hAt = (s) => { let a = 0, w = 0; for (let i = -4; i <= 4; i++) { const g = GW[i + 4]; a += hRaw(s + i * 1.1) * g; w += g; } return a / w; };
       const h0 = hAt(V.s);
       // Kamera: folgt der Höhe vor der Läuferin, ruhig
       let ahead = 0; for (let d = -4; d <= 14; d += 3) ahead += hAt(V.s + d); ahead /= 7;
@@ -4570,14 +4575,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (V.T && !V.pen) for (const base of [Math.floor(s0 / V.T.L) * V.T.L, Math.ceil(s0 / V.T.L) * V.T.L]) for (const c of V.T.curves) {
         const a = base + c.a, b = base + c.b;
         if (b < s0 - 2 || a - 8 > s1) continue;
-        for (let q = a; q <= b; q += 1.6) { if (q < s0 - 1 || q > s1 + 1) continue; chevron(X(q), Y(q) - 22 * k, c.dir, k); }
-        const xs = X(a - 7), ys = Y(a - 7);
-        if (a - 7 > s0 - 2 && a - 7 < s1 + 2) { seg([xs, ys - 4 * k], [xs, ys - 40 * k], I.tinte, 2 * k); chevron(xs, ys - 46 * k, c.dir, k * 1.3); }
+        // ein Holzschild vor der Kurve, mit Schneehaube, statt roter Tafeln
+        const xs = X(a - 6), ys = Y(a - 6);
+        if (a - 6 > s0 - 2 && a - 6 < s1 + 2) { seg([xs, ys - 2 * k], [xs, ys - 34 * k], mix(I.dach, I.tinte, 0.35), 2.4 * k); chevron(xs, ys - 39 * k, c.dir, k * 1.05); }
       }
-      // Streckenpfosten (rot) alle 4 m
-      for (let s = Math.floor(s0 / 4) * 4; s < s1; s += 4) {
-        const x = X(s), y = Y(s);
-        seg([x, y - 3 * k], [x, y - 17 * k], I.tinte, 1.6 * k); poly([[x, y - 17 * k], [x + 6 * k, y - 15 * k], [x, y - 12 * k]], I.rot);
+      // Schneeverwehungen am Loipenrand (weiche Hügel mit blauem Schatten) statt Streckenpfosten
+      for (let s = Math.floor(s0 / 5) * 5; s < s1; s += 5) {
+        const q = hsh(Math.round(s) + 313); if (q < 0.35) continue;
+        const x = X(s + q * 3), y = Y(s + q * 3) + 34 * k, rw = (18 + 26 * q) * k, rh = (5 + 6 * q) * k;
+        ctx.fillStyle = mix(I.papier, I.dunst, 0.45); ctx.beginPath(); ctx.ellipse(x + 3 * k, y + 2 * k, rw, rh, 0, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.ellipse(x, y, rw * 0.92, rh, 0, Math.PI, 0); ctx.fill();
       }
       // Gegner (hinter dir gezeichnet), Name über den nächsten
       const others = (V.others || []).filter((o) => o.s > s0 - 2 && o.s < s1 + 2).sort((a, b) => Math.abs(b.s - V.s) - Math.abs(a.s - V.s));
@@ -4613,14 +4620,32 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       skier(xr, yr, 62 * k, Math.atan(sl), playerPose(V, dt), V.suit, V.retro, faceFor(V.name || "Ich"));
       // Markierung über dir, sobald andere auf der Strecke sind
       if (others.length) { const yy = yr - (V.run.tuck ? 52 : 82) * k; poly([[xr - 7 * k, yy - 9 * k], [xr + 7 * k, yy - 9 * k], [xr, yy]], I.ocker); }
+      // vorn: vereinzelte verschneite Fichten am unteren Rand (ziehen schneller vorbei, geben Tiefe)
+      for (let s = Math.floor((s0 - 20) / 9) * 9; s < s1 + 20; s += 9) {
+        const q = hsh(Math.round(s) + 9091); if (q < 0.72) continue;
+        const x = xr + (s - V.s) * ppm * 1.35; if (x < -60 * k || x > W + 60 * k) continue;
+        spruce(x, H + 14 * k, (70 + 50 * q) * k, true);
+      }
+      // leiser Schneefall (Bildschirm, mit dem Tempo leicht schräg)
+      if (!R.lite) {
+        const vx = -((V.run && V.run.v) || 0) * ppm * 0.08 - 8 * k;
+        while (flakes.length < 46) flakes.push({ x: Math.random() * W, y: Math.random() * H, r: 0.8 + Math.random() * 1.7, v: 14 + Math.random() * 22, ph: Math.random() * 6 });
+        ctx.fillStyle = "rgba(255,255,255,0.85)";
+        for (const f of flakes) {
+          f.y += f.v * k * dt; f.x += (vx * (0.6 + f.r * 0.3) + Math.sin(V.t * 1.3 + f.ph) * 6 * k) * dt;
+          if (f.y > H + 4) { f.y = -4; f.x = Math.random() * W; } if (f.x < -6) f.x += W + 12; if (f.x > W + 6) f.x -= W + 12;
+          ctx.beginPath(); ctx.arc(f.x, f.y, f.r * k, 0, TAU); ctx.fill();
+        }
+      }
       return { X, Y, xr, yr };
     }
 
-    // Pfeiltafel für Kurven (rot, zwei weiße Winkel in Kurvenrichtung)
+    // Kurvenschild: Holztafel in Landschaftsfarben mit hellem Doppelwinkel und Schneehaube (fügt sich ein, schreit nicht)
     function chevron(x, y, dir, kk) {
       const w = 22 * kk, h = 13 * kk;
-      ctx.fillStyle = I.rot; ctx.fillRect(x - w / 2, y - h / 2, w, h);
-      ctx.strokeStyle = I.papier; ctx.lineWidth = 2.2 * kk; ctx.lineJoin = "miter";
+      ctx.fillStyle = mix(I.dach, I.tinte, 0.15); ctx.fillRect(x - w / 2, y - h / 2, w, h);
+      ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.ellipse(x, y - h / 2, w * 0.56, 2.6 * kk, 0, Math.PI, 0); ctx.fill();
+      ctx.strokeStyle = mix(I.papier, I.ocker, 0.25); ctx.lineWidth = 2 * kk; ctx.lineJoin = "miter";
       for (const o of [-4, 4]) { const cx = x + o * kk; ctx.beginPath(); ctx.moveTo(cx + dir * 3 * kk, y - 4 * kk); ctx.lineTo(cx - dir * 3 * kk, y); ctx.lineTo(cx + dir * 3 * kk, y + 4 * kk); ctx.stroke(); }
     }
     // Namensschild über einem Gegner
@@ -5136,7 +5161,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.13.0";
+  const VERSION = "0.13.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
