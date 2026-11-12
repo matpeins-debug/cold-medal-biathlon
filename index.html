@@ -6331,7 +6331,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.16.4";
+  const VERSION = "0.16.5";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6983,8 +6983,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
     if (Rc.phase === "mat") return tickMat(dt);
     Ph.step(R, L); Rc.ski += dt;
-    // vor dem Schießstand: ausrollen bis zur Matte (nicht in Erste Schritte und Training)
-    if (Rc.lap < Rc.stages.length && Rc.kind !== "learn" && R.s >= L.L - (Rc.hunt ? 12 : 18.5) && R.s < L.L) { Rc.phase = "mat"; Rc.matT = 0; Rc.matA = null; Rc.matAt = null; Rc.matStop = L.L - (Rc.hunt ? 9 : 15.5); R.tuck = false; inp.ptrs.clear(); return; }
+    // am Rundenende direkt durchs Visier (0.16.5, Mat: keine Pause vor dem Schießstand)
     if (Rc.kind === "learn") learnTick(dt);
     // Taktgeber für Anfänger: leises Klacken, wenn der Abstoß ideal wäre
     // Takt zum Hören und Fühlen (für alle): leises Klack und ein kurzer Ruck am Handy, wenn der Abstoß ideal wäre
