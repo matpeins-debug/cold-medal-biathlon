@@ -361,7 +361,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <span class="kicker" id="ifKick">ÜBER DAS SPIEL</span>
     <div class="if-body">
       <h3>Fanspiel</h3><p>Cold Medal · Biathlon ist ein inoffizielles Fanspiel ohne Verbindung zu Verbänden oder Veranstaltern. Alle Athletinnen und Athleten sind erfunden. Strecken sind öffentlichen Daten nachempfunden, nicht vermessen. Grafik und Ton entstehen im Spiel.</p>
-      <h3>Rennen</h3><p>Das Rennen läuft gerafft: Laufen und Strafrunden zwölfmal schneller als echt, am Schießstand zählt jede Sekunde. Die Zeiten werden so angezeigt, wie sie im echten Rennen wären.</p>
+      <h3>Rennen</h3><p>Das Rennen läuft gerafft: Laufen zwölfmal schneller als echt, am Schießstand zählt jede Sekunde. Fehler kosten Strafzeit, so viel wie eine Strafrunde von 150 m. Die Zeiten werden so angezeigt, wie sie im echten Rennen wären.</p>
       <h3>Datenschutz</h3><p>Kein Konto, keine Werbung, keine Cookies, keine Analyse. Name, Bestzeiten und Einstellungen speichert das Spiel nur im Browser auf diesem Gerät; es sendet nichts an einen Server.</p><p id="ifPriv"></p>
       <h3>Impressum</h3><p id="ifImp">Privates Spieleprojekt, nicht kommerziell.</p>
     </div>
@@ -925,9 +925,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
           const p = Math.min(0.98, stages[k] === "prone" ? a.T.prone + LV.prone : a.T.stand + LV.stand);
           let miss = 0; for (let i = 0; i < 5; i++) if (r() > p) miss++;
           const range = a.T.range[0] + (a.T.range[1] - a.T.range[0]) * r() + miss * 1.5 + LV.range;
-          const pen = miss * ref.pen * S * (0.97 + 0.08 * r());
-          total += range + pen;
-          Object.assign(seg, { range, pen, miss, after: total });
+          // keine Strafrunde: dieselbe Zeit als Strafzeit (gerundet wie beim Spieler)
+          const tpen = miss * Math.round(ref.pen * S);
+          total += range + tpen;
+          Object.assign(seg, { range, pen: 0, tpen, miss, after: total });
         }
         segs.push(seg);
       }
@@ -3805,7 +3806,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     jubel: [[0, POSES.stand], [0.35, POSES.cheer], [0.6, { lean: -2, crouch: 0, sL: [6, 14], fL: [0, 14], aF: [150, 26], aB: [-150, -26], hd: -14 }], [1, POSES.cheer]],
     winken: [[0, POSES.wave], [0.5, Object.assign({}, POSES.wave, { aF: [112, 66] })], [1, POSES.wave]],
   };
-  const KEYS = ["lean", "crouch", "hd"], PAIRS = ["sL", "fL", "aF", "aB"];
+  const KEYS = ["lean", "crouch", "hd", "ao"], PAIRS = ["sL", "fL", "aF", "aB"];
   const val = (o, k) => (o[k] == null ? 0 : o[k]);
   function mix(a, b, t) {
     const o = {};
@@ -3815,8 +3816,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
   // Posen als Zahlenreihe (für weiche Kurven durch Schlüsselbilder); lift = Höhe über dem Boden (Sprung)
   const CH = 12;
-  const toVec = (p, lift) => [val(p, "lean"), val(p, "crouch"), val(p, "hd"), p.sL[0], p.sL[1], p.fL[0], p.fL[1], p.aF[0], p.aF[1], p.aB[0], p.aB[1], lift || 0];
-  const toPose = (v) => ({ lean: v[0], crouch: v[1], hd: v[2], sL: [v[3], v[4]], fL: [v[5], v[6]], aF: [v[7], v[8]], aB: [v[9], v[10]] });
+  const toVec = (p, lift) => [val(p, "lean"), val(p, "crouch"), val(p, "hd"), p.sL[0], p.sL[1], p.fL[0], p.fL[1], p.aF[0], p.aF[1], p.aB[0], p.aB[1], lift || 0, val(p, "ao")];
+  const toPose = (v) => ({ lean: v[0], crouch: v[1], hd: v[2], sL: [v[3], v[4]], fL: [v[5], v[6]], aF: [v[7], v[8]], aB: [v[9], v[10]], ao: v[12] || 0 });
   // Weiche Kurve durch Schlüsselbilder K = [[t, Zahlenreihe], …]: Geschwindigkeit ohne Sprung (Hermite-Kurve), aber kein
   // Überschwingen: an Umkehrpunkten und Haltepunkten steht die Bewegung kurz (Steigung 0). loop: zyklisch, letztes = erstes Bild.
   function spline(K, t, loop) {
@@ -3930,7 +3931,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return o;
   }
   // weich nachführen: Rumpf und Beine zügig, Arme etwas später (fließender Armzug); fast = Sprung, Sturz
-  const RATE = { lean: 9, crouch: 9, hd: 8, sL: 13, fL: 11, aF: 6.5, aB: 6 };
+  const RATE = { lean: 9, crouch: 9, hd: 8, ao: 6.5, sL: 13, fL: 11, aF: 6.5, aB: 6 };
   function ease(cur, tgt, dt, fast) {
     if (!cur) return tgt;
     const o = {}, m = fast ? 2.4 : 1, a = (k) => 1 - Math.exp(-RATE[k] * m * dt);
@@ -4117,8 +4118,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     leg([hip, knee, ank], Z.hip * zs, Z.hip * 0.6 * zs, 6.2, zs > 0 ? legN : legF, J.sKn, zs > 0 ? sk.n : sk.f, zs > 0);
     // Arme mit Hand (Haut oder Handschuh) und Stock
     const hand = K.glove === "suit" ? suit : K.glove ? GLOVE : skin;
+    // ao (Grad, frei, Standard 0): Arme seitlich vom Körper weg, um die senkrechte Achse durch die Schulter gedreht
+    const ao = rad(p.ao || 0), aoC = Math.cos(ao), aoS = Math.sin(ao);
     const arm = (pts, z0, z1, col, near) => {
-      const q = pts.map((pt, i) => P(pt, z0 + (z1 - z0) * i / (pts.length - 1)));
+      const q = pts.map((pt, i) => {
+        const z = z0 + (z1 - z0) * i / (pts.length - 1);
+        if (!ao || !i) return P(pt, z);
+        const dx = pt[0] - pts[0][0];
+        return P([pts[0][0] + dx * aoC, pt[1]], z + Math.sign(z0) * Math.abs(dx) * aoS);
+      });
       parts.push({ d: depth(q), f: () => {
         const h = q[q.length - 1], e = q[q.length - 2], an = Math.atan2(h[1] - e[1], h[0] - e[0]);
         if (K.hands === "poles") {
@@ -5128,7 +5136,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.12.0";
+  const VERSION = "0.13.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -5443,12 +5451,6 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       enterRange(G.stance === "prone" ? "stand" : "prone", 0.78 + 0.1 * Math.random());
       return;
     }
-    // Zwischenzeit nach dem Schießen (Strafrunden noch nicht gelaufen: die kommen erst danach dazu)
-    if (Rc.ai && Rc.kind === "sprint") {
-      const k = Rc.rangeT.length - 1;
-      const est = dispTime() + miss * (Rc.ref.pen * T.SCALE);
-      Rc.splits.push(C.split(Rc.ai, k, est));
-    }
     mode = "run"; $("rhud").hidden = true; $("hud").hidden = false;
     Rc.R.hr = Rc.G.hr; Rc.R.v = 3; Rc.R.tp = 0.8; Rc.R.tuck = false;
     if (Rc.hunt) {
@@ -5460,9 +5462,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       banner(miss ? "STRAFZEIT" : "SAUBER", nb(`${G.n - miss}/${G.n}`), nb(`${miss ? miss + (miss > 1 ? " Minuten" : " Minute") + " Strafzeit" : "kein Fehler"}${kl ? ` · ${kl}× Kill-Zone −${kl * HU.killSec} s` : ""}`), 1.6);
       showSplit(); return;
     }
-    Rc.fadeAt = performance.now();
-    if (miss > 0) { Rc.phase = "pen"; Rc.penLeft = miss; Rc.penN = miss; Rc.penS = 0; banner("STRAFRUNDE", `1/${miss}`, nb(`${miss} Fehler · je 150 m, dann zurück auf die Strecke`), 1.8); }
-    else { Rc.phase = "go"; Rc.lap++; Rc.R.s = 0; banner("FEHLERFREI", "5/5", nb(`Raus aus dem Stadion · Runde ${Rc.lap + 1}`), 1.4); }
+    // keine Strafrunde mehr (Mat, 12.11.): jeder Fehler kostet die Zeit, die eine Strafrunde gekostet hätte, direkt auf die Uhr
+    const pc = Math.round(Rc.ref.pen * T.SCALE);
+    Rc.tpen += miss * pc;
+    if (Rc.ai && Rc.kind === "sprint") Rc.splits.push(C.split(Rc.ai, Rc.rangeT.length - 1, dispTime()));
+    Rc.fadeAt = performance.now(); Rc.phase = "go"; Rc.lap++; Rc.R.s = 0;
+    if (miss > 0) banner("STRAFZEIT", nb(`+${miss * pc} s`), nb(`${miss} Fehler · je ${pc} s · Runde ${Rc.lap + 1}`), 1.6);
+    else banner("FEHLERFREI", "5/5", nb(`Raus aus dem Stadion · Runde ${Rc.lap + 1}`), 1.4);
     showSplit();
   }
   function showSplit() {
@@ -5508,7 +5514,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
   // Erklärung wie im Fernsehen: woran es lag, was eine Strafrunde kostet, was ohne Fehler drin gewesen wäre
   function analysis(list, me, pb, old) {
-    const ref = Rc.ref, penCost = Rc.hunt ? Rc.FM.hunt.penSec : ref.pen * T.SCALE, nPer = Rc.hunt ? Rc.FM.hunt.shots : 5;
+    const ref = Rc.ref, penCost = Rc.hunt ? Rc.FM.hunt.penSec : Math.round(ref.pen * T.SCALE), nPer = Rc.hunt ? Rc.FM.hunt.shots : 5;
     const skiRank = 1 + list.filter((x) => !x.me && x.segs.reduce((s, q) => s + q.ski, 0) < me.ski).length;
     const miss = me.shoot.reduce((a, b) => a + b, 0);
     const rangeT = Rc.rangeT.reduce((a, b) => a + b, 0);
@@ -5530,7 +5536,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (miss > 0) {
       const without = me.total - miss * penCost;
       const r2 = 1 + list.filter((x) => !x.me && x.total < without).length;
-      p.push(nb(`${Rc.hunt ? "Jeder Fehler kostet eine Minute Strafzeit" : `Eine Strafrunde kostet etwa ${Math.round(penCost)} s`}. Ohne Fehler wärst du ${r2 === me.rank ? "trotzdem" : "auf"} Platz ${r2}${r2 === me.rank ? " geblieben" : " gelandet"}.`));
+      p.push(nb(`${Rc.hunt ? "Jeder Fehler kostet eine Minute Strafzeit" : `Jeder Fehler kostet ${Math.round(penCost)} s Strafzeit`}. Ohne Fehler wärst du ${r2 === me.rank ? "trotzdem" : "auf"} Platz ${r2}${r2 === me.rank ? " geblieben" : " gelandet"}.`));
     } else p.push(Rc.hunt ? "Alle Attrappen getroffen, wie ein alter Jäger." : "Fehlerfrei: mehr geht am Schießstand nicht.");
     if (Rc.hunt && miss) { const far = Rc.huntMiss || {}; if (far.long > far.short) p.push("Daneben ging es vor allem auf weite Entfernung: auf 150 bis 200 m fällt das Geschoss, also etwas höher halten."); else if (far.short) p.push("Auf kurze Entfernung trifft das Geschoss leicht hoch: knapp unter die Kill-Zone halten."); }
     if (K.early / n > 0.2) p.push("Viele Abstöße kamen zu früh. Warte, bis der Strich im grünen oder gelben Feld steht: das bringt mehr Tempo und spart Kraft.");
@@ -5844,7 +5850,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       : h ? [["Laufen", "linke Maustaste im Takt (← →)"], ["Flach", "rechte Maustaste: Doppelstock (↑)"], ["Abfahrt", "Taste gedrückt halten: Hocke (↓)"], ["Kurve", "Taste der Kurvenseite halten"], ["Takt", "klicken, wenn der Strich im Grün steht"], ["Schießen", "drücken, ziehen, loslassen (Leertaste, Pfeile)"]]
       : [["Bergauf", "links und rechts abwechselnd tippen"], ["Flach", "beide Daumen: Doppelstock"], ["Abfahrt", "halten: Hocke"], ["Kurve", "auf der Kurvenseite halten"], ["Takt", "tippen, wenn der Strich im Grün steht"], ["Schießen", "auflegen, ziehen, loslassen"]];
     $("resList").innerHTML = `<div class="cheat">${rows.map(([a, b]) => `<b>${a}</b><span>${b}</span>`).join("")}</div>`;
-    $("resTv").innerHTML = "<p>Im Rennen läufst du drei Runden und schießt zweimal: zuerst liegend, dann stehend. Jeder Fehler kostet eine Strafrunde.</p><p>Schneller Takt macht schneller, aber der Puls steigt, und mit hohem Puls wackelt das Visier. Die Abfahrt vor dem Schießstand in der Hocke rollen lassen.</p>" + (Rc.simple ? "<p>Mehr Kontrolle (Beine, Doppelstock, Kurven selbst) gibt es unter Athletin › Steuerung › Profi.</p>" : "");
+    $("resTv").innerHTML = "<p>Im Rennen läufst du drei Runden und schießt zweimal: zuerst liegend, dann stehend. Jeder Fehler kostet Strafzeit.</p><p>Schneller Takt macht schneller, aber der Puls steigt, und mit hohem Puls wackelt das Visier. Die Abfahrt vor dem Schießstand in der Hocke rollen lassen.</p>" + (Rc.simple ? "<p>Mehr Kontrolle (Beine, Doppelstock, Kurven selbst) gibt es unter Athletin › Steuerung › Profi.</p>" : "");
   }
 
   // ------------------------------------------------------------------ Gegner auf der Strecke
@@ -5867,12 +5873,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return out;
   }
   // Live-Platz (Massenstart): wer ist im Rennen weiter als du?
-  function liveRank() {
-    const L = Rc.L.L, D = dispTime();
-    const me = mode === "range" ? (Rc.lap + 1) * L : Rc.phase === "pen" ? (Rc.lap + 1) * L + 0.5 * (Rc.penS / (Rc.penN * Rc.L.penaltyL)) : Rc.lap * L + Rc.R.s;
-    let r = 1; for (const a of Rc.ai) if (C.progress(Rc.ref, a, D + Rc.off - a.off) > me) r++;
-    return r;
-  }
+  // Platz mit Strafzeit (wie die Live-Rangliste); Strafen stehen nur auf der Uhr, nicht auf der Strecke
+  function liveRank() { return liveBoard().findIndex((x) => x.me) + 1; }
   // Live-Rangliste wie im Fernsehen: Zeit jeder Gegnerin an genau deiner Stelle (Binärsuche über ihren Rennverlauf).
   // Sprint: gelaufene Zeit; Verfolgung: dazu der Startrückstand; Jagd: dazu die Strafzeit der schon passierten Stationen.
   let lbCache = { at: -1, list: null };
@@ -5887,7 +5889,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       let lo = 0, hi = a.total;
       if (C.progress(Rc.ref, a, hi - 1e-3) < me) { list.push({ name: a.name, nat: a.nat, t: a.total + (pur ? a.off : 0) + 1e-3, a }); continue; }
       for (let i = 0; i < 22; i++) { const mid = (lo + hi) / 2; if (C.progress(Rc.ref, a, mid) >= me) hi = mid; else lo = mid; }
-      let tp = 0; if (Rc.hunt) for (let j = 0; j < Math.min(passed, a.segs.length); j++) tp += a.segs[j].tpen || 0;
+      let tp = 0; for (let j = 0; j < Math.min(passed, a.segs.length); j++) tp += a.segs[j].tpen || 0;
       list.push({ name: a.name, nat: a.nat, t: hi + tp + (pur ? a.off : 0), a });
     }
     list.sort((x, y) => x.t - y.t);
@@ -6099,7 +6101,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     c.fillStyle = "#C23B2A"; c.fillRect(st[0] - 1.5, st[1] - 5, 3, 10);
     c.fillStyle = rng ? "#DDA43B" : "rgba(245,237,218,0.85)"; c.fillRect(st[0] - 22, st[1] + 1, 13, 5);
     const pc = [st[0] - 30, st[1] - 4];
-    if (!Rc.hunt) { c.beginPath(); c.arc(pc[0], pc[1], 5, 0, Math.PI * 2); c.strokeStyle = pen ? "#DDA43B" : "rgba(245,237,218,0.55)"; c.lineWidth = 2; c.stroke(); }
+    if (Rc.phase === "pen") { c.beginPath(); c.arc(pc[0], pc[1], 5, 0, Math.PI * 2); c.strokeStyle = pen ? "#DDA43B" : "rgba(245,237,218,0.55)"; c.lineWidth = 2; c.stroke(); }
     // du
     let p;
     if (rng) p = [st[0] - 15.5, st[1] + 3.5];
