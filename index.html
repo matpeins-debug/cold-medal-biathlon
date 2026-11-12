@@ -290,6 +290,221 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .h-board .lb-gap { text-align: center; font-size: 10px; line-height: 8px; opacity: 0.6; }
 .h-board.small .lb-row:not(.me), .h-board.small .lb-gap { display: none; }
 
+/* ------------------------------------------------------------ 0.16: Pass, Gruppen, Langlauf */
+.side-chips { position: absolute; right: 24px; top: 82px; display: flex; gap: 8px; justify-content: flex-end; }
+.chip-btn { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; background: var(--paper); color: var(--ink);
+  border: 2px solid var(--ink-deep); border-radius: 4px; box-shadow: 0 3px 0 var(--ink-deep); font: 800 15px var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.chip-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink-deep); }
+.badge { position: absolute; right: -8px; top: -9px; background: var(--red); color: #FBF4E4; font: 800 11px var(--font-label); border-radius: 9px; padding: 2px 6px; border: 1.5px solid var(--ink-deep); }
+.xc { position: absolute; right: 24px; bottom: 104px; flex-direction: column; align-items: flex-start; gap: 0; padding: 6px 16px 7px; min-width: 230px; min-height: 0;
+  background: #DCE6EC; color: #1E2734; border: 2px solid var(--ink-deep); box-shadow: 0 3px 0 var(--ink-deep); }
+.xc .hk { font-size: 11px; letter-spacing: 0.3em; color: #23466B; }
+.xc b { font-family: var(--font-display); font-size: 21px; letter-spacing: 0.04em; line-height: 1.1; }
+.xc .hs { font-family: var(--font-body); font-style: italic; font-size: 12.5px; color: #3A4454; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.set-note { font-size: 13.5px !important; color: #4A4436; }
+.btn.small { min-height: 38px; font-size: 15px; padding: 0 12px; }
+.icon-btn.mini { width: 30px; height: 30px; font: 800 18px var(--font-display); box-shadow: 0 2px 0 var(--ink-deep); }
+.if-btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+#figure { z-index: 5; }
+.sub { font-family: var(--font-label); font-size: 13.5px; color: #4A4436; }
+/* Gruppen */
+.grp-card { width: 600px; max-height: calc(100% - 24px); }
+.grp-head { display: flex; align-items: center; justify-content: space-between; }
+.gp-list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 190px; min-height: 0; }
+.gp-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; text-align: left; padding: 6px 10px; background: #FBF4E4;
+  border: 2px solid var(--ink-deep); border-radius: 4px; color: var(--ink); font-family: var(--font-label); }
+.gp-row b { font: 800 17px var(--font-display); letter-spacing: 0.03em; display: block; }
+.gp-row small { display: block; font-size: 12.5px; color: #4A4436; }
+.gp-new { background: var(--red); color: #FBF4E4; font: 800 12px var(--font-label); border-radius: 9px; padding: 2px 7px; }
+.gp-mem { display: flex; }
+.gp-mem .flag { margin-left: -4px; border: 1.5px solid #FBF4E4; border-radius: 2px; }
+.gp-paste { display: flex; gap: 8px; }
+.gp-paste input, .cl-say input { flex: 1; min-width: 0; font: 600 15px var(--font-label); padding: 4px 9px; border: 2px solid var(--ink-deep); border-radius: 3px; background: #FBF4E4; color: var(--ink); }
+#newClub .seg button { font-size: 14px; }
+#club { display: grid; grid-template-columns: 1fr 320px; gap: 12px; padding: 12px; background: rgba(14, 22, 34, 0.35); }
+.cl-left { display: flex; flex-direction: column; min-height: 0; padding: 10px 14px 8px; }
+.cl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cl-name { background: none; border: 0; padding: 0; text-align: left; font: 800 28px/30px var(--font-display); letter-spacing: 0.02em; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-name.own::after { content: " ✎"; font-size: 16px; color: #786D59; }
+.cl-mem { font: 600 13px var(--font-label); color: #4A4436; white-space: nowrap; }
+.cl-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.cl-view button { font-size: 14px; padding: 3px 10px; }
+.cl-round { display: flex; align-items: center; gap: 8px; font: 800 15px var(--font-display); }
+.cl-sub { margin-top: 3px; }
+.cl-rows .rl { cursor: pointer; }
+.rl.tot { grid-template-columns: 30px 24px 1fr 60px 60px; }
+.rl-act { display: flex; gap: 6px; align-items: center; padding: 4px 4px 6px 64px; border-bottom: 1px dotted var(--line); flex-wrap: wrap; }
+.rl-act button { font: 700 14px var(--font-label); background: #FBF4E4; border: 1.5px solid var(--ink-deep); border-radius: 14px; padding: 3px 10px; color: var(--ink); }
+.rl-act button.on { background: var(--gold); }
+.rl-act .watch { background: var(--ink); color: var(--paper); }
+.cl-right { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.cl-talk { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 10px 12px; gap: 6px; }
+.cl-feed { flex: 1; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 4px; -webkit-overflow-scrolling: touch; }
+.ev { font: 500 13.5px/1.3 var(--font-label); color: var(--ink); padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.ev i { float: right; font-style: normal; color: #786D59; font-size: 11.5px; margin-left: 6px; }
+.ev.sys { color: #4A4436; font-style: italic; }
+.ev .del { background: none; border: 0; color: #B23524; font-size: 12px; padding: 0 0 0 6px; }
+.cl-say { display: flex; gap: 6px; }
+.cl-note { margin: 0; font: 500 12px var(--font-label); color: var(--paper); background: rgba(20, 30, 46, 0.8); padding: 6px 8px; border-radius: 3px; word-break: break-all; user-select: text; -webkit-user-select: text; }
+#ui.narrow #club { grid-template-columns: 1fr 290px; }
+/* Rennen ansehen */
+.watch-chip { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); pointer-events: auto; }
+#hud.watch .hud-bc, #hud.watch .hud-bl, #hud.watch .h-prev, #hud.watch .zone { display: none !important; }
+.ui-toast { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 1px;
+  background: var(--ink); color: var(--paper); border: 2px solid var(--ink-deep); border-radius: 4px; padding: 6px 14px; max-width: 80%; text-align: center; pointer-events: none; }
+.ui-toast b { font: 800 15px var(--font-display); letter-spacing: 0.08em; }
+.ui-toast span { font: 500 13px var(--font-label); }
+.res-club { margin: 2px 0 6px !important; font: 700 14px var(--font-label) !important; color: #B23524; }
+#club .res-btns { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+#club .res-btns #clGo { grid-column: 1 / 4; }
+#club .res-btns .btn-secondary { font-size: 14px; min-height: 44px; padding: 0 6px; letter-spacing: 0.03em; }
+/* 0.16: aufgeräumtes HUD – Name und Startnummer in der Rangliste, Tempo im Taktkasten, Vorschau nur mit Anfänger-Hilfen */
+.hud-tl { display: none; }
+#hud.watch .hud-tl { display: flex; }
+#hud .h-board { top: 10px; }
+#hud.watch .h-board { top: 62px; }
+#hud.help .h-board { top: 136px; }
+#hud:not(.help) .h-prev { display: none; }
+#hud.help .h-prev { top: 10px; }
+.beat-head .sp { display: flex; align-items: baseline; gap: 4px; margin-left: 10px; }
+.beat-head .sp-val { font-size: 18px; line-height: 18px; min-width: 26px; }
+.beat-head .streak { margin-left: auto; }
+#clLeave { min-height: 26px; font: 600 12px var(--font-label); border: 0; text-decoration: underline; color: #786D59; letter-spacing: 0; text-transform: none; align-self: flex-start; padding: 2px 0; }
+
+/* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
+   Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
+   Buchschrift für Lesetext. Farben und Schriften kommen aus den Variablen des Spiels (alle Spiele der Reihe haben sie),
+   sonst gelten die Werte des Skispringens. Nur Klassen mit ps-, damit nichts im Spiel verrutscht. Grundstock für oberflaeche/. */
+.ps-dialog {
+  --ps-paper: var(--paper, #F1E7D2); --ps-ink: var(--ink, #1E2734); --ps-ink-deep: var(--ink-deep, #141B25);
+  --ps-red: var(--red, #C23B2A); --ps-warn: var(--warn, #D9682B);
+  --ps-text: #1E2734; --ps-text-2: #3A4454; --ps-muted: #786D59;
+  --ps-row: rgba(30, 39, 52, 0.055); --ps-row-2: rgba(30, 39, 52, 0.1); --ps-line: rgba(30, 39, 52, 0.22); --ps-line-2: rgba(30, 39, 52, 0.45);
+  --ps-hi: #B23524; --ps-hi-ink: #FBF4E4;
+  --ps-display: var(--font-display, "Futura", "Avenir Next Condensed", "Bahnschrift Condensed", "Roboto Condensed", "Arial Narrow", sans-serif);
+  --ps-body: var(--font-body, "Iowan Old Style", "Charter", "Georgia", serif);
+  --ps-label: var(--font-label, "Futura", "Avenir Next", "Segoe UI", Roboto, Arial, sans-serif);
+  display: flex; flex-direction: column; gap: 10px; box-sizing: border-box;
+  width: 760px; max-width: calc(100% - 32px); max-height: calc(100% - 20px); overflow: auto; padding: 14px 20px 16px; touch-action: pan-y;
+  color: var(--ps-text); font-family: var(--ps-body); text-align: left;
+  background-color: var(--ps-paper);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.36  0 0 0 0 0.28  0 0 0 0 0.16  0 0 0 0.075 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  border: 2px solid var(--ps-ink-deep); border-radius: 4px;
+  box-shadow: inset 0 0 0 4px var(--ps-paper), inset 0 0 0 5px rgba(30, 39, 52, 0.38), 0 5px 0 rgba(8, 12, 18, 0.5);
+  -webkit-user-select: none; user-select: none;
+}
+.ps-dialog *, .ps-dialog *::before, .ps-dialog *::after { box-sizing: border-box; }
+.ps-dialog [hidden] { display: none !important; }
+.ps-dialog button, .ps-dialog input, .ps-dialog select, .ps-stage { -webkit-tap-highlight-color: transparent; }
+.ps-dialog button:focus-visible, .ps-dialog input:focus-visible, .ps-dialog select:focus-visible, .ps-stage:focus-visible { outline: 2px solid var(--ps-hi); outline-offset: 2px; }
+
+/* Kopf: Titel in Versalien, rechts nur „Fertig“ */
+.ps-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ps-title { margin: 0; font-family: var(--ps-display); font-style: normal; font-weight: 800; font-size: 32px; line-height: 34px;
+  letter-spacing: 0.015em; text-transform: uppercase; color: var(--ps-ink); text-wrap: balance; }
+.ps-btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 18px; margin: 0;
+  border-radius: 4px; font-family: var(--ps-display); font-weight: 700; font-size: 19px; letter-spacing: 0.07em; text-transform: uppercase;
+  white-space: nowrap; cursor: pointer; }
+.ps-btn svg { display: block; flex: none; }
+.ps-btn-1 { background: var(--ps-red); color: #FBF4E4; border: 2px solid var(--ps-ink-deep);
+  box-shadow: inset 0 0 0 2px var(--ps-red), inset 0 0 0 3px rgba(251, 244, 228, 0.5), 0 3px 0 var(--ps-ink-deep); }
+.ps-btn-2 { background: var(--ps-paper); color: var(--ps-ink); border: 2px solid var(--ps-ink-deep); box-shadow: 0 3px 0 var(--ps-ink-deep); }
+.ps-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ps-ink-deep); }
+.ps-btn:disabled { opacity: 0.55; cursor: default; }
+
+/* links die Figur (antippen wechselt die Haltung), rechts die Reiter */
+.ps-grid { display: grid; grid-template-columns: 268px minmax(0, 1fr); gap: 20px; align-items: start; }
+.ps-left { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ps-stage { height: 236px; border-radius: 4px; overflow: hidden; border: 2px solid var(--ps-ink-deep); background: #E9E4D3; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(20, 27, 37, 0.35); }
+.ps-stage:active { transform: translateY(1px); box-shadow: 0 2px 0 rgba(20, 27, 37, 0.35); }
+.ps-canvas { display: block; width: 100%; height: 100%; }
+.ps-cap { margin: 0; font-family: var(--ps-body); font-size: 12.5px; line-height: 16px; color: var(--ps-muted); text-align: center; }
+.ps-opts { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+/* Reiter über die ganze Breite */
+.ps-seg { display: flex; flex-shrink: 0; border: 2px solid var(--ps-line-2); border-radius: 4px; overflow: hidden; }
+.ps-seg button { height: 34px; margin: 0; padding: 0 10px; border: none; border-radius: 0; background: transparent; color: var(--ps-text-2);
+  font-family: var(--ps-display); font-weight: 700; font-size: 16px; letter-spacing: 0.04em; cursor: pointer; }
+.ps-seg button + button { border-left: 1px solid var(--ps-line); }
+.ps-seg button[aria-checked="true"] { background: var(--ps-hi); color: var(--ps-hi-ink); }
+.ps-tabs { align-self: stretch; border-color: var(--ps-ink-deep); }
+.ps-tabs button { flex: 1 1 auto; padding: 0 8px; }
+.ps-tabbox { display: flex; flex-direction: column; gap: 6px; }
+
+/* Zeilen, Farbfelder, Eingaben */
+.ps-row { display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-height: 32px; }
+.ps-lbl { flex: none; width: 92px; font-size: 15px; font-weight: 600; color: var(--ps-text-2); white-space: normal;
+  -webkit-hyphens: auto; hyphens: auto; overflow-wrap: break-word; }
+.ps-row-wrap { align-items: flex-start; }
+.ps-row-wrap .ps-lbl { padding-top: 7px; }
+.ps-swatches { display: flex; flex-wrap: wrap; gap: 5px 7px; max-width: calc(var(--ps-per, 8) * 39px - 7px); }
+.ps-swatch { width: 32px; height: 32px; margin: 0; padding: 0; border-radius: 16px; border: 2px solid transparent; cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(30, 39, 52, 0.18) inset; }
+.ps-swatch[aria-checked="true"] { border-color: var(--ps-text); box-shadow: 0 0 0 2px rgba(17, 25, 36, 0.9) inset; }
+.ps-dim .ps-swatches { opacity: 0.35; }
+.ps-name, .ps-select, .ps-input { height: 38px; margin: 0; padding: 0 12px; border-radius: 3px; border: 1px solid var(--ps-line-2); background: var(--ps-row);
+  color: var(--ps-text); font-family: var(--ps-display); font-weight: 700; font-size: 19px; letter-spacing: 0.04em; }
+.ps-name, .ps-input { flex: 1; min-width: 0; width: auto; text-transform: uppercase; -webkit-user-select: text; user-select: text; }
+.ps-name.ps-mixed { text-transform: none; }
+.ps-name::placeholder, .ps-input::placeholder { color: var(--ps-muted); opacity: 1; text-transform: none; letter-spacing: 0.02em; }
+.ps-select option { background: #FBF4E4; color: #1E2734; }
+.ps-id { gap: 10px; }
+.ps-id .ps-nation { flex: none; width: 172px; }
+.ps-row-sel { gap: 10px; }
+.ps-row-sel .ps-select { flex: 1; min-width: 0; width: auto; }
+.ps-need { outline: 3px solid var(--ps-warn); outline-offset: 1px; }
+.ps-hint { margin: 2px 0 0; max-width: 420px; font-family: var(--ps-body); font-size: 12.5px; line-height: 17px; color: var(--ps-muted); }
+.ps-plain { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; margin: 0; padding: 0 10px; border-radius: 4px;
+  border: 2px solid var(--ps-line-2); background: transparent; color: var(--ps-text); font-family: var(--ps-label); font-weight: 700; font-size: 13px;
+  letter-spacing: 0.04em; cursor: pointer; }
+.ps-plain svg { display: block; flex: none; }
+.ps-random { margin-left: auto; width: 38px; height: 38px; padding: 0; justify-content: center; }
+
+/* erster Start: Name oder als Gast */
+.ps-ask { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -2px 0 2px;
+  font-family: var(--ps-body); font-size: 12.5px; line-height: 16px; color: var(--ps-muted); }
+.ps-warn { color: var(--ps-warn); font-weight: 600; }
+
+/* Reiter Code */
+.ps-codebox { gap: 7px; }
+.ps-code-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-height: 36px; }
+.ps-code-val { flex: 1; min-width: 0; font-family: var(--ps-display); font-weight: 800; font-size: 26px; line-height: 30px; letter-spacing: 0.1em;
+  color: var(--ps-ink); white-space: nowrap; font-variant-numeric: tabular-nums; -webkit-user-select: text; user-select: text; }
+.ps-code-val.ps-none { font-family: var(--ps-body); font-weight: 400; font-size: 15px; letter-spacing: 0; color: var(--ps-muted); }
+.ps-code-st { margin: 0; }
+.ps-codebox .ps-btn { height: 38px; padding: 0 14px; font-size: 16px; }
+.ps-code-save { align-self: flex-start; }
+.ps-sep { display: flex; align-items: center; gap: 10px; margin: 4px 0 0; font-family: var(--ps-label); font-weight: 700; font-size: 11px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--ps-muted); }
+.ps-sep::after { content: ""; flex: 1; height: 1px; background: var(--ps-line); }
+.ps-code-row { gap: 10px; }
+.ps-code-in { letter-spacing: 0.12em; }
+.ps-code-res { margin: 0; }
+.ps-code-ok { gap: 10px; }
+
+/* eigene Ebene (CMPass.ui.open) für Spiele ohne eigene Ebenen; schmale Bildschirme: Figur über den Reitern */
+.ps-screen { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 10px;
+  background: rgba(17, 25, 36, 0.55); }
+.ps-screen[hidden] { display: none; }
+@media (max-width: 640px) {
+  .ps-screen .ps-dialog { width: 100%; max-width: 100%; max-height: 100%; padding: 12px 14px 14px; }
+  .ps-screen .ps-title { font-size: 24px; line-height: 27px; }
+  .ps-screen .ps-head .ps-btn { height: 40px; padding: 0 14px; font-size: 17px; }
+  .ps-screen .ps-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .ps-screen .ps-stage { height: 190px; }
+  .ps-screen .ps-row { gap: 8px; }
+  .ps-screen .ps-lbl { width: 60px; }
+  .ps-screen .ps-seg button { padding: 0 7px; }
+  .ps-screen .ps-random { width: 36px; }
+  .ps-screen .ps-swatches { gap: 5px; max-width: calc(var(--ps-per, 8) * 33px - 5px); }
+  .ps-screen .ps-swatch { width: 28px; height: 28px; border-radius: 14px; }
+  .ps-screen .ps-name, .ps-screen .ps-select, .ps-screen .ps-input { padding: 0 8px; font-size: 17px; }
+  .ps-screen .ps-id .ps-nation { width: 150px; }
+  .ps-screen .ps-code-val { flex: none; font-size: 21px; letter-spacing: 0.04em; }
+}
+@media (prefers-reduced-motion: reduce) { .ps-btn:active, .ps-stage:active { transform: none; } }
+
 </style>
 </head>
 <body>
@@ -313,6 +528,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       <div class="venue-text"><b id="venueName">Hochfilzen</b><span id="venueSub" class="sub">Sprint 7,5 km · 3 Runden</span><span id="venueBest" class="sub hi"></span></div>
     </div>
   </div>
+  <div class="side-chips">
+    <button type="button" id="btnGroups" class="chip-btn"><i class="ico" data-i="group"></i><span>Gruppen</span><b id="grpNew" class="badge" hidden></b></button>
+    <button type="button" id="btnCode" class="chip-btn" aria-label="Dein Code" hidden><i class="ico" data-i="key"></i><span>Code</span></button>
+    <button type="button" id="btnSet" class="chip-btn" aria-label="Einstellungen"><i class="ico" data-i="gear"></i></button>
+  </div>
+  <button type="button" id="btnXc" class="btn xc"><span class="hk">LANGLAUF</span><b>OHNE GEWEHR</b><span class="hs" id="xcSub">10 km klassisch · Einzelstart</span></button>
   <button type="button" id="btnHunt" class="btn hunt"><span class="hk">NOSTALGIE</span><b>JAGD 1960</b><span class="hs">Kimme und Korn · 3D-Attrappen</span></button>
   <div class="foot"><span id="verLine">Version 0.1 · Fanspiel</span> · <button type="button" id="btnInfo" class="link">Info</button></div>
 </section>
@@ -331,19 +552,75 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 <!-- ============ Athletin / Athlet und Einstellungen ============ -->
 <section id="settings" class="screen dlg" hidden>
   <div class="card panel-strong wide setcard">
-    <span class="kicker">DEINE STARTERIN</span>
+    <span class="kicker">EINSTELLUNGEN</span>
     <div class="set-grid">
-      <label class="set-row"><span>Name</span><input id="setName" maxlength="14" autocomplete="off" spellcheck="false"></label>
-      <label class="set-row"><span>Nation</span><select id="setNat"></select></label>
-      <div class="set-row"><span>Rennen</span><div class="seg" id="setSex"><button type="button" data-v="w">Damen</button><button type="button" data-v="m">Herren</button></div></div>
       <div class="set-row"><span>Steuerung</span><div class="seg" id="setCtrl"><button type="button" data-v="easy">Einfach</button><button type="button" data-v="pro">Profi</button></div></div>
-      <div class="set-row"><span>Stil</span><div class="seg" id="setStyle"><button type="button" data-v="classic">Klassisch</button><button type="button" data-v="skate">Skating</button></div></div>
-      <div class="set-row"><span>Visier</span><div class="seg" id="setSight"><button type="button" data-v="kreuz">Kreuz</button><button type="button" data-v="ring">Ring</button></div></div>
+      <div class="set-row"><span>Rangliste</span><div class="seg" id="setBoard"><button type="button" data-v="on">Live</button><button type="button" data-v="off">Aus</button></div></div>
       <div class="set-row"><span>Gegner</span><div class="seg" id="setLevel"><button type="button" data-v="easy">Leicht</button><button type="button" data-v="normal">Normal</button><button type="button" data-v="hard">Stark</button></div></div>
       <div class="set-row"><span>Hilfen</span><div class="seg" id="setHelp"><button type="button" data-v="anf">Anfänger</button><button type="button" data-v="pro">Profi</button></div></div>
       <div class="set-row"><span>Ton</span><div class="seg" id="setSound"><button type="button" data-v="1">An</button><button type="button" data-v="0">Aus</button></div></div>
     </div>
+    <p class="set-note">Name, Land, Aussehen, Damen oder Herren, Technik und Visier: unter <b>Deine Figur</b> (oben rechts antippen).</p>
     <button type="button" class="btn btn-primary back" data-back="menu">Fertig</button>
+  </div>
+</section>
+
+<!-- ============ Deine Figur (Pass der Reihe, ../pass/pass-ui.js) ============ -->
+<section id="figure" class="screen dlg" hidden></section>
+
+<!-- ============ Online fragen ============ -->
+<section id="askOnline" class="screen dlg" hidden>
+  <div class="card panel-strong wide">
+    <span class="kicker">ONLINE MITMACHEN?</span>
+    <p id="aoTxt"></p>
+    <button type="button" id="aoYes" class="btn btn-primary">Ja, online</button>
+    <button type="button" id="aoNo" class="btn btn-secondary">Nein, nur auf diesem Gerät</button>
+  </div>
+</section>
+
+<!-- ============ Gruppen ============ -->
+<section id="groups" class="screen dlg" hidden>
+  <div class="card panel-strong wide grp-card">
+    <div class="grp-head"><span class="kicker">DEINE GRUPPEN</span><button type="button" id="gpNew" class="btn btn-primary small">Neue Gruppe</button></div>
+    <p id="gpOff" class="sub" hidden></p>
+    <div id="gpList" class="gp-list"></div>
+    <p id="gpEmpty" class="sub" hidden>Noch keine Gruppe. Leg eine an und schick den Link in eure WhatsApp-Gruppe: alle laufen dasselbe Rennen, die anderen laufen als Geister mit.</p>
+    <div class="gp-paste"><input id="gpLink" placeholder="Link oder Gruppen-Code einfügen" autocomplete="off" spellcheck="false" maxlength="200"><button type="button" id="gpOpen" class="btn btn-secondary small">Öffnen</button></div>
+    <button type="button" class="btn btn-plain back" data-back="menu">Zurück</button>
+  </div>
+</section>
+
+<section id="newClub" class="screen dlg" hidden>
+  <div class="card panel-strong wide">
+    <span class="kicker" id="ncKick">NEUE GRUPPE</span>
+    <label class="set-row" id="ncNameRow"><span>Name</span><input id="ncName" maxlength="24" autocomplete="off" spellcheck="false" placeholder="z. B. Stammtisch"></label>
+    <div class="set-row"><span>Rennen</span><div class="seg" id="ncRace"><button type="button" data-v="sprint">Sprint</button><button type="button" data-v="mass">Massenst.</button><button type="button" data-v="xc">Langlauf</button><button type="button" data-v="jagd">Jagd 1960</button></div></div>
+    <div class="set-row"><span>Wertung</span><div class="seg" id="ncSex"><button type="button" data-v="w">Damen</button><button type="button" data-v="m">Herren</button></div></div>
+    <div class="set-row"><span>Gegner</span><div class="seg" id="ncLevel"><button type="button" data-v="easy">Leicht</button><button type="button" data-v="normal">Normal</button><button type="button" data-v="hard">Stark</button></div></div>
+    <p class="sub" id="ncNote">Alle in der Runde laufen mit demselben Wind, demselben Feld und derselben Startnummer.</p>
+    <button type="button" id="ncGo" class="btn btn-primary">Anlegen</button>
+    <button type="button" id="ncBack" class="btn btn-plain">Abbrechen</button>
+  </div>
+</section>
+
+<section id="club" class="screen club" hidden>
+  <div class="cl-left panel-strong">
+    <div class="cl-head">
+      <button type="button" id="clName" class="cl-name">GRUPPE</button>
+      <span id="clMem" class="cl-mem"></span>
+    </div>
+    <div class="cl-bar">
+      <div class="seg cl-view" id="clView"><button type="button" data-v="round">Runde</button><button type="button" data-v="tot">Gesamt</button></div>
+      <span class="cl-round"><button type="button" id="clPrev" class="icon-btn mini" aria-label="Runde davor">‹</button><b id="clRoundN">Runde 1</b><button type="button" id="clNext" class="icon-btn mini" aria-label="nächste Runde">›</button></span>
+    </div>
+    <span id="clSub" class="sub cl-sub"></span>
+    <div id="clRows" class="res-list cl-rows"></div>
+  </div>
+  <div class="cl-right">
+    <div class="panel-strong cl-talk"><span class="kicker">GESPRÄCH</span><div id="clFeed" class="cl-feed"></div>
+      <div class="cl-say"><input id="clSay" maxlength="80" placeholder="Schreib etwas an alle" autocomplete="off"><button type="button" id="clSend" class="btn btn-secondary small">Senden</button></div></div>
+    <p id="clNote" class="cl-note" hidden></p>
+    <div class="res-btns"><button type="button" id="clGo" class="btn btn-primary">Laufen</button><button type="button" id="clShare" class="btn btn-secondary">Link</button><button type="button" id="clRound" class="btn btn-secondary">+ Runde</button><button type="button" id="clBack" class="btn btn-secondary">Menü</button></div>
   </div>
 </section>
 
@@ -362,7 +639,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <div class="if-body">
       <h3>Fanspiel</h3><p>Cold Medal · Biathlon ist ein inoffizielles Fanspiel ohne Verbindung zu Verbänden oder Veranstaltern. Alle Athletinnen und Athleten sind erfunden. Strecken sind öffentlichen Daten nachempfunden, nicht vermessen. Grafik und Ton entstehen im Spiel.</p>
       <h3>Rennen</h3><p>Das Rennen läuft gerafft: Laufen zwölfmal schneller als echt, am Schießstand zählt jede Sekunde. Fehler kosten Strafzeit, so viel wie eine Strafrunde von 150 m. Die Zeiten werden so angezeigt, wie sie im echten Rennen wären.</p>
-      <h3>Datenschutz</h3><p>Kein Konto, keine Werbung, keine Cookies, keine Analyse. Name, Bestzeiten und Einstellungen speichert das Spiel nur im Browser auf diesem Gerät; es sendet nichts an einen Server.</p><p id="ifPriv"></p>
+      <h3>Datenschutz</h3><p>Kein Konto, keine Werbung, keine Cookies, keine Analyse. Name, Bestzeiten und Einstellungen speichert das Spiel im Browser auf diesem Gerät. Deine Figur (Name, Land, Aussehen) teilt es mit den anderen Spielen von Cold Medal unter derselben Adresse.</p><p id="ifOnline"></p><p id="ifPriv"></p><div id="ifOnBtns" class="if-btns" hidden><button type="button" id="ifOnToggle" class="btn btn-secondary small"></button><button type="button" id="ifForget" class="btn btn-plain small">Meine Online-Daten löschen</button></div>
       <h3>Impressum</h3><p id="ifImp">Privates Spieleprojekt, nicht kommerziell.</p>
     </div>
     <button type="button" class="btn btn-primary back" data-back="menu">Schließen</button>
@@ -386,11 +663,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <div class="kraft-row"><span class="unit">KRAFT</span><div class="bar kraft"><i id="hKraft"></i></div></div>
   </div>
   <div class="panel hud-bc" id="beatBox">
-    <div class="beat-head"><span class="kicker">TAKT</span><span id="hStreak" class="streak"></span><span id="beatLbl" class="beat-lbl"></span></div>
+    <div class="beat-head"><span class="kicker">TAKT</span><span id="hStreak" class="streak"></span><span id="beatLbl" class="beat-lbl"></span><span class="sp"><span id="hSpeed" class="num sp-val">0</span><span class="unit">km/h</span><span id="hTuck" class="chip" hidden>HOCKE</span></span></div>
     <div class="beat"><i class="z-early"></i><i class="z-press"></i><i class="z-beat"></i><i class="z-late"></i><span id="beatMark" class="mark"></span></div>
     <div class="beat-lbls" id="beatLbls"><span>zu früh</span><span>Druck</span><span>im Takt</span><span></span></div>
   </div>
-  <div class="panel hud-br"><span id="hSpeed" class="num sp-val">0</span><span class="unit">km/h</span><span id="hTuck" class="chip" hidden>HOCKE</span></div>
+  <button type="button" id="hWatch" class="chip-btn watch-chip" hidden>1× · schneller</button>
+
 </div>
 
 <!-- ============ HUD Schießstand ============ -->
@@ -409,6 +687,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 <div id="learnCard" class="learn panel-strong" hidden><div class="lc-head"><span id="lcKick" class="kicker">ERSTE SCHRITTE · 1/6</span><span id="lcDots" class="lc-dots"></span></div><p id="lcText"></p></div>
 <div id="banner" class="banner" hidden><span id="bKick" class="kicker"></span><b id="bTitle"></b><span id="bSub"></span></div>
 <div id="tip" class="tip" hidden></div>
+<div id="uiToast" class="ui-toast" hidden></div>
 
 <!-- ============ Pause ============ -->
 <section id="pause" class="screen dlg" hidden>
@@ -427,7 +706,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <div id="resList" class="res-list"></div>
   </div>
   <div class="res-right">
-    <div class="panel-strong res-tv"><span class="kicker">ANALYSE</span><div id="resTv"></div></div>
+    <div class="panel-strong res-tv"><span class="kicker">ANALYSE</span><p id="resClub" class="res-club" hidden></p><div id="resTv"></div></div>
     <div class="res-btns"><button type="button" id="resNext" class="btn btn-primary next" hidden>Verfolgung starten</button><button type="button" id="resAgain" class="btn btn-primary">Nochmal</button><button type="button" id="resMenu" class="btn btn-secondary">Menü</button></div>
   </div>
 </section>
@@ -457,6 +736,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // offene Visierung (Kimme und Korn), keine Strafrunde: jeder Fehler eine Minute Strafzeit, ein Treffer in die Kill-Zone 10 s gut.
     jagd: { name: "Jagdpatrouille", w: { km: 10, laps: 5 }, m: { km: 15, laps: 5 }, stages: ["prone", "kneel", "stand", "prone"], start: 60, field: 30,
       hunt: { shots: 3, penSec: 60, killSec: 10 } },
+    // Langlauf ohne Gewehr (seit 0.16): Einzelstart im klassischen Stil, 10 km Damen, 15 km Herren, Runden wie im Sprint
+    xc: { name: "Langlauf", w: { km: 10, laps: 4 }, m: { km: 15, laps: 6 }, stages: [], start: 30, field: 50 },
   };
   const PENALTY_M = 150;
 
@@ -4357,6 +4638,565 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   root.CMFigur = { draw, joints, fromPoints, mix, seq, ease, gesture, idle, cleanLook, shade, POSES, ABLAEUFE, GESTEN, ARTEN, KITS, SKI, LEN, DEF_LOOK, SKIN, HAIRC, SUIT, HAIRS, BEARDS, PATTERNS, INK };
 })(typeof window !== "undefined" ? window : globalThis);
 
+/* Cold Medal Games · Pass (pass/pass.js, global CMPass)
+ *
+ * Eine Figur für alle Spiele der Reihe (Mat, 12.11.2026): Name, Land, Aussehen, Code und Taler liegen im Pass, nicht im
+ * Spielstand eines einzelnen Spiels. Alle Spiele liegen unter matpeins-debug.github.io und teilen den Browser-Speicher
+ * (Schlüssel „cm.pass“); auf einem anderen Gerät holt man den Pass mit dem persönlichen Code (Schema cm, RPCs public.cm_pass_*).
+ * Das Fenster „Deine Figur“ liegt in pass-ui.js. Regeln: nur abwärtskompatibel ändern, unbekannte Felder bleiben erhalten,
+ * der Code geht nie im Klartext in die Daten (der Server speichert nur seinen Prüfwert).
+ *
+ * Format (v 1): { v, code, name, nation, look: { hair, hairC, beard, skin, suit, accent, pattern }, taler, at, edited }
+ *   code    12 Zeichen ohne I, O, 0, 1 oder null (entsteht beim ersten Online-Schritt)
+ *   look    Kopf als Nummern in den Listen von figur.js, Farben als #RRGGBB (Liste COLORS), Muster uni | stripe | split
+ *   taler   gemeinsame Währung der Reihe (vorerst schreibt nur das Skispringen)
+ *   at      letzte Änderung (ms); edited: Name oder Aussehen hat jemand selbst gewählt (nicht nur Standard)
+ */
+(function (root) {
+  "use strict";
+  const KEY = "cm.pass", V = 1;
+  const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // ohne I, O, 0, 1 (verwechselbar)
+  const CODE_RE = /^[A-HJ-NP-Z2-9]{12}$/;
+  const HEX = /^#[0-9A-F]{6}$/i;
+  const fig = () => root.CMFigur || null;
+
+  // Eine Farbliste für Anzug und Zweitfarbe in allen Spielen: zuerst die Anzugfarben des Skispringens (Reihenfolge fest, das
+  // Skispringen meldet sie online als Nummer), dann die Plakatfarben der Figur (figur.js SUIT) und Bordeaux; Tinte (SUIT 5)
+  // fehlt in der Auswahl, weil sie wie Schwarz aussieht (bleibt aber gültig).
+  const COLORS = [["#FF8A3D", "Orange"], ["#FFD23F", "Gelb"], ["#E5383B", "Rot"], ["#F25C78", "Pink"], ["#9B6BFF", "Violett"],
+    ["#3A7BFF", "Blau"], ["#4FD1C5", "Türkis"], ["#3FBF6E", "Grün"], ["#EEF2F7", "Weiß"], ["#262E3B", "Schwarz"],
+    ["#C23B2A", "Signalrot"], ["#23466B", "Alpenblau"], ["#3F6B55", "Tannengrün"], ["#DDA43B", "Ocker"], ["#6B3F7A", "Pflaume"], ["#7A2232", "Bordeaux"]];
+  const PATTERNS = [["uni", "Uni"], ["stripe", "Streifen"], ["split", "Zweifarbig"]];
+  const HAIRC_NAMES = ["Dunkelbraun", "Braun", "Blond", "Schwarz", "Grau"];
+  const SKIN_NAMES = ["Sehr hell", "Hell", "Mittel", "Dunkel", "Sehr dunkel"];
+  const NATIONS = [["AUT", "Österreich"], ["GER", "Deutschland"], ["SUI", "Schweiz"], ["NOR", "Norwegen"], ["SLO", "Slowenien"], ["POL", "Polen"],
+    ["JPN", "Japan"], ["FIN", "Finnland"], ["ITA", "Italien"], ["CZE", "Tschechien"], ["FRA", "Frankreich"], ["USA", "USA"]];
+  // Standard wie die Figur: Signalrot mit Ocker (die Plakatfarben der Reihe)
+  const DEF_LOOK = { hair: 0, hairC: 0, beard: 0, skin: 1, suit: "#C23B2A", accent: "#DDA43B", pattern: "uni" };
+  const LOOK_KEYS = ["hair", "hairC", "beard", "skin", "suit", "accent", "pattern"];
+  const HEAD = { hair: 9, hairC: 5, beard: 4, skin: 5 };   // Anzahl, falls figur.js fehlt (Tests ohne Figur)
+  const count = (k) => { const F = fig(); const L = F && { hair: F.HAIRS, hairC: F.HAIRC, beard: F.BEARDS, skin: F.SKIN }[k]; return L ? L.length : HEAD[k]; };
+  const isObj = (v) => !!v && typeof v === "object" && !Array.isArray(v);
+
+  // ------------------------------------------------------------------ Prüfen und Reparieren
+  // Name wie am Server (tm.clean_name): ohne Steuerzeichen und <>"&\/;{}, höchstens 12 Zeichen; leer = noch kein Name
+  const cleanName = (s) => String(s == null ? "" : s).replace(/[\u0000-\u001f\u007f<>"&\\/;{}]/g, "").trim().slice(0, 12);
+  function cleanLook(l) {
+    const o = Object.assign({}, DEF_LOOK);
+    if (!isObj(l)) return o;
+    for (const k of Object.keys(l)) {   // unbekannte einfache Felder (spätere Muster, Wappen) bleiben
+      const v = l[k];
+      if (!LOOK_KEYS.includes(k) && (typeof v === "string" || typeof v === "boolean" || (typeof v === "number" && isFinite(v)))) o[k] = v;
+    }
+    for (const k of ["hair", "hairC", "beard", "skin"]) if (Number.isInteger(l[k]) && l[k] >= 0 && l[k] < count(k)) o[k] = l[k];
+    for (const k of ["suit", "accent"]) {
+      const v = l[k], F = fig();
+      if (typeof v === "string" && HEX.test(v)) o[k] = v.toUpperCase();
+      else if (Number.isInteger(v) && F && F.SUIT[v]) o[k] = F.SUIT[v].toUpperCase();   // Nummer in der Plakatliste der Figur (Eiskunstlauf)
+    }
+    if (PATTERNS.some((p) => p[0] === l.pattern)) o.pattern = l.pattern;
+    return o;
+  }
+  function clean(p) {
+    let o = {};
+    if (isObj(p)) { try { o = JSON.parse(JSON.stringify(p)); } catch (e) { o = {}; } }
+    o.v = Number.isInteger(o.v) && o.v > V ? o.v : V;   // ein neueres Format nicht zurückstufen
+    o.code = typeof o.code === "string" && CODE_RE.test(o.code) ? o.code : null;
+    o.name = cleanName(o.name);
+    o.nation = typeof o.nation === "string" && /^[A-Z]{3}$/.test(o.nation) ? o.nation : "AUT";
+    o.look = cleanLook(o.look);
+    o.taler = typeof o.taler === "number" && isFinite(o.taler) && o.taler >= 0 ? Math.min(1e7, Math.round(o.taler)) : 0;
+    o.at = typeof o.at === "number" && isFinite(o.at) && o.at > 0 ? Math.round(o.at) : 0;
+    o.edited = !!o.edited;
+    return o;
+  }
+  const blank = () => clean(null);
+  // gleich bis auf den Zeitstempel?
+  const same = (a, b) => { const x = Object.assign({}, a, { at: 0 }), y = Object.assign({}, b, { at: 0 }); return JSON.stringify(x) === JSON.stringify(y); };
+
+  // ------------------------------------------------------------------ Speicher (geteilt von allen Spielen dieser Adresse)
+  let cur = null;
+  const subs = [];
+  const store = () => { try { return root.localStorage || null; } catch (e) { return null; } };
+  function read() {
+    const s = store();
+    if (!s) return null;
+    try { const raw = s.getItem(KEY); return raw ? clean(JSON.parse(raw)) : null; } catch (e) {
+      try { const raw = s.getItem(KEY); if (raw) s.setItem(KEY + ".backup", raw); } catch (e2) { /* egal */ }
+      return null;
+    }
+  }
+  function write(p) { const s = store(); if (!s) return false; try { s.setItem(KEY, JSON.stringify(p)); return true; } catch (e) { return false; } }
+  function emit(src) { for (const f of subs.slice()) { try { f(cur, src); } catch (e) { /* ein Spiel darf die anderen nicht stören */ } } }
+
+  // Pass laden; fehlt er, entsteht er aus seed (Objekt oder Funktion mit den Angaben des Spiels). created: eben neu angelegt.
+  let created = false;
+  function load(seed) {
+    cur = read();
+    created = false;
+    if (!cur) {
+      cur = clean(typeof seed === "function" ? seed() : seed);
+      cur.at = cur.at || Date.now();
+      write(cur); created = true;
+    }
+    return cur;
+  }
+  const get = () => cur || load();
+  // Felder ändern; look wird zusammengeführt. Schreibt nur, wenn sich etwas ändert. src: wer ändert (an die Zuhörer).
+  function set(patch, src) {
+    const base = get(), nx = Object.assign({}, base, isObj(patch) ? patch : {});
+    if (isObj(patch) && isObj(patch.look)) nx.look = Object.assign({}, base.look, patch.look);
+    const c = clean(nx);
+    if (same(c, base)) return base;
+    c.at = Date.now();
+    cur = c; write(cur); emit(src || "local");
+    return cur;
+  }
+  // ganzen Pass ersetzen (vom Server geholt, aus einer Datei); bleibt sonst wie set
+  function replace(p, src) { cur = clean(p); cur.at = cur.at || Date.now(); write(cur); emit(src || "load"); return cur; }
+  // Pass auf diesem Gerät löschen (Kopie bleibt unter cm.pass.backup)
+  function remove() {
+    const s = store();
+    try { if (s) { const raw = s.getItem(KEY); if (raw) s.setItem(KEY + ".backup", raw); s.removeItem(KEY); } } catch (e) { /* egal */ }
+    cur = null;
+  }
+  // Zuhörer: fn(pass, src); src "local" | "load" | "tab" (anderer Tab, z. B. das Biathlon daneben). Gibt eine Abmeldung zurück.
+  function on(fn) { subs.push(fn); return () => { const i = subs.indexOf(fn); if (i >= 0) subs.splice(i, 1); }; }
+  if (root.addEventListener) {
+    root.addEventListener("storage", (e) => {
+      if (e.key !== KEY || e.newValue == null) return;   // gelöscht: im Speicher bleibt der Pass, bis das Spiel neu lädt
+      const p = read();
+      if (!p || (cur && same(p, cur))) return;
+      cur = p; emit("tab");
+    });
+  }
+
+  // ------------------------------------------------------------------ Code der Reihe
+  function newCode() {
+    const b = new Uint8Array(12);
+    (root.crypto || globalThis.crypto).getRandomValues(b);
+    let s = "";
+    for (const x of b) s += ALPHA[x & 31];
+    return s;
+  }
+  const codeOk = (c) => typeof c === "string" && CODE_RE.test(c);
+  const fmtCode = (c) => String(c || "").replace(/(.{4})(?=.)/g, "$1-");
+  // Eingabe aufräumen (Leerzeichen, Bindestriche, Kleinbuchstaben); null wenn kein gültiger Code
+  const parseCode = (t) => { const s = String(t || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); return CODE_RE.test(s) ? s : null; };
+  // Code anlegen, falls noch keiner da ist
+  function ensureCode() { const p = get(); return p.code || set({ code: newCode() }, "local").code; }
+
+  // ------------------------------------------------------------------ Online (rpc: Funktion des Spiels, z. B. TMOnline.make(cfg).rpc)
+  // Gesendet wird alles außer dem Code; der Server prüft Felder und Größe und speichert unter dem Prüfwert des Codes.
+  const online = {
+    async put(rpc, p) {
+      p = p || get();
+      if (!p || !codeOk(p.code)) return null;
+      const data = Object.assign({}, p); delete data.code;
+      return rpc("cm_pass_put", { p_code: p.code, p_data: data }, 8000);
+    },
+    // Pass zu einem Code holen: null, wenn es keinen gibt
+    async get(rpc, code) {
+      if (!codeOk(code)) return null;
+      const j = await rpc("cm_pass_get", { p_code: code }, 8000);
+      if (!j || !isObj(j.d)) return null;
+      return clean(Object.assign({}, j.d, { code }));
+    },
+  };
+
+  root.CMPass = { KEY, V, COLORS, PATTERNS, HAIRC_NAMES, SKIN_NAMES, NATIONS, DEF_LOOK, LOOK_KEYS,
+    clean, cleanLook, cleanName, blank, same, load, get, set, replace, remove, on, get created() { return created; },
+    newCode, codeOk, fmtCode, parseCode, ensureCode, online };
+})(typeof window !== "undefined" ? window : globalThis);
+
+/* Cold Medal Games · Fenster „Deine Figur“ (pass/pass-ui.js, CMPass.ui)
+ *
+ * Ein Fenster für alle Spiele der Reihe: links die Figur auf hellem Plakatgrund (antippen wechselt die Haltung), rechts Reiter:
+ * Person (Name, Land, Frisur, Bart, Haare, Haut), Farben (Anzug, Muster, Zweitfarbe, Zufall), eigene Reiter der Sportart
+ * (im Skispringen: Ausrüstung) und Code (der persönliche Code der Reihe: zeigen, kopieren, online sichern, auf einem anderen
+ * Gerät holen). Was man hier wählt, liegt im Pass und gilt in jedem Spiel. Aussehen wie das Skispringen (Papier, Druckmarken),
+ * Klassen mit dem Präfix ps- (pass.css). Braucht figur.js und pass.js.
+ *
+ * const ui = CMPass.ui.mount(host, opts)   host: leeres Element, das das Spiel ein- und ausblendet (Ebene, Maßstab)
+ *   opts.title        Überschrift, Standard „Deine Figur“      opts.kit     Kit der Figur in der Vorschau (figur.js KITS)
+ *   opts.nations      [[Kürzel, Name], …] (sonst CMPass.NATIONS) opts.upper  Namen in Versalien (Standard ja)
+ *   opts.labels       { suit: "Anzug", accent: "Zweitfarbe" }  opts.personHint  kurzer Satz unter Person
+ *   opts.preview      eigene Vorschau: { poses: [[id, Name], …], pose, personPose, colorPose, draw(ctx, w, h, t, pose, look) }
+ *                     (Hintergrund wie hier: CMPass.ui.backdrop(ctx, w, h))
+ *   opts.tabs         eigene Reiter: [{ id, label, pose, rows: [Zeile, …] }], Zeile:
+ *                       { type: "swatches", label, list: [[Wert, Name, Farbe?], …], get, set, dim?, hide? }
+ *                       { type: "seg", label, list: [[Wert, Name], …], get, set, hide? }
+ *                       { type: "selects", label, items: [{ list, get, set, aria }] }      { type: "hint", text }
+ *   opts.code         Reiter Code: { status() → { code?, text, save?, load? }, save(), load(code) → { text, apply? } }
+ *                     status: code = der gezeigte Code (sonst der im Pass, null = „noch keiner“), save = Beschriftung des Knopfs
+ *                     zum Sichern (ohne: kein Knopf), load: false blendet „Auf einem anderen Gerät“ aus. Fehler als Error mit Text.
+ *                     Für Spiele nur mit Pass: CMPass.ui.codeVia(rpc). Ohne opts.code kein Reiter Code.
+ *   opts.random()     zusätzlich bei „Zufall“ (Ausrüstung der Sportart)     opts.onDone()  nach „Fertig“
+ *   opts.defaultName  Name, wenn keiner eingegeben ist         opts.dpr()   Pixeldichte der Vorschau
+ * ui.open({ ask, title, tab })   ask: erster Start, ohne Namen geht es nicht weiter (oder „Als Gast spielen“)
+ * ui.refresh() · ui.done() → false, solange ein Name fehlt · ui.close() · ui.setTab(id) · ui.el (das Fenster)
+ * CMPass.ui.open(opts) legt selbst eine Ebene über die Seite (für Spiele ohne eigene Ebenen) und zeigt das Fenster.
+ */
+(function (root) {
+  "use strict";
+  const P = root.CMPass, doc = root.document;
+  let uid = 0;
+  const mk = (tag, cls, text) => { const e = doc.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const at = (e, a) => { for (const k of Object.keys(a)) e.setAttribute(k, a[k]); return e; };
+  const DICE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.4" fill="currentColor" stroke="none"/>' +
+    '<circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg>';
+  // Vorschau ohne eigene Zeichnung des Spiels: die Figur steht, jubelt, winkt oder tanzt (Gesten aus figur.js)
+  const DEF_POSES = [["stand", "Stehen"], ["jubel", "Jubel"], ["winken", "Winken"], ["charleston", "Tanz"]];
+  const errText = (e) => (e && e.message ? e.message : "Hat nicht geklappt. Bitte später noch einmal.");
+
+  // Hintergrund der Vorschau: heller Plakathimmel mit blassen Bergen über Schnee. Hell, damit jede Farbe gut steht (auch
+  // dunkle Anzüge und Haare); die Figur hat eine dunkle Kontur. Für eigene Vorschauen der Spiele: CMPass.ui.backdrop(…).
+  function backdrop(c, w, h, o) {
+    o = o || {};
+    const g = c.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "#C7DAE5"); g.addColorStop(0.6, "#E9E4D3"); g.addColorStop(1, "#F1E7D2");
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = "rgba(35,70,107,0.12)";
+    c.beginPath(); c.moveTo(0, h * 0.64);
+    for (const [x, y] of [[0.14, 0.47], [0.27, 0.58], [0.45, 0.39], [0.63, 0.55], [0.8, 0.44], [1, 0.6]]) c.lineTo(w * x, h * y);
+    c.lineTo(w, h); c.lineTo(0, h); c.closePath(); c.fill();
+    if (o.ground !== false) {
+      const y = o.groundY != null ? o.groundY : h - 12;
+      c.fillStyle = "#FBF8F1"; c.fillRect(0, y, w, h - y);
+      c.fillStyle = "rgba(30,39,52,0.28)"; c.fillRect(0, y, w, 1.5);
+    }
+  }
+
+  function defaultDraw(c, w, h, t, pose, look, kit) {
+    backdrop(c, w, h);
+    const F = root.CMFigur;
+    if (!F) return;
+    let p = F.POSES.stand, lift = 0, mood = "ruhig";
+    if (pose === "stand") p = F.idle(F.POSES.stand, t);
+    else {
+      const G = F.GESTEN[pose], r = G && F.gesture(pose, G.loop ? t : t % (G.dauer + 1.4));
+      if (r) { p = r.pose; lift = r.lift; mood = r.mood; }
+    }
+    const s = Math.min(w / 64, (h - 26) / 96);
+    F.draw(c, { x: w / 2, y: h - 13, s, dir: 1, pose: p, lift, look: F.cleanLook(look), kit: kit || "plain", face: true, mood });
+  }
+
+  // Eine Zeile im Fenster; sync() stellt den aktuellen Wert dar (und blendet aus, wenn hide() es will)
+  function row(spec, changed) {
+    if (spec.type === "hint") {
+      const p = mk("p", "ps-hint", typeof spec.text === "function" ? spec.text() : spec.text);
+      return { el: p, sync() { if (typeof spec.text === "function") p.textContent = spec.text(); } };
+    }
+    const r = mk("div", "ps-row");
+    r.appendChild(mk("span", "ps-lbl", spec.label));
+    const hide = () => { r.hidden = !!(spec.hide && spec.hide()); };
+    if (spec.type === "swatches") {
+      const box = at(mk("div", "ps-swatches"), { role: "radiogroup", "aria-label": spec.aria || spec.label });
+      // mehr als acht Felder: gleich lange Reihen (10 → 5 + 5, 16 → 8 + 8)
+      if (spec.list.length > 8) { r.classList.add("ps-row-wrap"); box.style.setProperty("--ps-per", Math.ceil(spec.list.length / Math.ceil(spec.list.length / 8))); }
+      const bs = spec.list.map(([v, name, col]) => {
+        const b = at(mk("button", "ps-swatch"), { type: "button", role: "radio", "aria-label": name, "aria-checked": "false" });
+        b.style.background = col || v; b._v = v; box.appendChild(b); return b;
+      });
+      box.addEventListener("click", (e) => { const b = e.target.closest(".ps-swatch"); if (b && box.contains(b)) { spec.set(b._v); changed(spec); } });
+      r.appendChild(box);
+      return { el: r, sync() { hide(); const v = spec.get(); for (const b of bs) b.setAttribute("aria-checked", String(b._v === v)); r.classList.toggle("ps-dim", !!(spec.dim && spec.dim())); } };
+    }
+    if (spec.type === "seg") {
+      const box = at(mk("div", "ps-seg"), { role: "radiogroup", "aria-label": spec.aria || spec.label });
+      const bs = spec.list.map(([v, name]) => { const b = at(mk("button", null, name), { type: "button", role: "radio", "aria-checked": "false" }); b._v = v; box.appendChild(b); return b; });
+      box.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && box.contains(b)) { spec.set(b._v); changed(spec); } });
+      r.appendChild(box);
+      return { el: r, sync() { hide(); const v = spec.get(); for (const b of bs) b.setAttribute("aria-checked", String(b._v === v)); } };
+    }
+    // mehrere Auswahllisten in einer Zeile (Frisur und Bart)
+    r.classList.add("ps-row-sel");
+    const sels = (spec.items || []).map((it) => {
+      const s = at(mk("select", "ps-select"), { "aria-label": it.aria || spec.label });
+      for (const [v, name] of it.list) { const o = mk("option", null, name); o.value = String(v); s.appendChild(o); }
+      s.addEventListener("change", () => { const hit = it.list.find(([v]) => String(v) === s.value); if (hit) { it.set(hit[0]); changed(spec); } });
+      r.appendChild(s);
+      return [s, it];
+    });
+    return { el: r, sync() { hide(); for (const [s, it] of sels) s.value = String(it.get()); } };
+  }
+
+  // Reiter Code: der persönliche Code der Reihe (zeigen, kopieren), online sichern, auf einem anderen Gerät holen
+  function codeTab(code, stop) {
+    const box = mk("div", "ps-tabbox ps-codebox");
+    const top = mk("div", "ps-code-top"), val = mk("b", "ps-code-val");
+    const bCopy = at(mk("button", "ps-plain", "Kopieren"), { type: "button" });
+    top.append(mk("span", "ps-lbl", "Dein Code"), val, bCopy);
+    const st = mk("p", "ps-hint ps-code-st");
+    const bSave = at(mk("button", "ps-btn ps-btn-2 ps-code-save"), { type: "button" });
+    const sep = mk("p", "ps-sep", "Auf einem anderen Gerät");
+    const inRow = mk("div", "ps-row ps-code-row");
+    const inCode = at(mk("input", "ps-input ps-code-in"), { type: "text", maxlength: "16", autocomplete: "off", spellcheck: "false", "aria-label": "Code eingeben", placeholder: "Code eingeben" });
+    const bGet = at(mk("button", "ps-btn ps-btn-2 ps-code-get", "Holen"), { type: "button" });
+    inRow.append(inCode, bGet);
+    const res = mk("p", "ps-hint ps-code-res"); res.hidden = true;
+    const okRow = mk("div", "ps-row ps-code-ok"); okRow.hidden = true;
+    const bYes = at(mk("button", "ps-btn ps-btn-1 ps-code-yes", "Laden"), { type: "button" }), bNo = at(mk("button", "ps-plain", "Abbrechen"), { type: "button" });
+    okRow.append(bYes, bNo);
+    box.append(top, st, bSave, sep, inRow, res, okRow);
+    let pending = null, busy = false, shownCode = "";
+    // Rückfrage zum Laden: dann nur noch sie (der obere Teil hat Pause), damit alles ins Fenster passt
+    const ask = (on) => { okRow.hidden = !on; top.hidden = st.hidden = on; if (on) bSave.hidden = true; else sync(); };
+    function sync() {
+      const s = (code.status && code.status()) || {}, c = "code" in s ? s.code : P.get().code;
+      shownCode = P.codeOk(c) ? c : "";
+      val.textContent = shownCode ? P.fmtCode(shownCode) : "noch keiner";
+      val.classList.toggle("ps-none", !shownCode);
+      bCopy.hidden = !shownCode;
+      st.textContent = s.text || "";
+      bSave.textContent = s.save || ""; bSave.hidden = !s.save;
+      // Holen geht nur, wenn das Spiel online ist (s.load === false: aus oder keine Verbindung möglich)
+      const canLoad = s.load !== false;
+      sep.hidden = inRow.hidden = !canLoad;
+      if (!canLoad) { pending = null; okRow.hidden = true; res.hidden = true; }
+      if (pending) { top.hidden = st.hidden = bSave.hidden = true; } else { top.hidden = st.hidden = false; }
+    }
+    bCopy.addEventListener("click", async () => {
+      const t = P.fmtCode(shownCode);
+      try { await root.navigator.clipboard.writeText(t); bCopy.textContent = "Kopiert"; }
+      catch (e) { const rg = doc.createRange(); rg.selectNodeContents(val); const sel = root.getSelection(); sel.removeAllRanges(); sel.addRange(rg); bCopy.textContent = "Markiert"; }
+      setTimeout(() => { bCopy.textContent = "Kopieren"; }, 1800);
+    });
+    bSave.addEventListener("click", async () => {
+      if (busy) return;
+      busy = true; bSave.disabled = true;
+      try { await code.save(); sync(); } catch (e) { sync(); st.textContent = errText(e); }
+      busy = false; bSave.disabled = false;
+    });
+    bGet.addEventListener("click", async () => {
+      const c = P.parseCode(inCode.value);
+      if (pending) { pending = null; ask(false); }
+      res.hidden = false; res.classList.remove("ps-warn");
+      if (!c) { res.textContent = "Kein gültiger Code: 12 Zeichen, zum Beispiel K7PM-3QXD-9TRA."; res.classList.add("ps-warn"); return; }
+      res.textContent = "Suche …"; bGet.disabled = true;
+      try { const r = await code.load(c); res.textContent = r.text; if (r.apply) { pending = r.apply; ask(true); } }
+      catch (e) { res.textContent = errText(e); res.classList.add("ps-warn"); }
+      bGet.disabled = false;
+    });
+    bYes.addEventListener("click", () => { const f = pending; if (!f) return; pending = null; ask(false); res.hidden = true; inCode.value = ""; f(); });
+    bNo.addEventListener("click", () => { pending = null; ask(false); res.hidden = true; inCode.value = ""; });
+    inCode.addEventListener("keydown", (e) => { if (e.key === "Enter") bGet.click(); stop(e); });
+    return { box, sync };
+  }
+
+  function mount(host, opts) {
+    opts = opts || {};
+    const F = root.CMFigur, id = ++uid, upper = opts.upper !== false;
+    const pv = opts.preview || { poses: DEF_POSES, pose: "stand" };
+    const lbl = Object.assign({ suit: "Anzug", accent: "Zweitfarbe" }, opts.labels || {});
+    const look = () => P.get().look;
+    const setLook = (patch) => P.set({ look: patch, edited: true }, "ui");
+    const personPose = pv.personPose || pv.pose || pv.poses[0][0];
+    let tab = "person", pose = personPose, ask = false, shown = false, raf = 0, openedAt = 0;
+    // Tasten beim Tippen nicht ans Spiel weitergeben, außer Escape (schließt das Fenster)
+    const stop = (e) => { if (e.key !== "Escape") e.stopPropagation(); };
+
+    // ---------------------------------------------------------------- Aufbau: Kopf nur Titel und Fertig
+    const dlg = at(mk("div", "ps-dialog"), { role: "dialog", "aria-labelledby": "psTitle" + id });
+    const head = mk("div", "ps-head"), title = at(mk("h2", "ps-title", opts.title || "Deine Figur"), { id: "psTitle" + id });
+    const bDone = at(mk("button", "ps-btn ps-btn-1 ps-done", "Fertig"), { type: "button" });
+    head.append(title, bDone);
+
+    // links: die Figur; antippen wechselt die Haltung
+    const grid = mk("div", "ps-grid"), left = mk("div", "ps-left"), opt = mk("div", "ps-opts");
+    const stage = at(mk("div", "ps-stage"), { role: "button", tabindex: "0", "aria-label": "Haltung der Figur wechseln" });
+    const cv = at(mk("canvas", "ps-canvas"), { role: "img", "aria-label": "Vorschau deiner Figur" });
+    const cap = mk("p", "ps-cap");
+    stage.appendChild(cv); left.append(stage, cap);
+    const poseName = () => (pv.poses.find((x) => x[0] === pose) || pv.poses[0])[1];
+    const nextPose = () => { const i = pv.poses.findIndex((x) => x[0] === pose); pose = pv.poses[(i + 1) % pv.poses.length][0]; refresh(); };
+    stage.addEventListener("click", nextPose);
+    stage.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); nextPose(); } });
+
+    // Person: Name und Land, dann der Kopf
+    const idRow = mk("div", "ps-row ps-id");
+    const inName = at(mk("input", "ps-name"), { type: "text", maxlength: "12", autocomplete: "off", spellcheck: "false", "aria-label": "Name", placeholder: "Dein Name" });
+    if (!upper) inName.classList.add("ps-mixed");
+    const selNat = at(mk("select", "ps-select ps-nation"), { "aria-label": "Land" });
+    for (const [c, n] of opts.nations || P.NATIONS) { const o = mk("option", null, n); o.value = c; selNat.appendChild(o); }
+    idRow.append(inName, selNat);
+    const askRow = mk("div", "ps-ask"), askTxt = mk("span", "ps-ask-txt"), bGuest = at(mk("button", "ps-plain", "Als Gast spielen"), { type: "button" });
+    askRow.append(askTxt, bGuest); askRow.hidden = true;
+    const ASK = "Dein Name steht auf den Tafeln und in den Gruppen, in allen Spielen.";
+    const person = [
+      { type: "selects", label: "Frisur", head: true, items: [
+        { aria: "Frisur", list: F.HAIRS.map((n, i) => [i, n]), get: () => look().hair, set: (v) => setLook({ hair: v }) },
+        { aria: "Bart", list: F.BEARDS.map((n, i) => [i, i ? n : "ohne Bart"]), get: () => look().beard, set: (v) => setLook({ beard: v }) }] },
+      { type: "swatches", label: "Haare", aria: "Haarfarbe", head: true, list: F.HAIRC.map((c, i) => [i, P.HAIRC_NAMES[i] || "Haarfarbe " + (i + 1), c]), get: () => look().hairC, set: (v) => setLook({ hairC: v }) },
+      { type: "swatches", label: "Haut", aria: "Hautton", head: true, list: F.SKIN.map((c, i) => [i, P.SKIN_NAMES[i] || "Hautton " + (i + 1), c]), get: () => look().skin, set: (v) => setLook({ skin: v }) },
+      { type: "hint", text: opts.personHint || "Deine Figur gilt in allen Spielen von Cold Medal." },
+    ];
+    // Farben: die Zweitfarbe erscheint erst, wenn ein Muster sie braucht
+    const colors = [
+      { type: "swatches", label: lbl.suit, aria: "Farbe: " + lbl.suit, list: P.COLORS, get: () => look().suit, set: (v) => setLook({ suit: v }) },
+      { type: "seg", label: "Muster", list: P.PATTERNS, get: () => look().pattern, set: (v) => {
+        const L = look(), patch = { pattern: v };
+        if (v !== "uni" && L.accent === L.suit) patch.accent = L.suit === "#EEF2F7" ? "#262E3B" : "#EEF2F7";   // Muster soll man sehen
+        setLook(patch);
+      } },
+      { type: "swatches", label: lbl.accent, aria: lbl.accent, list: P.COLORS, get: () => look().accent, set: (v) => setLook({ accent: v }), hide: () => look().pattern === "uni" },
+    ];
+    const tabs = [{ id: "person", label: "Person", pose: pv.personPose, rows: person }, { id: "farben", label: "Farben", pose: pv.colorPose, rows: colors }]
+      .concat((opts.tabs || []).filter((t) => t && t.id && Array.isArray(t.rows)));
+    const changed = (spec) => { if (spec.head) pose = personPose; refresh(); };
+    const boxes = tabs.map((t) => {
+      const box = mk("div", "ps-tabbox"); box._id = t.id;
+      if (t.id === "person") box.append(idRow, askRow);
+      t._rows = t.rows.map((s) => { const r = row(s, changed); box.appendChild(r.el); return r; });
+      return box;
+    });
+    // Zufall gehört zu den Farben (Würfel am Ende der Zeile Muster): Anzug, Muster, Zweitfarbe und die Ausrüstung der Sportart;
+    // die Person bleibt
+    const bRand = at(mk("button", "ps-plain ps-random"), { type: "button", "aria-label": "Zufällige Farben", title: "Zufällige Farben" });
+    bRand.innerHTML = DICE;
+    tabs[1]._rows[1].el.appendChild(bRand);
+    let code = null;
+    if (opts.code) { code = codeTab(opts.code, stop); code.box._id = "code"; boxes.push(code.box); tabs.push({ id: "code", label: "Code", pose: personPose, rows: [], _rows: [] }); }
+    const segTab = at(mk("div", "ps-seg ps-tabs"), { role: "tablist", "aria-label": "Was du gestaltest" });
+    const tabBtns = tabs.map((t) => { const b = at(mk("button", null, t.label), { type: "button", role: "tab", "aria-selected": "false" }); b._v = t.id; segTab.appendChild(b); return b; });
+    opt.append(segTab, ...boxes);
+    grid.append(left, opt); dlg.append(head, grid);
+    host.appendChild(dlg);
+
+    // ---------------------------------------------------------------- Darstellen
+    function refresh() {
+      const p = P.get();
+      if (doc.activeElement !== selNat) selNat.value = p.nation;
+      for (const b of tabBtns) { const on = b._v === tab; b.setAttribute("aria-selected", String(on)); b.setAttribute("aria-checked", String(on)); }
+      for (const box of boxes) box.hidden = box._id !== tab;
+      for (const t of tabs) if (t.id === tab) for (const r of t._rows) r.sync();
+      if (code && tab === "code") code.sync();
+      askRow.hidden = !ask;
+      cap.textContent = pv.poses.length > 1 ? poseName() + " · antippen für eine andere Haltung" : "";
+    }
+    function setTab(t) {
+      tab = tabs.some((x) => x.id === t) ? t : "person";
+      const T = tabs.find((x) => x.id === tab);
+      if (T && T.pose) pose = T.pose;
+      refresh();
+    }
+    function drawPreview(t) {
+      const cw = cv.clientWidth, ch = cv.clientHeight;
+      if (!cw || !ch) return;
+      const dpr = Math.min(3, Math.max(1, opts.dpr ? opts.dpr() : root.devicePixelRatio || 1));
+      const bw = Math.round(cw * dpr), bh = Math.round(ch * dpr);
+      if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+      const c = cv.getContext("2d");
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      try {
+        if (opts.preview && opts.preview.draw) opts.preview.draw(c, cw, ch, t, pose, P.get().look);
+        else defaultDraw(c, cw, ch, t, pose, P.get().look, tab === "person" || tab === "code" ? opts.personKit || "plain" : opts.kit);
+      } catch (e) { /* eine kaputte Vorschau darf das Fenster nicht stören */ }
+    }
+    const hidden = () => !host.isConnected || host.hidden || doc.hidden || !cv.offsetParent;
+    function frame(ts) {
+      raf = 0;
+      if (!shown) return;
+      if (hidden()) { if (Date.now() - openedAt < 1500) raf = root.requestAnimationFrame(frame); return; }   // gleich nach dem Öffnen noch warten
+      drawPreview(ts / 1000);
+      raf = root.requestAnimationFrame(frame);
+    }
+    const run = () => { if (shown && !raf && root.requestAnimationFrame) raf = root.requestAnimationFrame(frame); };
+    doc.addEventListener("visibilitychange", () => { if (!doc.hidden) run(); });
+
+    // ---------------------------------------------------------------- Bedienen
+    function done() {
+      const raw = (inName.value || "").trim().slice(0, 12), typed = P.cleanName(upper ? raw.toUpperCase() : raw);
+      if (ask && !typed) {
+        setTab("person");
+        inName.classList.add("ps-need"); askTxt.textContent = "Bitte gib einen Namen ein, oder spiel als Gast."; askTxt.classList.add("ps-warn");
+        try { inName.focus(); } catch (e) { /* egal */ }
+        return false;
+      }
+      inName.classList.remove("ps-need"); askTxt.classList.remove("ps-warn");
+      const cur = P.get(), name = typed || cur.name || P.cleanName(opts.defaultName || "");
+      if (name !== cur.name) P.set({ name, edited: true }, "ui");
+      ask = false; shown = false;
+      if (opts.onDone) opts.onDone();
+      return true;
+    }
+    function random() {
+      const pick = (a) => a[Math.floor(Math.random() * a.length)][0];
+      const suit = pick(P.COLORS);
+      let accent = pick(P.COLORS);
+      while (accent === suit) accent = pick(P.COLORS);
+      setLook({ suit, accent, pattern: pick(P.PATTERNS) });
+      if (opts.random) opts.random();
+      pose = pv.colorPose || pose;
+      refresh();
+    }
+    bDone.addEventListener("click", () => done());
+    bRand.addEventListener("click", () => random());
+    bGuest.addEventListener("click", () => { inName.value = upper ? "GAST" : "Gast"; done(); });
+    segTab.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && segTab.contains(b)) setTab(b._v); });
+    selNat.addEventListener("change", () => P.set({ nation: selNat.value, edited: true }, "ui"));
+    inName.addEventListener("keydown", (e) => { if (e.key === "Enter") inName.blur(); stop(e); });
+    inName.addEventListener("input", () => { if (inName.value.trim()) { inName.classList.remove("ps-need"); askTxt.classList.remove("ps-warn"); askTxt.textContent = ASK; } });
+    // Änderungen aus einem anderen Spiel (anderer Tab) oder vom Server gleich zeigen
+    P.on((p, src) => { if (src !== "ui") { if (src !== "local" && doc.activeElement !== inName) inName.value = p.name; refresh(); } });
+
+    return {
+      el: dlg,
+      open(o) {
+        o = o || {};
+        ask = !!o.ask;
+        title.textContent = o.title || opts.title || "Deine Figur";
+        inName.value = P.get().name; inName.classList.remove("ps-need");
+        askTxt.textContent = ASK; askTxt.classList.remove("ps-warn");
+        setTab(ask ? "person" : o.tab || "person");
+        shown = true; openedAt = Date.now(); run();
+        if (ask) setTimeout(() => { try { inName.focus(); } catch (e) { /* egal */ } }, 60);
+      },
+      close() { shown = false; },
+      refresh, done, setTab,
+      get tab() { return tab; }, get pose() { return pose; },
+      get name() { return inName.value; },
+    };
+  }
+
+  // Reiter Code für Spiele, die nur den Pass online sichern (ohne eigenen Spielstand): rpc wie bei CMPass.online
+  function codeVia(rpc) {
+    return {
+      status() {
+        const p = P.get();
+        return p.code ? { code: p.code, text: "Mit diesem Code holst du deine Figur auf jedes Gerät, in jedem Spiel von Cold Medal. Gib ihn nicht weiter.", save: "Jetzt sichern" }
+          : { code: null, text: "Sichere deine Figur online, dann bekommst du deinen Code. Mit ihm holst du sie auf jedes Gerät.", save: "Online sichern" };
+      },
+      async save() { P.ensureCode(); await P.online.put(rpc); },
+      async load(code) {
+        const p = await P.online.get(rpc, code);
+        if (!p) throw new Error("Zu diesem Code gibt es keine Figur.");
+        return { text: `Figur ${p.name || "ohne Namen"} (${p.nation}). Deine Figur auf diesem Gerät wird ersetzt.`, apply() { P.replace(p, "load"); } };
+      },
+    };
+  }
+
+  // Für Spiele ohne eigene Ebenen: eine Ebene über der ganzen Seite, Escape oder „Fertig“ schließt
+  let own = null;
+  function open(opts, o) {
+    if (!own) {
+      const host = at(mk("section", "ps-screen"), { "aria-modal": "true" });
+      host.hidden = true;
+      doc.body.appendChild(host);
+      const onDone = opts && opts.onDone;
+      const ui = mount(host, Object.assign({}, opts, { onDone() { host.hidden = true; if (onDone) onDone(); } }));
+      host.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); ui.done(); } });
+      own = { host, ui };
+    }
+    own.host.hidden = false;
+    own.ui.open(o);
+    return own.ui;
+  }
+
+  P.ui = { mount, open, backdrop, codeVia, DEF_POSES };
+})(typeof window !== "undefined" ? window : globalThis);
+
 /* COLD MEDAL BIATHLON – Grafik im Plakatstil (Canvas 2D).
  * Kulisse: Himmel und zwei Panorama-Ebenen aus plakat.js (vorgerendert je Bildgröße), sie wandern langsam mit dem Fortschritt der Runde.
  * Strecke: Seitenansicht, die Steigungen 2,4-fach überhöht, damit Anstiege und Abfahrten lesbar sind. Läuferin in fester Größe.
@@ -4648,14 +5488,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (V.classic) {
         // klassisch: bei jedem Abstoß wechselt das Bein; Gelenke weich nachgeführt (ein früher Abstoß springt nicht)
         if (Rn.lastT !== clLast) { clLast = Rn.lastT; clSide = -clSide; }
-        const T = poseAt(ph, Rn.tech === "double", clSide); T.classic = 1; T.cph = ph; T.tuck = Rn.tuck ? 1 : 0;
+        const T = poseAt(ph, Rn.tech === "double", clSide); T.classic = 1; T.cph = ph; T.tuck = Rn.tuck ? 1 : Rn.matK || 0;
         if (PCd == null) PCd = T.dbl; if (PCt == null) PCt = T.tuck;
         PCd += (T.dbl - PCd) * (1 - Math.exp(-dt / 0.11)); PCt += (T.tuck - PCt) * (1 - Math.exp(-dt / 0.11)); T.dbl = PCd; T.tuck = PCt;
         const J = joints(T);
         if (!PJ || dt === 0) PJ = J; else PJ = mixJ(PJ, J, 1 - Math.exp(-dt / 0.045));
         return { J: PJ };
       }
-      const T = poseAt(ph, Rn.tech === "double", Rn.tech === "double" ? dblSide : Rn.side || 1); T.tuck = Rn.tuck ? 1 : 0;
+      const T = poseAt(ph, Rn.tech === "double", Rn.tech === "double" ? dblSide : Rn.side || 1); T.tuck = Rn.tuck ? 1 : Rn.matK || 0;   // matK: am Schießstand auf die Matte
       if (!PP || dt === 0) { PP = Object.assign({}, T); return PP; }
       const f = 1 - Math.exp(-dt / 0.04), fs = 1 - Math.exp(-dt / 0.11);
       for (const key of ["sw", "ext", "lift", "lean", "flift"]) PP[key] += ((T[key] || 0) - (PP[key] || 0)) * f;
@@ -4763,7 +5603,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         A.ph += dt / cyc * (1 - A.tuck); if (A.ph >= 1) { A.ph -= 1; A.n++; }
         const P = poseAt(A.ph, A.dbl > 0.5, A.n % 2 ? 1 : -1); P.tuck = A.tuck; P.dbl = A.dbl;
         if (V.classic) { P.classic = 1; P.cph = A.ph; }
-        skier(x, y, 56 * k, aR, P, SUIT[o.nat], V.retro, faceFor(o.name));
+        // Geister (Gruppen): im Aussehen aus ihrem Pass, halb durchsichtig
+        if (o.ghost) ctx.globalAlpha = 0.55;
+        skier(x, y, 56 * k, aR, P, o.look ? [o.look.suit, o.look.accent] : SUIT[o.nat] || SUIT.AUT, V.retro, o.look || faceFor(o.name));
+        ctx.globalAlpha = 1;
         if (o === oA || o === oB) tag(x, y - 70 * k, o.name, k);
       }
       // Stöcke stechen ein (der ideale Moment): ein kleines Schneewölkchen an den Stockspitzen
@@ -4777,7 +5620,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       ctx.globalAlpha = 1;
       // Läuferin
       const [yP, aP] = skiFit(V.s, 62 * k);
-      skier(xr, yP, 62 * k, aP, playerPose(V, dt), V.suit, V.retro, faceFor(V.name || "Ich"));
+      skier(xr, yP, 62 * k, aP, playerPose(V, dt), V.look ? [V.look.suit, V.look.accent] : V.suit, V.retro, V.look || faceFor(V.name || "Ich"));
       // Markierung über dir, sobald andere auf der Strecke sind
       if (others.length) { const yy = yr - (V.run.tuck ? 52 : 82) * k; poly([[xr - 7 * k, yy - 9 * k], [xr + 7 * k, yy - 9 * k], [xr, yy]], I.ocker); }
       // vorn: vereinzelte verschneite Fichten am unteren Rand (ziehen schneller vorbei, geben Tiefe)
@@ -5262,7 +6105,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
 
     function clear() { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
-    return Object.assign(R, { MM, MMH, drawHunt, poseAt, burst, resize, clear, drawRun, drawRange, drawMenu, windFlag, skier, get W() { return W; }, get H() { return H; }, SUIT, PLAKAT });
+    return Object.assign(R, { MM, MMH, drawHunt, poseAt, burst, resize, clear, drawRun, drawRange, drawMenu, windFlag, skier, faceFor, get W() { return W; }, get H() { return H; }, SUIT, PLAKAT });
   }
 
   root.BIRender = { make, SUIT, PLAKAT };
@@ -5303,7 +6146,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
     // Gleiten: leises, durchgehendes Rauschen der Ski im Schnee, lauter mit dem Tempo (ein Knoten, nur die Lautstärke wandert)
     let gl = null;
-    function glide(v, run) {
+    // Gleiten: Rauschen der Ski, lauter und heller mit dem Tempo. flow (0 … 1): im Takt gleitet es hörbar satter (eine zweite, tiefere
+    // Schicht wie ein Zischen über guten Schnee), außer Takt nur das dünne Grundrauschen
+    function glide(v, run, flow) {
       if (!ok()) return;
       if (!gl) {
         const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
@@ -5312,9 +6157,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         s.connect(f); f.connect(g); g.connect(master); s.start();
         gl = { g, f };
       }
-      const target = run ? Math.min(0.07, 0.008 + (v / 14) * 0.06) : 0;
+      if (!gl.g2) {
+        const s2 = ac.createBufferSource(); s2.buffer = noiseBuf; s2.loop = true; s2.playbackRate.value = 0.7;
+        const f2 = ac.createBiquadFilter(); f2.type = "lowpass"; f2.frequency.value = 900; f2.Q.value = 0.9;
+        const g2 = ac.createGain(); g2.gain.value = 0;
+        s2.connect(f2); f2.connect(g2); g2.connect(master); s2.start();
+        gl.g2 = g2; gl.f2 = f2;
+      }
+      const fl = Math.max(0, Math.min(1, flow || 0));
+      const target = run ? Math.min(0.07, 0.008 + (v / 14) * 0.06) * (0.65 + 0.35 * fl) : 0;
       gl.g.gain.setTargetAtTime(target, ac.currentTime, 0.08);
-      gl.f.frequency.setTargetAtTime(1800 + v * 140, ac.currentTime, 0.1);
+      gl.f.frequency.setTargetAtTime(1800 + v * 140 + fl * 500, ac.currentTime, 0.1);
+      gl.g2.gain.setTargetAtTime(run ? fl * Math.min(0.09, 0.015 + v / 14 * 0.07) : 0, ac.currentTime, 0.15);
+      gl.f2.frequency.setTargetAtTime(600 + v * 60, ac.currentTime, 0.2);
     }
     const MEL = [0, 4, 7, 9, 7, 4, 2, 4, 0, 4, 7, 12, 9, 7, 4, 7, 9, 12, 14, 12, 9, 7, 4, 2, 4, 7, 4, 2, 0, 2, 4, 0];
     const Snd = {
@@ -5333,6 +6188,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       thud() { if (!ok()) return; const t = ac.currentTime; tone(t, 110, 0.12, 0.22, "square", 70); noise(t, 0.08, 300, 1, 0.12); },
       tick() { if (!ok()) return; const t = ac.currentTime; tone(t, 2200, 0.025, 0.06, "sine"); noise(t, 0.02, 3500, 2, 0.05); },
       pole() { if (!ok()) return; tone(ac.currentTime, 1800, 0.03, 0.04, "triangle"); },
+      // Schuss auf einer Nachbarbahn: leiser, dumpfer, manchmal mit dem Klappen der Scheibe danach
+      farShot(hit, pan) {
+        if (!ok()) return; const t = ac.currentTime, d = 0.02 + Math.random() * 0.03;
+        noise(t + d, 0.07, 1300 + Math.random() * 500, 0.8, 0.22 + Math.random() * 0.1); tone(t + d, 120, 0.1, 0.12, "sine", 55);
+        if (hit) tone(t + d + 0.18 + Math.random() * 0.05, 1900, 0.04, 0.035, "triangle");
+      },
       shot() { if (!ok()) return; const t = ac.currentTime; noise(t, 0.09, 2400, 0.7, 0.9, "highpass"); tone(t, 150, 0.12, 0.5, "sine", 60); },
       // Treffer: die Stahlklappe schlägt hörbar zu (heller Klang, kurz danach das Nachfedern)
       hit() { if (!ok()) return; const t = ac.currentTime + 0.12; noise(t, 0.05, 3200, 1.5, 0.35); tone(t, 1560, 0.3, 0.2, "triangle"); tone(t, 2340, 0.22, 0.1, "sine"); tone(t + 0.07, 1560, 0.12, 0.06, "triangle"); },
@@ -5350,12 +6211,75 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   root.BIAudio = { make };
 })(typeof window !== "undefined" ? window : globalThis);
 
+// COLD MEDAL BIATHLON online: Supabase über die REST-Schnittstelle, ohne Bibliothek (Vorlage: skispringen/src/online.js).
+// Das Spiel ruft nur die geprüften Datenbankfunktionen bi_* und cm_pass_* auf (Tabellen sind von außen nicht erreichbar).
+// Der persönliche Code (12 Zeichen) kommt aus dem Pass der Reihe (../pass/); das Biathlon erzeugt nie einen eigenen.
+(function () {
+  "use strict";
+  const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // ohne I, O, 0, 1 (verwechselbar)
+  const CODE_RE = /^[A-HJ-NP-Z2-9]{12}$/, GROUP_RE = /^[A-HJ-NP-Z2-9]{7}$/;
+
+  const fmtCode = (c) => String(c || "").replace(/(.{4})(?=.)/g, "$1-");
+  // Eingabe aufräumen: Leerzeichen, Bindestriche, Kleinbuchstaben; null wenn kein gültiger Code
+  function parseCode(t) {
+    const s = String(t || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return CODE_RE.test(s) ? s : null;
+  }
+  const groupOk = (g) => GROUP_RE.test(String(g || ""));
+
+  // cfg: { url: "https://….supabase.co", key: "sb_publishable_…" }; null wenn nicht eingerichtet
+  function make(cfg) {
+    const url = cfg && String(cfg.url || "").replace(/\/+$/, "");
+    if (!url || !/^https:\/\/[a-z0-9.-]+$/i.test(url) || !cfg.key || typeof fetch !== "function") return null;
+    const base = url + "/rest/v1/rpc/";
+    const headers = { "Content-Type": "application/json", apikey: cfg.key, Authorization: "Bearer " + cfg.key };
+    async function rpc(fn, args, ms) {
+      const ac = typeof AbortController === "function" ? new AbortController() : null;
+      const timer = ac ? setTimeout(() => ac.abort(), ms || 9000) : 0;
+      try {
+        const r = await fetch(base + fn, { method: "POST", headers, body: JSON.stringify(args || {}), signal: ac ? ac.signal : undefined, cache: "no-store" });
+        const text = await r.text();
+        let j = null;
+        try { j = text ? JSON.parse(text) : null; } catch (e) { /* keine JSON-Antwort */ }
+        if (!r.ok) {
+          const e = new Error((j && (j.message || j.hint)) || "HTTP " + r.status);
+          e.status = r.status; e.code = (j && j.code) || "";
+          throw e;
+        }
+        return j;
+      } catch (e) {
+        if (e && e.name === "AbortError") { const x = new Error("Zeit abgelaufen"); x.status = 0; x.code = "timeout"; throw x; }
+        if (e && e.status == null) { e.status = 0; e.code = e.code || "net"; }
+        throw e;
+      } finally { if (timer) clearTimeout(timer); }
+    }
+    return { rpc };
+  }
+
+  // Fehler in einen kurzen Satz fürs Spiel
+  // Der Server meldet Fehler als HTTP-Status: 400 ungültig, 404 Gruppe fehlt, 409 Gruppe voll, 429 zu schnell, 507 Speicher voll
+  function message(e) {
+    const c = e && e.code, st = e && e.status;
+    if (c === "PGRST202") return "Diese Funktion ist online noch nicht eingerichtet";
+    if (st === 429) return "Zu viele Anfragen, kurz warten";
+    if (st === 404) return "Gruppe nicht gefunden (30 Tage ohne Rennen werden Gruppen gelöscht)";
+    if (st === 409) return "Die Gruppe ist voll";
+    if (st === 400) return "Ungültige Angaben";
+    if (st === 507) return "Online-Speicher ist voll";
+    if (!st) return "Keine Verbindung";
+    if (st >= 500) return "Server gerade nicht erreichbar";
+    return "Online gerade nicht möglich";
+  }
+
+  window.BIOnline = { make, fmtCode, parseCode, groupOk, message, ALPHA };
+})();
+
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.15.1";
+  const VERSION = "0.16.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
-  const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
+  const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
   const $ = (id) => document.getElementById(id);
   const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -5374,7 +6298,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const SVG = (p, w) => `<svg width="${w || 22}" height="${w || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
   const ICON = {
     arrow: SVG('<path d="M4 12h15M13 6l6 6-6 6"/>', 26), chev: SVG('<path d="M9 5l7 7-7 7"/>'), pen: SVG('<path d="M4 20l4-1 11-11-3-3L5 16z"/>', 18),
-    pause: SVG('<path d="M8 5v14M16 5v14"/>'), heart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z"/></svg>',
+    pause: SVG('<path d="M8 5v14M16 5v14"/>'), group: SVG('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.6 2.7-6 6-6s6 2.4 6 6"/><path d="M16 4.6a3.2 3.2 0 0 1 0 6.4M18 14.3c1.8.8 3 2.8 3 5.7"/>', 20),
+    key: SVG('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>', 20), gear: SVG('<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>', 20), heart: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z"/></svg>',
   };
   function fillIcons(root) { for (const e of (root || document).querySelectorAll("[data-i]")) if (!e.firstChild) e.innerHTML = ICON[e.dataset.i] || ""; }
   function flag(code, w, h) {
@@ -5401,16 +6326,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
   // ------------------------------------------------------------------ Spielstand (nur auf diesem Gerät)
   const KEY = "coldmedal-biathlon";
-  const DEF = { name: "", sex: "w", nat: "AUT", help: "anf", ctrl: "easy", style: "classic", sight: "kreuz", board: "on", level: "normal", sound: 1, best: {}, tips: {}, races: 0 };
+  const DEF = { name: "", sex: "w", nat: "AUT", help: "anf", ctrl: "easy", style: "auto", sight: "kreuz", board: "on", level: "normal", sound: 1, best: {}, tips: {}, races: 0 };
   function sanitize(o) {
-    const S = Object.assign({}, DEF);
+    const S = Object.assign({}, DEF, { cseen: {}, clubs: [], best: {}, tips: {} });
     if (o && typeof o === "object") {
       if (typeof o.name === "string") S.name = o.name.replace(/[<>]/g, "").slice(0, 14);
       if (o.sex === "m" || o.sex === "w") S.sex = o.sex;
       if (NAT[o.nat]) S.nat = o.nat;
       if (o.help === "pro" || o.help === "anf") S.help = o.help;
       if (o.ctrl === "pro" || o.ctrl === "easy") S.ctrl = o.ctrl;
-      if (o.style === "classic" || o.style === "skate") S.style = o.style;
+      // Technik: „auto“ = wie im Rennen (Weltcup Skating, Langlauf und Jagd 1960 klassisch); bis 0.15 hieß der Standard „classic“
+      if (o.style === "skate" || (o.style === "classic" && o.v16)) S.style = o.style;
+      S.v16 = 1; S.passIn = o.passIn ? 1 : 0;
+      if (o.online === true || o.online === false) S.online = o.online;
+      if (o.cseen && typeof o.cseen === "object") for (const k of Object.keys(o.cseen).slice(-40)) { const v = o.cseen[k]; if (Array.isArray(v) && v.length === 2 && isFinite(v[0]) && isFinite(v[1])) S.cseen[k] = [+v[0], +v[1]]; }
+      if (Array.isArray(o.clubs)) S.clubs = o.clubs.filter((x) => x && typeof x === "object" && /^[A-HJ-NP-Z2-9]{7}$/.test(x.c)).slice(0, 16);
       if (o.sight === "kreuz" || o.sight === "ring") S.sight = o.sight;
       if (o.board === "on" || o.board === "off") S.board = o.board;
       S.boardSmall = !!o.boardSmall;
@@ -5419,6 +6349,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (o.tips && typeof o.tips === "object") for (const k of Object.keys(o.tips)) S.tips[k] = +o.tips[k] || 0;
       S.races = +o.races || 0;
       if (o.level === "easy" || o.level === "normal" || o.level === "hard") S.level = o.level;
+      if (Array.isArray(o.pend)) S.pend = o.pend.filter((x) => x && typeof x === "object" && /^[A-HJ-NP-Z2-9]{7}$/.test(x.c)).slice(-5);
       const ls = o.lastSprint;
       if (ls && isFinite(ls.seed) && isFinite(ls.t) && (ls.sex === "w" || ls.sex === "m")) S.lastSprint = { seed: ls.seed >>> 0, sex: ls.sex, t: +ls.t, rank: +ls.rank || 0, level: ["easy", "normal", "hard"].includes(ls.level) ? ls.level : "normal" };
     }
@@ -5427,12 +6358,28 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   let S = DEF;
   try { S = sanitize(JSON.parse(localStorage.getItem(KEY) || "null")); } catch (e) { S = sanitize(null); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* privat: dann eben nicht */ } }
-  const myName = () => (S.name || (S.sex === "m" ? "DU" : "DU")).toUpperCase();
 
   // ------------------------------------------------------------------ Bühne und Skalierung (wie beim Skispringen)
   const stage = $("stage"), ui = $("ui"), canvas = $("scene");
   const renderer = RM.make(canvas, $("grain"));
   const AU = window.BIAudio.make(() => !!S.sound), Snd = AU.Snd, Hap = AU.Hap;
+
+  // ------------------------------------------------------------------ Pass der Reihe (../pass/): Name, Land, Aussehen, Code für alle Spiele
+  // Beim ersten Start entsteht er aus den bisherigen Angaben des Biathlons; hat jemand schon in einem anderen Spiel gestaltet
+  // (edited), gewinnt der Pass. Das Biathlon erzeugt nie einen eigenen Code.
+  const PASS = window.CMPass;
+  {
+    const old = () => {
+      const su = RM.SUIT[S.nat] || RM.SUIT.AUT, f = renderer.faceFor(S.name || "Ich");
+      return { name: S.name, nation: S.nat, look: Object.assign({ suit: su[0], accent: su[1], pattern: "uni" }, f), edited: !!S.name };
+    };
+    const p = PASS.load(old);
+    if (!PASS.created && !p.edited && S.name && !S.passIn) PASS.set(old(), "game");   // Pass aus einem anderen Spiel, dort nie gestaltet
+    if (!S.passIn) { S.passIn = 1; save(); }
+  }
+  const myNat = () => PASS.get().nation;
+  const myLook = () => PASS.get().look;
+  const myName = () => (PASS.get().name || "DU").toUpperCase();
   let W = 844, Hs = 390, rotated = false, uiS = 1;
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   let lowRes = false;   // schwaches Gerät erkannt (watchFrames)
@@ -5471,20 +6418,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const easy = () => S.ctrl !== "pro";
   const canHover = () => !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
   // ------------------------------------------------------------------ Bildschirme
-  const SCREENS = ["menu", "training", "settings", "info", "pause", "result", "askLearn"];
+  const SCREENS = ["menu", "training", "settings", "info", "pause", "result", "askLearn", "figure", "askOnline", "groups", "newClub", "club"];
   let mode = "menu";
   function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; }
   function setText(el, v) { if (el._v !== v) { el._v = v; el.textContent = v; } }
   function setHtml(el, v) { if (el._h !== v) { el._h = v; el.innerHTML = v; } }
 
   function refreshMenu() {
-    $("athFlag").innerHTML = flag(S.nat, 22, 15);
-    setText($("athName"), S.name ? S.name.toUpperCase() : (S.sex === "m" ? "ATHLET" : "ATHLETIN"));
+    $("athFlag").innerHTML = flag(myNat(), 22, 15);
+    setText($("athName"), PASS.get().name ? PASS.get().name.toUpperCase() : (S.sex === "m" ? "ATHLET" : "ATHLETIN"));
     const F = T.SPRINT[S.sex];
     $("venueSub").textContent = nb(`Sprint ${dec(F.km, F.km % 1 ? 1 : 0)} km · ${S.sex === "m" ? "Herren" : "Damen"}`);
     const b = S.best[`sprint-hochfilzen-${S.sex}${S.level === "normal" ? "" : "-" + S.level}`];
     $("venueBest").textContent = b ? nb(`Bestzeit ${fmtT(b.t)}`) : "";
     $("verLine").textContent = `Version ${VERSION} · Fanspiel`;
+    refreshBadge(); loadMyClubs(); flushPending();
+    const X = T.FORMATS.xc[S.sex]; $("xcSub").textContent = nb(`${dec(X.km, 0)} km ${S.style === "skate" ? "Skating" : "klassisch"} · Einzelstart`);
     drawSketch();
   }
   function drawSketch() {
@@ -5504,24 +6453,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   // Einstellungen
   function segSet(id, v) { for (const b of $(id).querySelectorAll("button")) b.classList.toggle("on", b.dataset.v === String(v)); }
   function openSettings() {
-    $("setName").value = S.name;
-    const sel = $("setNat"); if (!sel.options.length) for (const k of Object.keys(NAT)) { const o = document.createElement("option"); o.value = k; o.textContent = NAT[k]; sel.appendChild(o); }
-    sel.value = S.nat; segSet("setSex", S.sex); segSet("setHelp", S.help); segSet("setCtrl", S.ctrl); segSet("setStyle", S.style); segSet("setSight", S.sight); segSet("setLevel", S.level); segSet("setSound", S.sound);
-    $("settings").querySelector(".kicker").textContent = S.sex === "m" ? "DEIN STARTER" : "DEINE STARTERIN";
+    segSet("setHelp", S.help); segSet("setCtrl", S.ctrl); segSet("setLevel", S.level); segSet("setSound", S.sound); segSet("setBoard", S.board);
     show("settings");
   }
-  $("setName").addEventListener("input", (e) => { S.name = e.target.value.replace(/[<>]/g, "").slice(0, 14); save(); });
-  $("setNat").addEventListener("change", (e) => { if (NAT[e.target.value]) { S.nat = e.target.value; save(); } });
-  for (const [id, key, num] of [["setSex", "sex"], ["setHelp", "help"], ["setCtrl", "ctrl"], ["setStyle", "style"], ["setSight", "sight"], ["setLevel", "level"], ["setSound", "sound", true]]) {
+  for (const [id, key, num] of [["setHelp", "help"], ["setCtrl", "ctrl"], ["setLevel", "level"], ["setSound", "sound", true], ["setBoard", "board"]]) {
     $(id).addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       S[key] = num ? +b.dataset.v : b.dataset.v; save(); segSet(id, S[key]);
-      if (key === "sex") $("settings").querySelector(".kicker").textContent = S.sex === "m" ? "DEIN STARTER" : "DEINE STARTERIN";
       if (key === "sound" && S.sound) Snd.unlock();
     });
   }
   for (const b of document.querySelectorAll("[data-back]")) b.addEventListener("click", () => { toMenu(); });
-  $("btnAthlete").addEventListener("click", openSettings);
+  $("btnAthlete").addEventListener("click", () => openFigure());
+  $("btnSet").addEventListener("click", openSettings);
   // Info: Fanspiel, Datenschutz, Impressum (Angaben aus site.json, nur in der Web-Fassung)
   $("btnInfo").addEventListener("click", () => {
     const im = SITE.impressum || {}, lines = [im.name, im.adresse, im.mail].filter((x) => typeof x === "string" && x.trim());
@@ -5549,14 +6493,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   $("hBoard").classList.toggle("small", !!S.boardSmall);
   $("btnPause").addEventListener("click", pause); $("btnPause2").addEventListener("click", pause);
   $("pResume").addEventListener("click", resume);
-  $("pRestart").addEventListener("click", () => startRace(Rc.kind));
-  $("pQuit").addEventListener("click", toMenu);
-  $("resAgain").addEventListener("click", () => startRace(Rc.kind === "learn" ? "sprint" : Rc.kind));
+  // Gruppe: nochmal dieselbe Runde (Geister neu), zurück in die Gruppe statt ins Menü
+  const clubAgain = () => runClub(Rc.club.c, { n: Rc.club.n, race: Rc.kind, s: Rc.seed, sex: Rc.sex, lv: Rc.level });
+  $("pRestart").addEventListener("click", () => { if (Rc.club && !Rc.watch) clubAgain(); else startRace(Rc.kind, Rc.opts); });
+  $("pQuit").addEventListener("click", () => { if (Rc && Rc.club) openClub(Rc.club.c); else toMenu(); });
+  $("resAgain").addEventListener("click", () => { if (Rc.club) clubAgain(); else startRace(Rc.kind === "learn" ? "sprint" : Rc.kind); });
   $("resNext").addEventListener("click", () => startRace("pursuit"));
   $("btnPursuit").addEventListener("click", () => startRace("pursuit"));
-  $("resMenu").addEventListener("click", toMenu);
+  $("resMenu").addEventListener("click", () => { if (Rc && Rc.club) openClub(Rc.club.c); else toMenu(); });
 
   function toMenu() {
+    clearTimeout(clubT);
     mode = "menu"; Rc = null; paused = false; canvas.style.filter = "";
     $("hud").hidden = true; $("rhud").hidden = true; $("learnCard").hidden = true; banner(null); tip(null);
     show("menu"); refreshMenu();
@@ -5577,52 +6524,61 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   // Rc: laufendes Rennen oder Training. Zeiten: ski/pen in Spielsekunden (Anzeige mal SCALE), range 1 : 1.
   let Rc = null, paused = false;
   const VENUE = "hochfilzen";
-  function startRace(kind) {
+  // o (Gruppen): { seed, sex, level, club: { c, n }, ghosts: [Geist, …], watch: Geist } – gleiche Bedingungen für alle in der Runde
+  function startRace(kind, o) {
+    o = o || {};
     Snd.unlock();
-    const seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;
-    const race = kind === "sprint" || kind === "mass" || kind === "pursuit" || kind === "jagd", fmt = race ? kind : "sprint", FM = T.FORMATS[fmt];
-    const L = kind === "learn" ? T.learnTrack(S.sex) : T.lap(VENUE, S.sex, fmt);
+    const seed = o.seed != null ? o.seed >>> 0 : (Date.now() ^ (Math.random() * 1e9)) >>> 0;
+    const sex = o.sex || S.sex, level = o.level || S.level;
+    const race = kind === "sprint" || kind === "mass" || kind === "pursuit" || kind === "jagd" || kind === "xc", fmt = race ? kind : "sprint", FM = T.FORMATS[fmt];
+    const L = kind === "learn" ? T.learnTrack(sex) : T.lap(VENUE, sex, fmt);
     Rc = {
-      kind, seed, L, fmt, race, sex: S.sex, lap: 0, laps: kind === "lap" ? 1 : kind === "shoot" ? 0 : L.laps,
+      kind, seed, L, fmt, race, sex, level, club: o.club || null, ghosts: o.ghosts || [], watch: o.watch || null, lap: 0, laps: kind === "lap" ? 1 : kind === "shoot" ? 0 : L.laps,
       stages: race ? FM.stages.slice() : [], R: Ph.newRunner({ v: 0.6, hr: 0.42 }),
       ski: 0, range: 0, pen: 0, phase: "count", pt: 0, G: null, shots: [], arriveHr: [], rangeT: [], splits: [],
       bib: 1 + Math.floor(Ph.rng(seed)() * FM.field), wind: { base: (Ph.rng(seed ^ 3)() - 0.4) * 2.6, gust: 0.8 + Ph.rng(seed ^ 5)() * 1.2, ph: Ph.rng(seed ^ 9)() * 6 },
       penLeft: 0, penN: 0, penS: 0, trainRounds: [], shift: 0, shiftY: 0, decor: null, beats: 0, tpen: 0, kills: 0, hunt: !!FM.hunt && race,
     };
-    Rc.R.cycK = Rc.hunt || S.style !== "skate" ? 1.2 : 1;
-    Rc.FM = FM; Rc.R.footQ = S.help === "anf" ? 0.85 : 0.6; Rc.R.simple = easy(); Rc.simple = easy(); Rc.R.acidMul = S.level === "easy" ? 0.5 : 1;
+    // Technik je Rennen: Weltcup im Skating, Langlauf und Jagd 1960 klassisch; „Technik“ unter Deine Figur kann das festlegen
+    Rc.classic = S.style === "classic" || (S.style !== "skate" && (Rc.hunt || fmt === "xc") && race);
+    Rc.R.cycK = Rc.classic ? 1.2 : 1;
+    Rc.FM = FM; Rc.R.footQ = S.help === "anf" ? 0.85 : 0.6; Rc.R.simple = easy(); Rc.simple = easy(); Rc.R.acidMul = level === "easy" ? 0.5 : 1;
+    Rc.rec = race && kind !== "pursuit" && !Rc.watch ? { P: [], next: 0, hits: [], kills: [] } : null;   // Rennverlauf (Geist für die Gruppe)
     Rc.together = kind === "mass" || kind === "pursuit";   // Platz nach Fortschritt: wer zuerst ins Ziel kommt
     if (kind === "pursuit") {
       setupPursuit(seed);
     } else if (race) {
-      Rc.field = C.field(S.sex, seed, fmt); Rc.ai = C.simulate(Rc.field, VENUE, S.sex, seed, fmt, S.level);
+      Rc.field = C.field(sex, seed, fmt); Rc.ai = C.simulate(Rc.field, VENUE, sex, seed, fmt, level);
       // Startnummern zufällig; Sprint: Einzelstart alle 30 s nach Nummer, Massenstart: alle zugleich
       const r = Ph.rng(seed ^ 0xb1b), bibs = [];
       for (let b = 1; b <= FM.field; b++) if (b !== Rc.bib) bibs.push(b);
       for (let i = bibs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [bibs[i], bibs[j]] = [bibs[j], bibs[i]]; }
       Rc.ai.forEach((a, i) => { a.bib = bibs[i]; a.off = (a.bib - 1) * FM.start; });
-      Rc.off = (Rc.bib - 1) * FM.start; Rc.ref = C.reference(VENUE, S.sex, fmt); Rc.seen = new Map();
+      Rc.off = (Rc.bib - 1) * FM.start; Rc.ref = C.reference(VENUE, sex, fmt); Rc.seen = new Map();
     }
     paused = false; inp.down = false; inp.key = false; inp.ptrs.clear(); inp.rangeId = null;
     show(null); $("result").hidden = true; tip(null);
     canvas.style.filter = Rc.hunt ? "sepia(0.42) saturate(0.82) contrast(1.03)" : "";
-    $("hFlag").innerHTML = flag(S.nat, 22, 15); $("hName").textContent = myName(); $("hBib").textContent = Rc.bib;
+    $("hFlag").innerHTML = flag(Rc.watch ? Rc.watch.c : myNat(), 22, 15); $("hName").textContent = Rc.watch ? Rc.watch.n : myName(); $("hBib").textContent = Rc.bib;
     $("beatLbls").hidden = S.help !== "anf";
     // Taktbalken: einfach = breites grünes Feld (nachsichtig), Profi = enge Felder
     const zs = easy() ? [42, 20, 46, 32] : [40, 25, 45, 30], zb = $("beatBox").querySelectorAll(".beat i"), zl = $("beatLbls").children;
     zs.forEach((f, i) => { zb[i].style.flex = f; zl[i].style.flex = f; });
     zl[1].textContent = easy() ? "schnell" : "Druck";
-    $("resAgain").textContent = kind === "learn" ? "Zum Sprint" : "Nochmal"; $("resNext").hidden = true;
+    $("resAgain").textContent = kind === "learn" ? "Zum Sprint" : "Nochmal"; $("resMenu").textContent = "Menü"; $("resNext").hidden = true;
+    Rc.opts = o; $("hSplit").hidden = true;
+    // Rennen ansehen: keine Eingabe, Taktbalken und Puls weg, Knopf für schneller
+    $("hud").classList.toggle("watch", !!Rc.watch); $("hud").classList.toggle("help", S.help === "anf" && !Rc.watch); $("hWatch").hidden = !Rc.watch; $("hWatch").textContent = "1× · schneller"; Rc.wSpeed = 1;
     $("learnCard").hidden = true;
     if (kind === "shoot") { enterRange("prone", 0.8); return; }
     mode = "run"; $("hud").hidden = false; $("rhud").hidden = true;
     if (kind === "learn") { Rc.R.footQ = 0.6; Rc.phase = "go"; Rc.R.v = 2; Rc.dec = { decor: null, stadium: () => false, pen: false }; learnStep(0); return; }
     Rc.phase = "count"; Rc.pt = 0;
-    banner(race ? `${FM.name.toUpperCase()} · ${S.sex === "m" ? "HERREN" : "DAMEN"}` : "TRAINING", "3", kind === "pursuit" ? `Start als ${Rc.bib}. · ${Rc.off ? fmtB(Rc.off) + " hinter der Ersten" : "du führst"}` : kind === "jagd" ? `Wie 1960 · vier Stationen · Kimme und Korn` : race ? `Hochfilzen · Startnummer ${Rc.bib}${kind === "mass" ? " · alle zugleich" : ""}` : "Eine Runde");
+    banner(race ? `${Rc.watch ? "ANSEHEN · " : Rc.club ? "GRUPPE · " : ""}${FM.name.toUpperCase()} · ${sex === "m" ? "HERREN" : "DAMEN"}` : "TRAINING", "3", kind === "pursuit" ? `Start als ${Rc.bib}. · ${Rc.off ? fmtB(Rc.off) + " hinter der Ersten" : "du führst"}` : Rc.watch ? `${Rc.watch.n} · antippen: schneller` : Rc.ghosts.length ? `${Rc.ghosts.length} ${Rc.ghosts.length === 1 ? "Geist läuft" : "Geister laufen"} mit` : kind === "jagd" ? `Wie 1960 · vier Stationen · Kimme und Korn` : kind === "xc" ? `Langlauf klassisch · Startnummer ${Rc.bib}` : race ? `Hochfilzen · Startnummer ${Rc.bib}${kind === "mass" ? " · alle zugleich" : ""}` : "Eine Runde");
     Snd.beep(false);
     if (S.help === "anf" && (S.tips.run2 || 0) < 3) { Rc.pendTip = (Rc.simple ? (canHover() ? "<b>Klicken</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>gedrückt halten</b>" : "<b>Tippen</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>halten</b>") : canHover() ? "<b>Linksklick</b> im Takt (grünes Feld) · flach <b>Rechtsklick</b> · <b>halten</b> = Hocke" : "<b>Links/rechts</b> im Takt (grünes Feld) · flach <b>beide Daumen</b> · <b>halten</b> = Hocke") ; S.tips.run2 = (S.tips.run2 || 0) + 1; save(); }
   }
-  const dispTime = () => (Rc.ski + Rc.pen) * T.SCALE + Rc.range + (Rc.tpen || 0);
+  const dispTime = () => (Rc.watch ? Rc.we || 0 : (Rc.ski + Rc.pen) * T.SCALE + Rc.range) + (Rc.tpen || 0);
   // Verfolgung: gestartet wird mit dem Rückstand aus dem Sprint. Grundlage ist dein letzter Sprint (gleiches Feld, gleiche Namen);
   // ohne Sprint startest du aus der Mitte des Feldes. Die besten 30 starten; wer dahinter lag, startet als 30.
   function setupPursuit(seed) {
@@ -5661,6 +6617,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   function leaveRange() {
     const G = Rc.G, miss = Ph.misses(G);
     Rc.shots.push(G.shots.map((s) => s.hit));
+    if (Rc.rec) Rc.rec.kills.push(Rc.hunt ? Ph.kills(G) : 0);
     Rc.rangeT.push(Rc.range - Rc.rangeStart);
     if (Rc.kind === "learn") { finishLearn(); return; }
     if (Rc.kind === "shoot") {
@@ -5697,19 +6654,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
 
   function finish() {
+    if (Rc.rec) Rc.rec.P.push(Rc.laps * Rc.L.L);   // Geist: Ziel als letzter Punkt
     mode = "result"; Snd.gong(); Hap(40);
     $("hud").hidden = true; $("rhud").hidden = true; banner(null); tip(null);
     S.races++;
     if (Rc.kind === "lap") return showLapResult();
-    const me = { name: myName(), nat: S.nat, total: dispTime() + (Rc.kind === "pursuit" ? Rc.off : 0), me: true, shoot: Rc.shots.map((a) => a.filter((h) => !h).length), ski: Rc.ski * T.SCALE };
+    const me = { name: myName(), nat: myNat(), total: dispTime() + (Rc.kind === "pursuit" ? Rc.off : 0), me: true, shoot: Rc.shots.map((a) => a.filter((h) => !h).length), ski: Rc.ski * T.SCALE };
     const ai = Rc.kind === "pursuit" ? Rc.ai.map((a) => Object.assign({}, a, { total: a.total + a.off })) : Rc.ai;
     const list = C.standings(ai.concat([me]));
-    if (Rc.kind === "sprint") S.lastSprint = { seed: Rc.seed, sex: Rc.sex, t: me.total, rank: me.rank, level: S.level };
-    const key = `${Rc.fmt}-hochfilzen-${Rc.sex}${S.level === "normal" ? "" : "-" + S.level}`, old = S.best[key];
+    if (Rc.kind === "sprint" && !Rc.club) S.lastSprint = { seed: Rc.seed, sex: Rc.sex, t: me.total, rank: me.rank, level: Rc.level };
+    const key = `${Rc.fmt}-hochfilzen-${Rc.sex}${Rc.level === "normal" ? "" : "-" + Rc.level}`, old = S.best[key];
     const pb = !old || me.total < old.t;
     if (pb) S.best[key] = { t: me.total, rank: me.rank };
     save();
     showResult(list, me, pb, old);
+    // Gruppe: Rennen melden (das beste zählt), Knöpfe führen zurück in die Gruppe
+    $("resClub").hidden = !Rc.club;
+    if (Rc.club) { $("resAgain").textContent = "Nochmal laufen"; $("resMenu").textContent = "Zur Gruppe"; clubPost(Rc, me); }
   }
 
   // ------------------------------------------------------------------ Ergebnis
@@ -5720,7 +6681,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     show("result");
     $("resKick").textContent = `${T.FORMATS[Rc.fmt].name.toUpperCase()} · HOCHFILZEN · ${Rc.sex === "m" ? "HERREN" : "DAMEN"}`;
     $("resTitle").textContent = nb(`Platz ${me.rank} von ${list.length}`);
-    $("resSub").textContent = nb(`${fmtT(me.total)} · ${me.rank === 1 ? "Sieg" : fmtB(me.behind) + " auf " + list[0].name} · Schießen ${me.shoot.join("+")}`);
+    $("resSub").textContent = nb(`${fmtT(me.total)} · ${me.rank === 1 ? "Sieg" : fmtB(me.behind) + " auf " + list[0].name}${me.shoot.length ? ` · Schießen ${me.shoot.join("+")}` : ""}`);
     let html = "";
     const near = new Set(); for (let i = Math.max(0, me.rank - 3); i < Math.min(list.length, me.rank + 2); i++) near.add(i);
     let gap = false;
@@ -5740,6 +6701,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const medRange = fieldRange[Math.floor(fieldRange.length / 2)];
     const K = Rc.R.kinds, n = Math.max(1, Rc.R.pushes);
     const stat = (a, b) => `<div class="stat"><span>${a}</span><b>${nb(b)}</b></div>`;
+    const noGun = !Rc.stages.length;
+    if (noGun) {
+      const p0 = [`${Rc.classic ? "Klassisch" : "Skating"}, ${dec(Rc.L.km, 0)} km ohne Gewehr: hier zählt nur der Takt.`];
+      if (K.early / n > 0.2) p0.push("Viele Abstöße kamen zu früh. Warte aufs Klack: das bringt mehr Tempo und spart Kraft.");
+      if (pb && old) p0.push(nb(`Neue Bestzeit: ${fmtB(old.t - me.total).replace("+", "")} schneller als bisher.`));
+      return stat("Laufzeit", fmtT(me.ski)) + stat("Abstöße im Takt", `${Math.round((K.beat + K.press) / n * 100)} %`) + stat("höchster Puls", String(bpm(Rc.maxHr || 0))) + p0.map((x) => `<p>${esc(x)}</p>`).join("");
+    }
     let h = stat("Laufzeit", `${fmtT(me.ski)} (Platz ${skiRank})`)
       + stat("Schießen", `${me.shoot.length * nPer - miss} von ${me.shoot.length * nPer} · ${me.shoot.join("+")}`)
       + (Rc.hunt ? stat("Kill-Zone · Strafzeit", `${Rc.kills}× · ${Rc.tpen >= 0 ? "+" : "−"}${fmtT(Math.abs(Rc.tpen))}`) : "")
@@ -5797,7 +6765,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const onUi = (e) => e.target.closest && e.target.closest("button, input, select, .screen:not(#hud):not(#rhud), .res-list, .h-board");
   stage.addEventListener("pointerdown", (e) => {
     if (onUi(e) || paused) return;
-    if (turnEl) return;
+    if (turnEl || (Rc && Rc.watch)) return;
     advanceTo(performance.now());
     Snd.unlock();
     const p = stagePoint(e);
@@ -5835,7 +6803,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   window.addEventListener("keydown", (e) => {
     if (e.target && /INPUT|SELECT/.test(e.target.tagName)) return;
     if (e.key === "Escape" && (mode === "run" || mode === "range")) { paused ? resume() : pause(); return; }
-    if (paused || !Rc) return;
+    if (paused || !Rc || Rc.watch) return;
     if (mode === "range" && e.key.startsWith("Arrow")) { inp.ax = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : inp.ax; inp.ay = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : inp.ay; e.preventDefault(); return; }
     if (mode === "run") {
       if (e.key === "ArrowDown") { e.preventDefault(); if (!e.repeat) { advanceTo(performance.now()); inp.ptrs.set("k" + e.key, { side: 0, t0: simT - 1, noPush: true }); } return; }
@@ -5864,7 +6832,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const kind = Ph.push(R, sl, side);
     renderer.burst(kind, R.tech, R.v);
     Snd.push(kind); flashBeat(kind === "wrong" ? "wrong" : R.tech === "double" ? (kind === "beat" || kind === "press" ? "double" : kind) : kind);
-    if (kind === "beat" || kind === "press") Snd.note(R.streak, R.tech === "double");
+    if (kind === "beat" || kind === "press") { Snd.note(R.streak, R.tech === "double"); Hap(12); Rc.flow = Math.min(1, 0.55 + R.streak * 0.06); }
     else Snd.thud();
     if (Rc.kind === "learn") learnPush(kind);
   }
@@ -5928,6 +6896,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (beatFlash > 0) beatFlash -= dt;
     if (toastT > 0) { toastT -= dt; if (toastT <= 0) $("hToast").hidden = true; }
     if (rToastT > 0) { rToastT -= dt; if (rToastT <= 0) $("rToast").hidden = true; }
+    if (Rc.rec && Rc.phase !== "count" && (mode === "run" || mode === "range")) ghostRec();
     if (mode === "run") return tickRun(dt, auto);
     if (mode === "range") return tickRange(dt);
   }
@@ -5939,6 +6908,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (Rc.pt >= 3) { Rc.phase = "go"; banner(null); banner("", "LOS", "", 0.7); Snd.beep(true); if (Rc.pendTip) Rc.tipIn = 0.8; }
       return;
     }
+    if (Rc.watch) return tickWatch(dt);
     // Halten: Hocke; die Seite des gehaltenen Fingers ist die Lage in der Kurve
     if (!auto) {
       let held = null;
@@ -5956,10 +6926,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (cur !== Rc.penShown) { Rc.penShown = cur; if (cur > 1) banner("STRAFRUNDE", `${cur}/${Rc.penN}`, "", 1); }
       return;
     }
+    if (Rc.phase === "mat") return tickMat(dt);
     Ph.step(R, L); Rc.ski += dt;
+    // vor dem Schießstand: ausrollen bis zur Matte (nicht in Erste Schritte und Training)
+    if (Rc.lap < Rc.stages.length && Rc.kind !== "learn" && R.s >= L.L - (Rc.hunt ? 15 : 22) && R.s < L.L) { Rc.phase = "mat"; Rc.matT = 0; Rc.matStop = L.L - (Rc.hunt ? 9 : 15.5); R.tuck = false; inp.ptrs.clear(); return; }
     if (Rc.kind === "learn") learnTick(dt);
     // Taktgeber für Anfänger: leises Klacken, wenn der Abstoß ideal wäre
-    if ((S.help === "anf" || Rc.kind === "learn" || Rc.simple) && !auto && !R.tuck && Rc.tickAt !== R.lastT && R.tp >= Ph.cycle(L.slope(R.s), R) * 0.85) { Rc.tickAt = R.lastT; Snd.tick(); }
+    // Takt zum Hören und Fühlen (für alle): leises Klack und ein kurzer Ruck am Handy, wenn der Abstoß ideal wäre
+    if (!auto && !R.tuck && Rc.tickAt !== R.lastT && R.tp >= Ph.cycle(L.slope(R.s), R) * 0.85) { Rc.tickAt = R.lastT; Snd.tick(); Hap(5); }
+    // Gleiten im Takt: klingt satter, solange Abstöße im Takt kommen (klingt in 1,6 s aus)
+    Rc.flow = (Rc.flow || 0) * Math.exp(-dt / 1.6);
     Rc.maxHr = Math.max(Rc.maxHr || 0, R.hr);
     if (R.s >= L.L) {
       if (Rc.lap < Rc.stages.length) { R.s = L.L; enterRange(Rc.stages[Rc.lap], R.hr); return; }
@@ -5967,9 +6943,27 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       R.s -= L.L; Rc.lap++;
     }
   }
+  // Ankunft am Schießstand: ausrollen bis zur Matte, abschnallen, hinlegen (liegend) oder hinstellen; die Uhr läuft weiter
+  function tickMat(dt) {
+    const R = Rc.R, L = Rc.L;
+    Rc.range += dt; Rc.matT += dt;
+    if (R.s < Rc.matStop) {
+      R.v = Math.max(2.4, R.v * Math.exp(-dt / 0.6));
+      R.s = Math.min(Rc.matStop, R.s + R.v * dt);
+      R.tp = Ph.P.push; R.hr = Math.max(0.3, R.hr - 0.01 * dt);
+      if (R.s >= Rc.matStop) { Rc.matAt = Rc.matT; Snd.push("double"); }
+      return;
+    }
+    R.v = 0;
+    const k = clamp((Rc.matT - Rc.matAt) / 0.7, 0, 1), st = Rc.stages[Rc.lap];
+    R.matK = st === "prone" ? k * 0.95 : st === "kneel" ? k * 0.6 : 0.12 * Math.sin(k * Math.PI);
+    if (Rc.matT - Rc.matAt >= 0.85) { R.matK = 0; R.s = L.L; enterRange(st, R.hr); }
+  }
   function tickRange(dt) {
     const G = Rc.G;
     Rc.range += dt;
+    // Nachbarbahnen: im Rennen schießen die anderen mit (zu hören, nicht zu sehen)
+    if (Rc.race && !G.hunt && Rc.kind !== "learn") { Rc.nbT = (Rc.nbT == null ? 0.8 : Rc.nbT) - dt; if (Rc.nbT <= 0) { Rc.nbT = 0.6 + Math.random() * (Rc.together ? 1.4 : 3.2); Snd.farShot(Math.random() < 0.82); } }
     Ph.rangeStep(G);
     if (Rc.shift) { Rc.shift *= Math.exp(-dt / 0.09); if (Math.abs(Rc.shift) < 0.5) Rc.shift = 0; }
     if (inp.ax || inp.ay) { const v = G.hunt ? 120 : 70; G.aim.x += inp.ax * v * dt; G.aim.y += inp.ay * v * dt; clampAim(G); }
@@ -6087,6 +7081,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         out.push({ a, s: pen ? w.s * Rc.L.penaltyL : w.s, k: w.k, v: Math.max(0, v) });
       }
     }
+    if (!pen && Rc.ghosts.length) ghostRivals(out);
     rivCache = { D, pen, list: out };
     return out;
   }
@@ -6102,7 +7097,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const L = Rc.L.L, D = dispTime(), pur = Rc.kind === "pursuit";
     const me = mode === "range" ? (Rc.lap + 1) * L : Rc.phase === "pen" ? (Rc.lap + 1) * L + 0.5 * (Rc.penS / (Rc.penN * Rc.L.penaltyL)) : Rc.lap * L + Rc.R.s;
     const passed = Math.floor(me / L + 1e-6);   // Schießen, die an dieser Stelle schon hinter dir liegen
-    const list = [{ name: myName(), nat: S.nat, t: D + (pur ? Rc.off : 0), me: true }];
+    const list = [{ name: Rc.watch ? Rc.watch.n : myName(), nat: Rc.watch ? Rc.watch.c : myNat(), t: D + (pur ? Rc.off : 0), me: true }];
+    for (const g of Rc.ghosts) { const t = ghostAt(g, me, passed); if (t != null) list.push({ name: g.n, nat: g.c, t: t + 2e-3, ghost: true }); }
     for (const a of Rc.ai) {
       let lo = 0, hi = a.total;
       if (C.progress(Rc.ref, a, hi - 1e-3) < me) { list.push({ name: a.name, nat: a.nat, t: a.total + (pur ? a.off : 0) + 1e-3, a }); continue; }
@@ -6119,7 +7115,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const show = Rc.ai && Rc.kind !== "learn" && Rc.phase !== "count" && S.board !== "off";
     box.hidden = !show; if (!show) return;
     const list = liveBoard(), mi = list.findIndex((x) => x.me), lead = list[0].t;
-    const idx = [0, 1, 2];
+    const idx = mi <= 3 ? [0, 1, 2, 3] : [0];
     for (const i of [mi - 1, mi, mi + 1]) if (i >= 0 && i < list.length && idx.indexOf(i) < 0) idx.push(i);
     idx.sort((a, b) => a - b);
     const short = (n) => { const p = n.split(" "); return p.length > 1 ? p[0][0] + ". " + p.slice(1).join(" ") : n; };
@@ -6127,10 +7123,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     for (const i of idx) {
       if (last >= 0 && i > last + 1) html += '<div class="lb-gap">···</div>';
       const x = list[i];
-      html += `<div class="lb-row${x.me ? " me" : ""}"><span class="lb-r">${i + 1}</span><span class="lb-n">${nb(x.me ? "DU" : short(x.name))}</span><span class="lb-t">${i === 0 ? "" : fmtB(x.t - lead)}</span></div>`;
+      html += `<div class="lb-row${x.me ? " me" : ""}"><span class="lb-r">${i + 1}</span><span class="lb-n">${nb(x.me && !Rc.watch ? "DU" : short(x.name))}${x.ghost ? " ·" : ""}</span><span class="lb-t">${i === 0 ? "" : fmtB(x.t - lead)}</span></div>`;
       last = i;
     }
-    if (box.dataset.h !== html) { box.dataset.h = html; box.innerHTML = `<div class="lb-head">LIVE · ${list.length} am Start</div>` + html; }
+    if (box.dataset.h !== html) { box.dataset.h = html; box.innerHTML = `<div class="lb-head">LIVE · ${list.length} · NR. ${Rc.bib}</div>` + html; }
   }
   // Abstand (Spiel-m) einer KI zu dir, positiv = vor dir
   function gap(r) {
@@ -6140,7 +7136,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   // Windschatten: knapp hinter jemandem weniger Luftwiderstand
   function drafting() {
     let best = 0;
-    for (const r of rivals()) { const d = gap(r); if (d > 0.25 && d < 2.2) best = Math.max(best, 1 - (d - 0.25) / 1.95); }
+    for (const r of rivals()) { if (r.a.ghost) continue; const d = gap(r); if (d > 0.25 && d < 2.2) best = Math.max(best, 1 - (d - 0.25) / 1.95); }
     return best;
   }
   // Überholen melden
@@ -6232,7 +7228,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         for (let j = 0; j < 4; j++) seg([X(sA + 2 + j * 1.6), Y(sA + 2 + j * 1.6)], [X(sA + 2 + j * 1.6), Y(sA + 2 + j * 1.6) - 9 * k], I.dach, 3 * k);
       }
       // Schießstand: Dach, Rückwand mit Scheiben am Ende der Runde
-      if (!pen && !hunt) for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
+      if (!pen && !hunt && L.format !== "xc") for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
         const sA = base - 22, sB = base - 9; if (sB < s0 - 2 || sA > s1 + 2) continue;
         const xa = X(sA), xb = X(sB), y = Math.min(Y(sA), Y(sB)) - 34 * k;
         poly([[xa - 6 * k, y - 46 * k], [xb + 6 * k, y - 46 * k], [xb, y - 58 * k], [xa, y - 58 * k]], I.dach);
@@ -6270,7 +7266,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     watchFrames(now);
     advanceTo(now);
     // Gleitgeräusch nur beim Laufen (Menü, Schießstand, Pause, Ziel: still)
-    Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen"));
+    Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen"), Rc ? (Rc.watch ? 0.8 : Rc.flow || 0) : 0);
     renderer.clear();
     const t = now / 1000;
     if (mode === "menu" || (!Rc && mode !== "result")) { renderer.drawMenu(t); return; }
@@ -6288,8 +7284,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // zwischen zwei Simulationsschritten weiterschieben (rest = noch nicht gerechnete Zeit), damit nichts ruckelt
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
-      const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib })) : [];
-      renderer.drawRun({ T: L, s: sNow, pen, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[S.nat], t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.hunt || S.style !== "skate", retro: !!Rc.hunt, name: S.name });
+      const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost })) : [];
+      renderer.drawRun({ T: L, s: sNow, pen, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
       // Ortswechsel (Schießstand → Strafrunde → Strecke): kurz abblenden, damit der Sprung nicht wie ein Fehler aussieht
@@ -6392,7 +7388,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (!pen) { cv = L.curveAt(R.s); cIn = cv !== 0; if (!cv) for (let d = 1; d <= 9 && !cv; d++) cv = L.curveAt(R.s + d); }
     const cue = $("hCue");
     $("hud").querySelector(".hud-cues").style.visibility = $("tip").hidden ? "" : "hidden";
-    if (Rc.simple) {
+    if (Rc.phase === "mat") cue.hidden = true;
+    else if (Rc.simple) {
       // einfach: nur die Abfahrt ansagen
       if (down && !R.tuck && Rc.kind !== "learn") { setText(cue, "Abfahrt · halten = Hocke"); cue.className = "h-cue go"; cue.hidden = false; } else cue.hidden = true;
     }
@@ -6454,16 +7451,565 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     for (let i = 0; i < (G.n || 5); i++) if (!dots[i].classList.contains("hit") && !dots[i].classList.contains("miss")) dots[i].className = i === G.target && !G.done ? "now" : "";
   }
 
+  // ================================================================== Deine Figur, Online, Gruppen (seit 0.16)
+  // Online nur in der Fassung für die Spielseite (site.json mit Supabase) und erst nach Zustimmung. Der Code kommt aus dem Pass.
+  const OL = window.BIOnline, ON = SITE.web && SITE.sb && OL ? OL.make(SITE.sb) : null;
+  const PAGE = SITE.url || "https://matpeins-debug.github.io/cold-medal-biathlon/";
+  const onlineOk = () => !!ON && S.online === true;
+  const ONLINE_TXT = "Gespeichert werden Name, Land und Aussehen deiner Figur, deine Rennen in Gruppen (Zeit, Schießen, Verlauf), Reaktionen und Kommentare und wer in welcher Gruppe ist, bei Supabase (Server in Frankfurt). Sichtbar für alle mit dem Link der Gruppe, gelöscht 30 Tage nach dem letzten Rennen. Ändern oder löschen unter Info.";
+  const RACE_NAME = { sprint: "Sprint", mass: "Massenstart", xc: "Langlauf", jagd: "Jagd 1960" };
+  const raceKm = (race, sex) => { const F = T.FORMATS[race][sex] || T.FORMATS[race].w; return `${dec(F.km, F.km % 1 ? 1 : 0)} km`; };
+  let uiToastT = 0;
+  function uiToast(head, text) {
+    const e = $("uiToast"); e.innerHTML = `<b>${esc(head)}</b>${text ? `<span>${esc(nb(text))}</span>` : ""}`; e.hidden = false;
+    clearTimeout(uiToastT); uiToastT = setTimeout(() => { e.hidden = true; }, 3200);
+  }
+  const onlineFail = (e, head) => uiToast(head || "ONLINE", OL ? OL.message(e) : "Keine Verbindung");
+  // Zustimmung zu Online: einmal fragen, dann merken (Info › Online ändert es)
+  let askCb = null, askFrom = "menu";
+  function askOnline(cb, from) {
+    if (!ON) { uiToast("NUR AUF DER SPIELSEITE", PAGE.replace(/^https:\/\//, "")); return; }
+    if (S.online === true) { cb(); return; }
+    askCb = cb; askFrom = from || "menu";
+    $("aoTxt").textContent = "In Gruppen laufen alle dasselbe Rennen, die anderen als Geister, die Rangliste sehen alle live. " + ONLINE_TXT;
+    show("askOnline");
+  }
+  $("aoYes").addEventListener("click", () => { S.online = true; save(); const cb = askCb; askCb = null; show(askFrom); if (askFrom === "menu") refreshMenu(); if (cb) cb(); });
+  $("aoNo").addEventListener("click", () => { S.online = false; save(); askCb = null; show(askFrom); if (askFrom === "menu") refreshMenu(); });
+
+  // Code der Reihe: nie ein eigener, immer der aus dem Pass; beim ersten Mal geht der Pass online mit (Figur auf jedem Gerät)
+  let passPut = false;
+  function myCode() {
+    const had = PASS.get().code, c = PASS.ensureCode();
+    if (ON && (!had || !passPut)) { passPut = true; PASS.online.put(ON.rpc).catch(() => { passPut = false; }); }
+    return c;
+  }
+  const meArgs = () => ({ p_code: myCode(), p_name: PASS.get().name || "ATHLET", p_nation: myNat(), p_look: myLook() });
+  function codeTab() {
+    const via = PASS.ui.codeVia(ON.rpc);
+    return {
+      status() {
+        if (S.online !== true) return { code: PASS.get().code, text: "Mit deinem Code holst du deine Figur auf jedes Gerät, in jedem Spiel von Cold Medal. Dafür geht das Spiel online. " + ONLINE_TXT + " Mit „Online sichern“ bist du einverstanden.", save: "Online sichern" };
+        return via.status();
+      },
+      async save() { S.online = true; save(); passPut = true; await via.save(); },
+      async load(code) { const r = await via.load(code); return { text: r.text, apply() { S.online = true; save(); r.apply(); } }; },
+    };
+  }
+
+  // Fenster „Deine Figur“ (pass-ui.js) mit dem Reiter Biathlon; was hier gewählt wird, gilt in allen Spielen (außer dem Reiter Biathlon)
+  let figFrom = "menu", afterName = null;
+  const passUi = PASS.ui.mount($("figure"), {
+    title: "Deine Figur", kit: "biathlon", nations: Object.keys(NAT).map((k) => [k, NAT[k]]),
+    personHint: "Gilt in allen Spielen von Cold Medal.",
+    tabs: [{ id: "bi", label: "Biathlon", rows: [
+      { type: "seg", label: "Rennen", list: [["w", "Damen"], ["m", "Herren"]], get: () => S.sex, set: (v) => { S.sex = v; save(); } },
+      { type: "seg", label: "Technik", list: [["auto", "Je Rennen"], ["classic", "Klassisch"], ["skate", "Skating"]], get: () => S.style, set: (v) => { S.style = v; save(); } },
+      { type: "seg", label: "Visier", list: [["kreuz", "Kreuz"], ["ring", "Ring"]], get: () => S.sight, set: (v) => { S.sight = v; save(); } },
+      { type: "hint", text: "Gibt es nur im Biathlon. Je Rennen: Weltcup im Skating, Langlauf und Jagd 1960 klassisch." }] }],
+    code: ON ? codeTab() : null,
+    dpr: () => Math.min(3, (window.devicePixelRatio || 1) * uiS),
+    onDone() {
+      const f = figFrom; figFrom = "menu";
+      if (f === "club" && club) showClub(); else { show(f); if (f === "menu") refreshMenu(); if (f === "groups") fillGroups(); }
+      const cb = afterName; afterName = null;
+      if (cb && PASS.get().name) cb();
+    },
+  });
+  function openFigure(o) {
+    figFrom = mode === "club" ? "club" : SCREENS.find((x) => x !== "figure" && !$(x).hidden) || "menu";
+    show("figure"); passUi.open(o || {});
+  }
+  // ohne Namen keine Gruppe: zuerst fragen, dann weiter
+  function ensureName(cb) { if (PASS.get().name) cb(); else { afterName = cb; openFigure({ ask: true, title: "Wie heißt du?" }); } }
+  // Pass geändert (Fenster, anderes Spiel im Nachbar-Tab, vom Server)
+  PASS.on(() => { if (mode === "menu") refreshMenu(); });
+  $("btnCode").addEventListener("click", () => openFigure({ tab: "code" }));
+  $("btnGroups").addEventListener("click", openGroups);
+  $("btnXc").addEventListener("click", () => startRace("xc"));
+
+  // ------------------------------------------------------------------ Gruppen: Liste
+  const okGrp = (c) => OL && OL.groupOk(c);
+  const tms = (iso) => { const t = Date.parse(String(iso || "").replace(/(\.\d{3})\d+/, "$1")); return isNaN(t) ? 0 : t; };
+  const num = (v, a, z) => clamp(Math.round(+v) || 0, a, z);
+  const natOk = (c) => (typeof c === "string" && /^[A-Z]{3}$/.test(c) ? c : "");
+  const lookOk = (l) => (l && typeof l === "object" ? PASS.cleanLook(l) : null);
+  const clubName = (k) => k.name || `Gruppe ${RACE_NAME[k.race] || "Biathlon"}`;
+  function clubEntry(x) {
+    if (!x || typeof x !== "object" || !okGrp(x.c)) return null;
+    return { c: x.c, name: typeof x.name === "string" ? x.name.slice(0, 24) : null, k: num(x.k, 1, 40), race: RACE_NAME[x.race] ? x.race : "sprint", sex: x.sex === "m" ? "m" : "w",
+      nm: num(x.nm, 0, 999), rk: num(x.rk, 0, 999), nr: num(x.nr, 0, 999), nw: num(x.nw, 0, 99999), own: x.own === true,
+      mem: (Array.isArray(x.mem) ? x.mem : []).slice(0, 6).map((m) => ({ n: String((m && m.n) || "").slice(0, 12), c: natOk(m && m.c) })) };
+  }
+  let myBusy = false, myAt = 0;
+  async function loadMyClubs(force) {
+    if (!onlineOk() || !PASS.get().code || myBusy || (!force && Date.now() - myAt < 20000)) return;
+    myBusy = true; myAt = Date.now();
+    try {
+      const L = await ON.rpc("bi_my_clubs", { p_code: PASS.get().code, p_seen: S.cseen }, 8000);
+      if (Array.isArray(L)) {
+        const srv = L.map(clubEntry).filter(Boolean);
+        S.clubs = srv.concat(S.clubs.filter((x) => !srv.some((y) => y.c === x.c)).map((x) => Object.assign({}, x, { nw: 0 }))).slice(0, 16);
+        save();
+        if (mode === "menu") refreshBadge();
+        if (!$("groups").hidden) fillGroups();
+      }
+    } catch (e) { /* die gemerkte Liste bleibt */ }
+    finally { myBusy = false; }
+  }
+  function refreshBadge() {
+    const n = S.clubs.reduce((a, x) => a + (x.nw || 0), 0), b = $("grpNew");
+    b.hidden = !n; b.textContent = n > 99 ? "99+" : String(n);
+    $("btnCode").hidden = !ON;
+  }
+  function openGroups() { show("groups"); fillGroups(); loadMyClubs(true); flushPending(); }
+  function fillGroups() {
+    $("gpOff").hidden = !!ON; $("gpNew").hidden = !ON; $("gpLink").parentNode.hidden = !ON;
+    if (!ON) $("gpOff").textContent = `Gruppen gehen auf der Spielseite im Browser: ${PAGE.replace(/^https:\/\//, "")}`;
+    const L = ON ? S.clubs : [];
+    $("gpEmpty").hidden = !ON || L.length > 0;
+    $("gpList").innerHTML = L.map((x) => {
+      const where = `${RACE_NAME[x.race]}${x.k > 1 ? ` · Runde ${x.k}` : ""} · ${x.sex === "m" ? "Herren" : "Damen"}`;
+      const me = x.rk ? `Platz ${x.rk} von ${x.nr}` : x.nr ? `${x.nr} gelaufen, du noch nicht` : "noch niemand gelaufen";
+      return `<button type="button" class="gp-row" data-c="${x.c}"><span class="gp-mem">${(x.mem || []).slice(0, 4).map((m) => flag(m.c || "AUT", 20, 13)).join("")}</span>` +
+        `<span><b>${esc(clubName(x))}</b><small>${esc(nb(`${where} · ${me} · ${x.nm} dabei`))}</small></span>${x.nw ? `<span class="gp-new">${x.nw > 99 ? "99+" : x.nw} neu</span>` : "<span></span>"}</button>`;
+    }).join("");
+  }
+  $("gpList").addEventListener("click", (e) => { const b = e.target.closest("[data-c]"); if (b) openClub(b.dataset.c); });
+  function groupFrom(text) { const m = /(?:^|[#&?\s/=])(?:g=)?([A-HJ-NP-Z2-9]{7})(?![A-Za-z0-9])/.exec(" " + String(text || "").trim().toUpperCase().replace(/^.*[#&?]G=/, "G=").replace(/^G=/, " ")); return m ? m[1] : null; }
+  $("gpOpen").addEventListener("click", () => { const c = groupFrom($("gpLink").value); if (c) openClub(c); else uiToast("KEIN GRUPPEN-CODE", "Den ganzen Link oder die 7 Zeichen nach g= einfügen"); });
+  function groupFromLocation() { const m = /(?:^|[#&?])g=([A-HJ-NP-Z2-9]{7})(?![A-Za-z0-9])/.exec((location.hash || "") + "&" + (location.search || "").replace(/^\?/, "&")); return m ? m[1] : null; }
+
+  // ------------------------------------------------------------------ Neue Gruppe, neue Runde, Umbenennen (ein Fenster)
+  let ncCtx = null, ncBusy = false;
+  function openNew(kind) {
+    if (!ON) { fillGroups(); return; }
+    askOnline(() => ensureName(() => {
+      const last = kind === "round" && club ? club.rounds[club.rounds.length - 1] : null;
+      ncCtx = { kind, race: last ? last.race : "sprint", sex: last ? last.sex : S.sex, level: last ? last.lv : S.level };
+      $("ncKick").textContent = kind === "new" ? "NEUE GRUPPE" : kind === "round" ? `NEUE RUNDE · ${clubName(club).toUpperCase()}` : "NAME DER GRUPPE";
+      $("ncNameRow").hidden = kind === "round"; $("ncName").value = kind === "rename" && club ? club.name || "" : "";
+      for (const id of ["ncRace", "ncSex", "ncLevel"]) $(id).parentNode.hidden = kind === "rename";
+      $("ncNote").hidden = kind === "rename";
+      $("ncGo").textContent = kind === "rename" ? "Speichern" : kind === "round" ? "Runde starten" : "Anlegen";
+      segSet("ncRace", ncCtx.race); segSet("ncSex", ncCtx.sex); segSet("ncLevel", ncCtx.level);
+      show("newClub");
+    }), kind === "new" ? "groups" : "club");
+  }
+  for (const [id, key] of [["ncRace", "race"], ["ncSex", "sex"], ["ncLevel", "level"]]) $(id).addEventListener("click", (e) => { const b = e.target.closest("button"); if (b && ncCtx) { ncCtx[key] = b.dataset.v; segSet(id, b.dataset.v); } });
+  $("ncBack").addEventListener("click", () => { if (ncCtx && ncCtx.kind !== "new" && club) showClub(); else openGroups(); ncCtx = null; });
+  $("ncGo").addEventListener("click", async () => {
+    if (!ncCtx || ncBusy) return;
+    ncBusy = true;
+    const c = ncCtx, seed = (Date.now() ^ (Math.random() * 4294967295)) >>> 0, title = $("ncName").value;
+    try {
+      let b;
+      if (c.kind === "new") b = await ON.rpc("bi_club_new", Object.assign(meArgs(), { p_title: title, p_race: c.race, p_sex: c.sex, p_level: c.level, p_seed: seed }));
+      else if (c.kind === "round") b = await ON.rpc("bi_club_round", Object.assign(meArgs(), { p_group: club.c, p_race: c.race, p_sex: c.sex, p_level: c.level, p_seed: seed }));
+      else b = await ON.rpc("bi_club_rename", { p_code: myCode(), p_group: club.c, p_title: title });
+      const k = clubFrom(b, c.kind === "new" ? null : club);
+      if (!k) throw Object.assign(new Error("leer"), { status: 500 });
+      if (c.kind === "round") k.sel = k.rounds.length - 1;
+      ncCtx = null; rememberClub(k); showClub(k);
+      if (c.kind === "new") { $("clNote").textContent = "Gruppe angelegt. Tippe auf „Link“ und schick ihn in eure WhatsApp-Gruppe."; $("clNote").hidden = false; }
+    } catch (e) { onlineFail(e, c.kind === "rename" ? "NICHT GESPEICHERT" : "GEHT GERADE NICHT"); }
+    finally { ncBusy = false; }
+  });
+  $("gpNew").addEventListener("click", () => openNew("new"));
+
+  // ------------------------------------------------------------------ Gruppe ansehen: Runden, Rangliste, Gesamt, Gespräch
+  let club = null, clubBusy = false, clubT = 0, clubView = "round", talk = [], talkTk = -1, actSel = null, leaveArm = 0;
+  function clubFrom(b, keep) {
+    if (!b || typeof b !== "object" || !okGrp(b.c) || !Array.isArray(b.rounds) || !b.rounds.length) return null;
+    const rounds = b.rounds.filter((d) => d && RACE_NAME[d.race]).map((d) => ({
+      n: num(d.n, 1, 40), race: d.race, sex: d.sex === "m" ? "m" : "w", lv: ["easy", "normal", "hard"].includes(d.lv) ? d.lv : "normal",
+      s: Number.isFinite(+d.s) ? Math.abs(Math.round(+d.s)) % 4294967296 : 1, at: tms(d.at), on: d.on ? String(d.on).slice(0, 12) : "", cnt: num(d.cnt, 0, 9999),
+      b: (Array.isArray(d.b) ? d.b : []).filter((x) => x && typeof x === "object").map((x) => ({
+        r: num(x.r, 1, 9999), n: String(x.n || "ATHLET").slice(0, 12), c: natOk(x.c), t: clamp(+x.t || 0, 0, 36000), sh: /^[0-5]{0,4}$/.test(x.sh) ? x.sh : "",
+        x: num(x.x, 1, 9999), me: x.me === true, id: /^[0-9a-f]{10}$/.test(x.id) ? x.id : null, at: tms(x.at), g: x.g === true, l: lookOk(x.l) })) }));
+    if (!rounds.length) return null;
+    const n = rounds.length, kept = keep && keep.c === b.c;
+    const sel = !kept ? n - 1 : keep.sel >= keep.rounds.length - 1 ? n - 1 : clamp(keep.sel, 0, n - 1);
+    return { c: b.c, name: typeof b.name === "string" && b.name ? b.name.slice(0, 24) : null, own: b.own === true, on: b.on ? String(b.on).slice(0, 12) : "", at: tms(b.at),
+      inn: b.in === true, tk: num(b.tk, 0, 1e12), jt: tms(b.jt), rounds, nm: num(b.nm, 0, 9999), sel,
+      race: rounds[n - 1].race,
+      mem: (Array.isArray(b.mem) ? b.mem : []).filter((x) => x && typeof x === "object").map((x) => ({ n: String(x.n || "ATHLET").slice(0, 12), c: natOk(x.c), me: x.me === true, own: x.own === true, j: tms(x.j), k: num(x.k, 0, 40), p: num(x.p, 0, 99999) })),
+      tot: (Array.isArray(b.tot) ? b.tot : []).filter((x) => x && typeof x === "object").map((x) => ({ r: num(x.r, 1, 9999), n: String(x.n || "ATHLET").slice(0, 12), c: natOk(x.c), p: num(x.p, 0, 99999), k: num(x.k, 0, 40), me: x.me === true })) };
+  }
+  function rememberClub(k) {
+    const cur = k.rounds[k.rounds.length - 1], me = cur.b.find((x) => x.me);
+    const e = { c: k.c, name: k.name, k: cur.n, race: cur.race, sex: cur.sex, nm: k.nm, rk: me ? me.r : 0, nr: cur.cnt, nw: 0, own: k.own, mem: k.mem.slice(0, 6).map((m) => ({ n: m.n, c: m.c })) };
+    S.clubs = [e].concat(S.clubs.filter((x) => x.c !== k.c)).slice(0, 16);
+    save();
+  }
+  function clubSeen(k) { S.cseen[k.c] = [k.tk || 0, k.jt || 0]; const ks = Object.keys(S.cseen); if (ks.length > 40) delete S.cseen[ks[0]]; const e = S.clubs.find((x) => x.c === k.c); if (e) e.nw = 0; save(); }
+  async function openClub(code) {
+    if (!ON) { openGroups(); return; }
+    if (S.online !== true) { askOnline(() => openClub(code), mode === "club" ? "club" : "groups"); return; }
+    if (clubBusy) return;
+    clubBusy = true;
+    try {
+      let b = await ON.rpc("bi_club_get", { p_group: code, p_code: PASS.get().code || null });
+      if (b && b.in !== true && PASS.get().name) { try { b = (await ON.rpc("bi_club_join", Object.assign(meArgs(), { p_group: code }))) || b; } catch (e) { /* ansehen geht auch so */ } }
+      const k = clubFrom(b, club && club.c === code ? club : null);
+      if (!k) {
+        S.clubs = S.clubs.filter((x) => x.c !== code); save();
+        uiToast("GRUPPE NICHT GEFUNDEN", "Nach 30 Tagen ohne Rennen wird eine Gruppe gelöscht");
+        openGroups(); return;
+      }
+      if (!club || club.c !== k.c) { clubView = "round"; talk = []; talkTk = -1; actSel = null; leaveArm = 0; }
+      rememberClub(k); showClub(k);
+      flushPending();
+    } catch (e) { onlineFail(e, "GRUPPE NICHT GELADEN"); }
+    finally { clubBusy = false; }
+  }
+  function showClub(k) {
+    if (k) club = k;
+    if (!club) { openGroups(); return; }
+    Rc = null; mode = "club"; paused = false; canvas.style.filter = "";
+    $("hud").hidden = true; $("rhud").hidden = true; $("learnCard").hidden = true; banner(null); tip(null);
+    if (k) $("clNote").hidden = true;
+    show("club"); fillClub(); clubPoll();
+    if (talkTk !== club.tk) loadTalk();
+  }
+  const rDesc = (d) => `${RACE_NAME[d.race]} ${raceKm(d.race, d.sex)} · ${d.sex === "m" ? "Herren" : "Damen"} · Gegner ${({ easy: "leicht", normal: "normal", hard: "stark" })[d.lv]}`;
+  const EMO = { like: "👍", fire: "🔥", wow: "😮", lol: "😂" };
+  function fillClub() {
+    const k = club; if (!k || mode !== "club") return;
+    const n = k.rounds.length; k.sel = clamp(k.sel, 0, n - 1);
+    const d = k.rounds[k.sel], tot = clubView === "tot";
+    const nameEl = $("clName"); nameEl.textContent = clubName(k).toUpperCase(); nameEl.classList.toggle("own", k.own);
+    $("clMem").textContent = nb(`${k.nm} ${k.nm === 1 ? "Mitglied" : "Mitglieder"}${k.on ? ` · gegründet von ${k.on}` : ""}`);
+    segSet("clView", tot ? "tot" : "round"); $("clView").hidden = n < 2;
+    $("clRoundN").textContent = `Runde ${d.n} von ${n}`; $("clPrev").disabled = k.sel <= 0; $("clNext").disabled = k.sel >= n - 1;
+    $("clRoundN").parentNode.style.visibility = tot || n < 2 ? "hidden" : "";
+    $("clSub").textContent = nb(tot ? `${n} Runden · Weltcup-Punkte je Runde (90, 75, 60 …)` : `${rDesc(d)} · ${d.cnt} gelaufen`);
+    $("clGo").textContent = nb(`Laufen: Runde ${(tot ? k.rounds[n - 1] : d).n}`);
+    $("clRound").hidden = n >= 40;
+    fillRows(); fillFeed();
+    clubSeen(k);
+  }
+  function fillRows() {
+    const k = club, d = k.rounds[k.sel];
+    if (clubView === "tot" && k.rounds.length > 1) {
+      $("clRows").innerHTML = k.tot.length ? k.tot.map((x) => `<div class="rl tot${x.me ? " me" : ""}"><span class="r">${x.r}</span><span class="f">${flag(x.c || "AUT", 20, 13)}</span><span class="n">${esc(x.n)}</span><span class="s">${x.k}/${k.rounds.length}</span><span class="t">${x.p}</span></div>`).join("")
+        : `<p class="sub">Noch niemand gelaufen.</p>`;
+      return;
+    }
+    const lead = d.b.length ? d.b[0].t : 0;
+    let h = "";
+    for (const x of d.b) {
+      h += `<div class="rl${x.me ? " me" : ""}" data-id="${x.id || ""}"><span class="r">${x.r}</span><span class="f">${flag(x.c || "AUT", 20, 13)}</span><span class="n">${esc(x.me ? "DU" : x.n)}${x.x > 1 ? ` <small>(${x.x}×)</small>` : ""}</span><span class="s">${x.sh.split("").join("+")}</span><span class="t">${fmtT(x.t)}</span><span class="b">${x.r === 1 ? "" : fmtB(x.t - lead)}</span></div>`;
+      if (actSel && actSel === x.id) {
+        const mine = (kind) => talk.some((y) => y.me && y.j === x.id && y.n === d.n && y.k === kind && !y.old);
+        const cnt = (kind) => talk.filter((y) => y.j === x.id && y.n === d.n && y.k === kind && !y.old).length;
+        h += `<div class="rl-act">${x.g ? `<button type="button" class="watch" data-watch="${x.id}">▶ Rennen ansehen</button>` : ""}` +
+          Object.keys(EMO).map((kk) => `<button type="button" class="${mine(kk) ? "on" : ""}" data-re="${kk}" data-to="${x.id}">${EMO[kk]}${cnt(kk) ? " " + cnt(kk) : ""}</button>`).join("") + `</div>`;
+      }
+    }
+    $("clRows").innerHTML = h || `<p class="sub">${d.n > 1 ? "Neue Runde, noch niemand gelaufen. Lauf als Erste!" : "Noch niemand gelaufen. Schick den Link und lauf als Erste!"}</p>`;
+  }
+  function fillFeed() {
+    const k = club, ev = [];
+    if (k.at) ev.push({ t: k.at, h: `<div class="ev sys"><i>${ago(k.at)}</i><b>${esc(k.on || "Jemand")}</b> gründet die Gruppe</div>` });
+    for (const d of k.rounds) {
+      if (d.n > 1 && d.at) ev.push({ t: d.at, h: `<div class="ev sys"><i>${ago(d.at)}</i><b>${esc(d.on || "Jemand")}</b> startet Runde ${d.n}: ${esc(nb(rDesc(d)))}</div>` });
+      for (const x of d.b) if (x.at) ev.push({ t: x.at, h: `<div class="ev"><i>${ago(x.at)}</i><b>${esc(x.me ? "Du" : x.n)}</b> ${esc(nb(`${fmtT(x.t)}${x.sh ? ` (${x.sh.split("").join("+")})` : ""} · Platz ${x.r} in Runde ${d.n}`))}</div>` });
+    }
+    for (const m of k.mem) if (m.j && !m.own) ev.push({ t: m.j, h: `<div class="ev sys"><i>${ago(m.j)}</i><b>${esc(m.me ? "Du" : m.n)}</b> ${m.me ? "bist" : "ist"} dabei</div>` });
+    for (const y of talk) {
+      const d = y.n ? k.rounds.find((r) => r.n === y.n) : null, who = d && y.j ? d.b.find((x) => x.id === y.j) : null;
+      const to = y.j ? ` zu ${who ? (who.me ? "deinem Rennen" : who.n) : "einem Rennen"}${y.old ? " (früher)" : ""}` : "";
+      ev.push({ t: y.at, h: `<div class="ev"><i>${ago(y.at)}</i><b>${esc(y.me ? "Du" : y.a)}</b>${esc(to)}: ${y.k === "c" ? esc(y.b) : EMO[y.k]}${y.me && y.k === "c" ? `<button type="button" class="del" data-del="${y.i}" aria-label="löschen">×</button>` : ""}</div>` });
+    }
+    ev.sort((a, b) => b.t - a.t);
+    const leave = k.inn ? `<button type="button" class="btn btn-plain small" id="clLeave">${leaveArm && Date.now() - leaveArm < 4000 ? "Wirklich verlassen? Nochmal tippen" : "Gruppe verlassen"}</button>` : "";
+    $("clFeed").innerHTML = ev.slice(0, 80).map((e) => e.h).join("") + leave;
+  }
+  function ago(t) {
+    if (!t) return "";
+    const d = (Date.now() - t) / 1000;
+    if (d < 60) return "gerade eben";
+    if (d < 3600) return `vor ${Math.floor(d / 60)} Min.`;
+    if (d < 86400) return `vor ${Math.floor(d / 3600)} Std.`;
+    const a = new Date(t); return `${a.getDate()}.${a.getMonth() + 1}.`;
+  }
+  async function loadTalk() {
+    if (!club) return;
+    const c = club.c, tk = club.tk;
+    try { const L = await ON.rpc("bi_talk_get", { p_group: c, p_code: PASS.get().code || null }, 8000); if (club && club.c === c) { talkSet(L); talkTk = tk; } } catch (e) { /* später */ }
+  }
+  function talkSet(L) {
+    talk = (Array.isArray(L) ? L : []).filter((y) => y && typeof y === "object" && (EMO[y.k] || y.k === "c")).map((y) => ({
+      i: num(y.i, 0, 1e15), n: y.n == null ? null : num(y.n, 1, 40), j: /^[0-9a-f]{10}$/.test(y.j) ? y.j : null, k: y.k, b: typeof y.b === "string" ? y.b.slice(0, 80) : "",
+      a: String(y.a || "ATHLET").slice(0, 12), me: y.me === true, old: y.old === true, at: tms(y.at) }));
+    if (mode === "club") { fillRows(); fillFeed(); }
+  }
+  function clubPoll() {
+    clearTimeout(clubT);
+    if (!ON || !club || mode !== "club") return;
+    clubT = setTimeout(async () => {
+      if (club && mode === "club" && !document.hidden) {
+        try {
+          const k = clubFrom(await ON.rpc("bi_club_get", { p_group: club.c, p_code: PASS.get().code || null }, 6000), club);
+          if (k && club && k.c === club.c && mode === "club") {
+            const grew = k.rounds.length > club.rounds.length, changed = JSON.stringify([k.rounds, k.mem, k.tot, k.name]) !== JSON.stringify([club.rounds, club.mem, club.tot, club.name]);
+            club = k; rememberClub(k);
+            if (changed) fillClub();
+            if (grew) uiToast(`NEUE RUNDE: ${RACE_NAME[k.race].toUpperCase()}`, `${k.rounds[k.rounds.length - 1].on || "Jemand"} hat sie gestartet`);
+            if (k.tk !== talkTk) loadTalk();
+          }
+        } catch (e) { /* beim nächsten Mal */ }
+      }
+      clubPoll();
+    }, 5000);
+  }
+  async function talkPost(kind, n, target, body) {
+    if (!club) return;
+    if (S.online !== true) return;
+    ensureName(async () => {
+      try { talkSet(await ON.rpc("bi_talk", Object.assign(meArgs(), { p_group: club.c, p_n: n, p_target: target, p_kind: kind, p_body: body || null }), 8000)); }
+      catch (e) { onlineFail(e, "NICHT GESENDET"); }
+    });
+  }
+  $("clRows").addEventListener("click", (e) => {
+    const w = e.target.closest("[data-watch]"), r = e.target.closest("[data-re]"), row = e.target.closest(".rl[data-id]");
+    const d = club && club.rounds[club.sel];
+    if (w && d) { watchRace(d, w.dataset.watch); return; }
+    if (r && d) { talkPost(r.dataset.re, d.n, r.dataset.to); return; }
+    if (row && row.dataset.id && clubView !== "tot") { actSel = actSel === row.dataset.id ? null : row.dataset.id; fillRows(); }
+  });
+  $("clFeed").addEventListener("click", async (e) => {
+    const del = e.target.closest("[data-del]");
+    if (del && club) { try { talkSet(await ON.rpc("bi_talk_del", { p_code: myCode(), p_group: club.c, p_id: +del.dataset.del }, 8000)); } catch (er) { onlineFail(er, "NICHT GELÖSCHT"); } return; }
+    if (e.target.id === "clLeave") clubLeave();
+  });
+  function say() { const v = $("clSay").value.trim(); if (!v || !club) return; $("clSay").value = ""; talkPost("c", null, null, v.slice(0, 80)); }
+  $("clSend").addEventListener("click", say);
+  $("clSay").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); say(); } });
+  $("clView").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { clubView = b.dataset.v; fillClub(); } });
+  $("clPrev").addEventListener("click", () => { if (club && club.sel > 0) { club.sel--; actSel = null; fillClub(); } });
+  $("clNext").addEventListener("click", () => { if (club && club.sel < club.rounds.length - 1) { club.sel++; actSel = null; fillClub(); } });
+  $("clName").addEventListener("click", () => { if (club && club.own) openNew("rename"); });
+  $("clRound").addEventListener("click", () => openNew("round"));
+  $("clBack").addEventListener("click", () => { clearTimeout(clubT); toMenu(); });
+  $("clShare").addEventListener("click", async () => {
+    if (!club) return;
+    const d = club.rounds[club.rounds.length - 1], top = d.b.slice(0, 3).map((x) => `${x.r}. ${x.n} ${fmtT(x.t)}`).join(" · ");
+    const text = `${myName()} lädt dich in die Gruppe „${clubName(club)}“ ein (Cold Medal Biathlon): ${rDesc(d)}. Alle laufen dasselbe Rennen, die anderen als Geister.${top ? ` Stand: ${top}.` : ""} Lauf mit:\n${PAGE}#g=${club.c}`;
+    try { if (navigator.share) { await navigator.share({ title: "Cold Medal Biathlon", text }); return; } } catch (er) { if (er && er.name === "AbortError") return; }
+    try { await navigator.clipboard.writeText(text); uiToast("LINK KOPIERT", "In WhatsApp einfügen und senden"); return; } catch (er) { /* weiter */ }
+    $("clNote").textContent = text; $("clNote").hidden = false;
+  });
+  async function clubLeave() {
+    if (!club) return;
+    if (!leaveArm || Date.now() - leaveArm > 4000) { leaveArm = Date.now(); fillFeed(); return; }
+    leaveArm = 0;
+    try {
+      await ON.rpc("bi_club_leave", { p_code: myCode(), p_group: club.c });
+      S.clubs = S.clubs.filter((x) => x.c !== club.c); delete S.cseen[club.c]; save();
+      club = null; clearTimeout(clubT); openGroups(); uiToast("GRUPPE VERLASSEN", "Mit dem Link kommst du jederzeit wieder dazu");
+    } catch (e) { onlineFail(e, "GEHT GERADE NICHT"); }
+  }
+  // In einer Runde laufen: die anderen (und dein bestes Rennen) laufen als Geister mit
+  async function loadGhosts(c, n) {
+    try {
+      const L = await ON.rpc("bi_ghosts", { p_group: c, p_n: n, p_code: PASS.get().code || null }, 7000);
+      return (Array.isArray(L) ? L : []).map(ghostFrom).filter(Boolean);
+    } catch (e) { return []; }
+  }
+  function ghostFrom(x) {
+    if (!x || typeof x !== "object") return null;
+    const g = ghostUnpack(x.gh); if (!g) return null;
+    return Object.assign(g, { n: x.me ? "DEIN BESTES" : String(x.n || "ATHLET").slice(0, 12).toUpperCase(), c: natOk(x.c) || "AUT", look: lookOk(x.l), t: clamp(+x.t || 0, 0, 36000), id: x.id, me: x.me === true });
+  }
+  $("clGo").addEventListener("click", () => {
+    if (!club) return;
+    const d = clubView === "tot" ? club.rounds[club.rounds.length - 1] : club.rounds[club.sel];
+    runClub(club.c, d);
+  });
+  function runClub(c, d) {
+    ensureName(async () => {
+      const gh = await loadGhosts(c, d.n);
+      clearTimeout(clubT);
+      startRace(d.race, { seed: d.s, sex: d.sex, level: d.lv, club: { c, n: d.n }, ghosts: gh.slice(0, 12) });
+    });
+  }
+  async function watchRace(d, id) {
+    const gh = await loadGhosts(club.c, d.n), w = gh.find((g) => g.id === id);
+    if (!w) { uiToast("NICHT MEHR DA", "Nur die besten zwölf Rennen einer Runde kann man ansehen"); return; }
+    clearTimeout(clubT);
+    startRace(d.race, { seed: d.s, sex: d.sex, level: d.lv, club: { c: club.c, n: d.n }, ghosts: gh.filter((g) => g !== w), watch: w });
+  }
+  // Rennen melden; geht es nicht, später noch einmal (höchstens fünf warten)
+  async function clubPost(r, me) {
+    const shots = r.shots.map((a) => a.filter((h) => !h).length).join("");
+    const p = { c: r.club.c, n: r.club.n, t: Math.round(me.total * 10) / 10, sh: shots, gh: ghostPack(r) };
+    $("resClub").textContent = "Wird an die Gruppe gemeldet …"; $("resClub").hidden = false;
+    try { await postOne(p); }
+    catch (e) {
+      S.pend = (S.pend || []).concat([p]).slice(-5); save();
+      $("resClub").textContent = "Noch nicht gemeldet (" + (OL ? OL.message(e) : "keine Verbindung") + "). Das Spiel versucht es später noch einmal.";
+    }
+  }
+  async function postOne(p) {
+    const b = await ON.rpc("bi_club_post", Object.assign(meArgs(), { p_group: p.c, p_n: p.n, p_t: p.t, p_shots: p.sh, p_ghost: p.gh }), 9000);
+    const k = clubFrom(b, club && club.c === p.c ? club : null);
+    if (k) {
+      const d = k.rounds.find((x) => x.n === p.n), me = d && d.b.find((x) => x.me);
+      club = k; rememberClub(k);
+      if (mode === "result" && me) $("resClub").textContent = nb(`Gruppe „${clubName(k)}“, Runde ${p.n}: Platz ${me.r} von ${d.cnt}${me.t < p.t - 0.05 ? ` (dein bestes: ${fmtT(me.t)})` : ""}`);
+    }
+  }
+  async function flushPending() {
+    if (!onlineOk() || !(S.pend && S.pend.length)) return;
+    const L = S.pend; S.pend = []; save();
+    for (const p of L) { try { await postOne(p); } catch (e) { if (e && e.status !== 400 && e.status !== 404) { S.pend.push(p); save(); } } }
+  }
+
+  // ------------------------------------------------------------------ Geister: Rennverlauf alle 2 s (Ort im Rennen, Spiel-m), Schießen je Stand
+  // Format „B“: Zahl der Schießen, je Schießen Treffer (Bits) und Kill-Zone, dann Zuwächse in 5 cm (Zeichen 0 … 62, 63 = zwei Zeichen mehr)
+  const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", GH_DT = 2;
+  function ghostPack(r) {
+    if (!r.rec) return null;
+    let s = "B" + B64[r.shots.length], prev = 0;
+    r.shots.forEach((h, i) => { let m = 0; h.forEach((x, j) => { if (x) m |= 1 << j; }); s += B64[m] + B64[Math.min(63, r.rec.kills[i] || 0)]; });
+    for (const p of r.rec.P) {
+      let d = Math.max(0, Math.round((p - prev) / 0.05));
+      if (d < 63) s += B64[d]; else { d = Math.min(4095, d); s += "_" + B64[d >> 6] + B64[d & 63]; }
+      prev += d * 0.05;
+    }
+    return s.length <= 6000 ? s : null;
+  }
+  function ghostUnpack(str) {
+    if (typeof str !== "string" || str[0] !== "B" || str.length < 3 || str.length > 6000) return null;
+    const v = (c) => B64.indexOf(c);
+    let i = 1;
+    const ns = v(str[i++]); if (ns < 0 || ns > 4) return null;
+    const hits = [], kills = [];
+    for (let k = 0; k < ns; k++) { const m = v(str[i++]), kl = v(str[i++]); if (!(m >= 0 && kl >= 0)) return null; hits.push([0, 1, 2, 3, 4].map((j) => !!((m >> j) & 1))); kills.push(kl); }
+    const P = []; let p = 0;
+    while (i < str.length) { let d = v(str[i++]); if (d === 63) { const a = v(str[i++]), b = v(str[i++]); if (!(a >= 0 && b >= 0)) return null; d = a * 64 + b; } if (d < 0) return null; p += d * 0.05; P.push(p); }
+    if (P.length < 2) return null;
+    return { hits, kills, P: Float32Array.from(P) };
+  }
+  // Ort eines Geistes nach e Sekunden Renn-Uhr (ohne Strafzeit); done: im Ziel
+  function gPos(g, e) {
+    const x = e / GH_DT, i = Math.floor(x), P = g.P;
+    if (i >= P.length - 1) return { P: P[P.length - 1], done: true };
+    if (i < 0) return { P: 0, done: false };
+    return { P: P[i] + (P[i + 1] - P[i]) * (x - i), done: false };
+  }
+  // Renn-Uhr (Laufen und Schießstand, ohne Strafzeit): danach richten sich die Geister
+  const physT = () => (Rc.watch ? Rc.we || 0 : (Rc.ski + Rc.pen) * T.SCALE + Rc.range);
+  function ghostRec() {
+    const g = Rc.rec, e = physT();
+    while (e >= g.next) { g.P.push(Rc.lap * Rc.L.L + clamp(Rc.R.s, 0, Rc.L.L)); g.next += GH_DT; }
+  }
+  // Strafzeit eines Geistes nach den Ständen 0 … j-1
+  function gPen(g, j) {
+    let t = 0; const pc = Rc.hunt ? 0 : Math.round(Rc.ref.pen * T.SCALE), nS = Rc.hunt ? Rc.FM.hunt.shots : 5;
+    for (let k = 0; k < Math.min(j, g.hits.length); k++) { const miss = g.hits[k].slice(0, nS).filter((h) => !h).length; t += Rc.hunt ? miss * Rc.FM.hunt.penSec - (g.kills[k] || 0) * Rc.FM.hunt.killSec : miss * pc; }
+    return t;
+  }
+  // Geister auf der Strecke (wie die KI in rivals)
+  function ghostRivals(out) {
+    const e = physT(), L = Rc.L.L;
+    Rc.ghosts.forEach((g, i) => {
+      const p = gPos(g, e); if (p.done) return;
+      const p2 = gPos(g, e + 0.6), k = Math.floor(p.P / L + 1e-6), sIn = p.P - k * L;
+      if (p2.P - p.P < 1e-4 && sIn < 1e-3 && k > 0) return;   // am Schießstand
+      out.push({ a: { name: g.n, nat: g.c, bib: 1000 + i, look: g.look, ghost: true }, s: sIn, k, v: Math.max(0, (p2.P - p.P) / (0.6 / T.SCALE)) });
+    });
+  }
+  // Zeit eines Geistes an deiner Stelle me (Spiel-m im Rennen), mit Strafzeit der Stände davor
+  function ghostAt(g, me, passed) {
+    const P = g.P; if (P[P.length - 1] < me - 0.5) return null;
+    let lo = 0, hi = P.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (P[m] >= me) hi = m; else lo = m + 1; }
+    const a = lo > 0 ? P[lo - 1] : 0, f = P[lo] > a ? (me - a) / (P[lo] - a) : 1;
+    return Math.max(0, (lo - 1 + clamp(f, 0, 1)) * GH_DT) + gPen(g, passed);
+  }
+
+  // ------------------------------------------------------------------ Rennen ansehen (Geist der Gruppe): die Figur läuft den gespeicherten Verlauf
+  const SN_ = { prone: "LIEGEND", kneel: "KNIEND", stand: "STEHEND" };
+  function tickWatch(dt) {
+    const g = Rc.watch, R = Rc.R, L = Rc.L;
+    Rc.we = (Rc.we || 0) + dt * (Rc.wIn ? 1 : T.SCALE) * (Rc.wSpeed || 1);   // Renn-Uhr: Laufen gerafft, am Stand 1 : 1
+    const p = gPos(g, Rc.we);
+    if (p.done) { finishWatch(); return; }
+    const p2 = gPos(g, Rc.we + 0.5), LL = L.L, nSt = Rc.stages.length;
+    const ws = Rc.wStage || 0;
+    // Stand: der Verlauf steht am Rundenende still
+    if (ws < nSt && p.P >= (ws + 1) * LL - 0.02) {
+      if (p.P > (ws + 1) * LL + 0.02 || (p2.P - p.P > 1e-3 && Rc.wIn)) {
+        // Stand verlassen
+        Rc.wStage = ws + 1; Rc.wIn = false; Rc.tpen = gPen(g, ws + 1);
+        const miss = (g.hits[ws] || []).slice(0, Rc.hunt ? 3 : 5).filter((h) => !h).length;
+        banner(miss ? "STRAFZEIT" : "SAUBER", `${(Rc.hunt ? 3 : 5) - miss}/${Rc.hunt ? 3 : 5}`, nb(`Runde ${ws + 2}`), 1.4); Rc.fadeAt = performance.now();
+      } else {
+        if (!Rc.wIn) { Rc.wIn = true; Rc.wArr = Rc.we; let j = Math.ceil(Rc.we / GH_DT); while (j < g.P.length && g.P[j] - p.P < 0.02) j++; Rc.wDep = j * GH_DT; Rc.fadeAt = performance.now(); }
+        const nS = Rc.hunt ? 3 : 5, f = clamp((Rc.we - Rc.wArr - 4) / Math.max(1, Rc.wDep - Rc.wArr - 7), 0, 1), shown = Math.floor(f * nS + 1e-6);
+        const dots = (g.hits[ws] || []).slice(0, nS).map((h, i) => (i < shown ? (h ? "●" : "○") : "·")).join(" ");
+        banner(`${Rc.hunt ? "STATION" : "SCHIESSEN"} ${ws + 1}`, SN_[Rc.stages[ws]] || "", dots, 0.3);
+        R.v = 0; R.tuck = false; R.s = LL; Rc.lap = ws; return;
+      }
+    }
+    const lap = Math.min(Math.floor((p.P - 1e-6) / LL), Rc.laps - 1);
+    Rc.lap = Math.max(0, lap); 
+    Ph.step(R, L);
+    R.s = p.P - Rc.lap * LL; R.v = Math.max(0, (p2.P - p.P) / (0.5 / T.SCALE));
+    const sl = L.slope(R.s); R.tuck = sl < -0.04 && R.v > 6; R.lean = L.curveAt(R.s);
+    if (!R.tuck && R.tp >= Ph.cycle(sl, R) * 0.9) Ph.push(R, sl, Math.abs(sl) < Ph.FLAT ? 0 : -(R.lastSide || -1));
+    R.s = p.P - Rc.lap * LL; R.v = Math.max(0, (p2.P - p.P) / (0.5 / T.SCALE));
+  }
+  function finishWatch() {
+    const c = Rc.club.c; Snd.gong();
+    banner("ZIEL", fmtT(Rc.watch.t), Rc.watch.n, 1.5);
+    mode = "result";
+    setTimeout(() => { if (mode === "result" && Rc && Rc.watch) openClub(c); }, 1600);
+  }
+  $("hWatch").addEventListener("click", () => {
+    if (!Rc || !Rc.watch) return;
+    Rc.wSpeed = Rc.wSpeed === 4 ? 12 : Rc.wSpeed === 12 ? 1 : 4;
+    $("hWatch").textContent = `${Rc.wSpeed}× · schneller`;
+  });
+
+  // ------------------------------------------------------------------ Info: Online ein/aus, Daten löschen
+  let forgetArm = 0;
+  function fillInfoOnline() {
+    $("ifOnBtns").hidden = !ON;
+    $("ifOnline").textContent = !ON ? "Gruppen und der Code gehen nur auf der Spielseite im Browser." : S.online === true ? "Online ist an. " + ONLINE_TXT : "Online ist aus: das Spiel sendet nichts an einen Server.";
+    $("ifOnToggle").textContent = S.online === true ? "Online ausschalten" : "Online einschalten";
+    $("ifForget").hidden = !PASS.get().code;
+    $("ifForget").textContent = forgetArm && Date.now() - forgetArm < 4000 ? "Wirklich alles löschen? Nochmal tippen" : "Meine Online-Daten löschen";
+  }
+  $("ifOnToggle").addEventListener("click", () => { S.online = S.online !== true; save(); fillInfoOnline(); });
+  $("ifForget").addEventListener("click", async () => {
+    if (!forgetArm || Date.now() - forgetArm > 4000) { forgetArm = Date.now(); fillInfoOnline(); return; }
+    forgetArm = 0;
+    try {
+      await ON.rpc("bi_forget", { p_code: PASS.get().code }, 9000);
+      S.online = false; S.clubs = []; S.cseen = {}; S.pend = []; save(); club = null;
+      uiToast("GELÖSCHT", "Deine Rennen, Gruppen und deine Figur online sind weg; auf diesem Gerät bleibt alles");
+    } catch (e) { onlineFail(e, "NICHT GELÖSCHT"); }
+    fillInfoOnline();
+  });
+  $("btnInfo").addEventListener("click", fillInfoOnline);
+
   // ------------------------------------------------------------------ Start
   fillIcons();
   layout();
   toMenu();
   requestAnimationFrame(frame);
+  // Link auf eine Gruppe (#g=CODE): gleich öffnen (fragt nach Online, wenn noch nicht zugestimmt)
+  { const g0 = groupFromLocation(); if (g0 && ON) openClub(g0); }
 
   // Zugriff für Tests
   window.__bi = {
     get S() { return S; }, get Rc() { return Rc; }, get mode() { return mode; }, VERSION, T, Ph, C,
     startRace, toMenu, press, release, aimMove, finish, advanceTo,
+    ghostPack, ghostUnpack, ghostFrom, gPos, clubFrom, showClub, openFigure, liveBoard, get club() { return club; }, set club(k) { club = k; }, PASS,
     // Rennen im Zeitraffer laufen lassen (Test): Takt-Abstöße, Hocke in steilen Abfahrten
     autoRun(seconds, phase) {
       const end = simT + seconds;
