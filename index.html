@@ -4673,7 +4673,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // Gleitgefühl: nach jedem Abstoß schiebt sich die Läuferin im Bild ein Stück nach vorn und gleitet dann zurück
       const vNow = (V.run && V.run.v) || 0; vAvg = vAvg == null ? vNow : vAvg + (vNow - vAvg) * (1 - Math.exp(-dt / 1.1));
       surge += (Math.max(-0.6, Math.min(1.6, vNow - vAvg)) - surge) * (1 - Math.exp(-dt / 0.12));
-      const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 4 * k + surge * 12 * k;
+      const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 3 * k + surge * 7 * k;
       const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
       const hAt = (s) => { let a = 0, w = 0; for (let i = -5; i <= 5; i++) { const g = GW[i + 5]; a += hRaw(s + i * 2.5) * g; w += g; } return a / w; };
       const h0 = hAt(V.s);
@@ -4860,27 +4860,36 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       ph = cl(ph);
       // Rhythmus wie beim echten Diagonalschritt: Stockeinsatz und Abstoß kurz und explosiv (0 … 0,22), dann langes Gleiten auf
       // einem Ski, in dem der Körper sich aufrichtet, das freie Bein locker nach vorn pendelt und der Arm weit vorn ausholt.
-      const pushE = cl(ph / 0.22), glideE = cl((ph - 0.22) / 0.78);
+      // ruhiger Rhythmus statt großer Ausholbewegung: weiche Pendel, kleine Ausschläge, Betonung nur im Abstoß
+      const pushE = cl(ph / 0.3), glideE = cl((ph - 0.3) / 0.7);
       // Kompression beim Abstoß (tief, Rumpf weit vor), dann im Gleiten aufrichten; Anfang = Ende (nahtlos)
-      const comp = ph < 0.16 ? easeOut(ph / 0.16) : 1 - easeIO(cl((ph - 0.16) / 0.7));
-      const lean = 0.6 + 0.34 * comp;
-      const hip = [0.03 + 0.04 * comp, -0.5 + 0.06 * comp];
+      const comp = ph < 0.2 ? easeIO(ph / 0.2) : 1 - easeIO(cl((ph - 0.2) / 0.65));
+      const lean = 0.66 + 0.14 * comp;
+      const hip = [0.03 + 0.02 * comp, -0.49 + 0.025 * comp];
       const d = [Math.sin(lean), -Math.cos(lean)], n = [-Math.cos(lean), -Math.sin(lean)];
       const at = (p, a, b) => [p[0] + d[0] * a + n[0] * b, p[1] + d[1] * a + n[1] * b];
       // Abstoßbein: schnellt nach hinten und hebt den Ski (Ferse hoch), schwingt dann im Gleiten weit nach vorn und wird Gleitbein
       let kx, ky, lk;
-      if (ph < 0.22) { const k = easeOut(pushE); kx = 0.04 - 0.66 * k; ky = -0.1 * k * k; lk = 0.17 * k; }
-      else { const k = easeIO(glideE); kx = -0.62 + 0.94 * k; ky = -0.1 * (1 - k) - 0.035 * Math.sin(Math.PI * k); lk = 0.17 * (1 - k) * (1 - k); }
+      // Abstoß: der Fuß drückt flach nach hinten (bleibt am Schnee), erst am Ende hebt die Ferse leicht ab;
+      // Rückschwung: Unterschenkel pendelt locker, der Ski schwebt knapp über dem Schnee und setzt vorn weich auf
+      if (ph < 0.3) { const k = easeIO(pushE); kx = 0.04 - 0.46 * k; ky = -0.035 * k * k * k; lk = 0.07 * k * k; }
+      else { const k = easeIO(glideE); kx = -0.42 + 0.66 * k; ky = -0.035 * (1 - k) - 0.02 * Math.sin(Math.PI * k); lk = 0.07 * (1 - k) * (1 - k); }
       // Gleitbein: steht vorn und wandert unter dem Körper durch (die Läuferin gleitet über ihren Fuß hinweg)
-      const footK = [kx, ky], footG = [0.32 - 0.28 * ph, 0];
-      const knee = (f, b) => [(hip[0] + f[0]) / 2 + b, (hip[1] + f[1]) / 2 + 0.02];
-      const kneeK = knee(footK, kx > -0.2 ? 0.11 : 0.02), kneeG = knee(footG, 0.08 + 0.1 * comp);
+      const footK = [kx, ky], footG = [0.24 - 0.2 * ph, 0];
+      // Knie aus echten Beinlängen (Ober- und Unterschenkel je 0,27), Knie zeigt nach vorn: kein Knicken, kein Strecken über die Länge
+      const knee = (f) => {
+        const L1 = 0.27, L2 = 0.27, dx = f[0] - hip[0], dy = f[1] - hip[1], d = Math.min(L1 + L2 - 1e-4, Math.hypot(dx, dy));
+        const base = Math.atan2(dy, dx), a = Math.acos((L1 * L1 + d * d - L2 * L2) / (2 * L1 * d));
+        return [hip[0] + Math.cos(base - a) * L1, hip[1] + Math.sin(base - a) * L1];
+      };
+      const kneeK = knee(footK), kneeG = knee(footG);
       const sh = at(hip, 0.42, 0), head = at(hip, 0.56, -0.04 + 0.03 * comp);
       // Arme gegengleich mit Schwung: Stockarm drückt kräftig durch und schwingt hinten hoch aus (Nachschwung),
       // der freie Arm holt vorn weit aus (Hand auf Kopfhöhe) und sticht am Ende ein
-      const swK = 1 - 2.25 * easeOut(cl(ph / 0.5)), swG = -1.25 + 2.25 * (ph < 0.85 ? easeOut(cl(ph / 0.85)) * 1.04 : 1.04 - 0.04 * (ph - 0.85) / 0.15);
-      const liftK = ph < 0.42 ? 0 : 0.1 * Math.sin(Math.PI * cl((ph - 0.42) / 0.58)), liftG = 0.14 * Math.sin(Math.PI * ph);
-      const hand = (sw) => [sh[0] + 0.4 * sw + 0.03, sh[1] + 0.24 - 0.13 * Math.max(0, sw) - 0.09 * Math.max(0, -sw - 0.6)];
+      // Arme pendeln gleichmäßig gegengleich (Sinus-artig), der Stockarm drückt im Abstoß etwas zügiger durch
+      const swK = 0.85 - 1.75 * easeIO(cl(ph / 0.6)), swG = -0.9 + 1.75 * easeIO(ph);
+      const liftK = ph < 0.5 ? 0 : 0.07 * Math.sin(Math.PI * cl((ph - 0.5) / 0.5)), liftG = 0.09 * Math.sin(Math.PI * ph);
+      const hand = (sw) => [sh[0] + 0.34 * sw + 0.04, sh[1] + 0.23 - 0.06 * Math.max(0, sw) - 0.04 * Math.max(0, -sw - 0.5)];
       const pole = (hd, sw, l) => [hd[0] - 0.26 + 0.14 * sw, -l];
       const hK = hand(swK), hG = hand(swG), pK = pole(hK, swK, liftK), pG = pole(hG, swG, liftG);
       const near = side < 0;
@@ -5344,7 +5353,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.15.0";
+  const VERSION = "0.15.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
