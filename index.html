@@ -640,13 +640,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const cv = flat || !T.curveAt ? 0 : T.curveAt(R.s);
     R.curve = cv; R.offLine = cv !== 0 && R.lean !== cv;
     if (R.offLine) a -= P.curveBrake * Math.min(1, R.v / 8);
-    // einfache Steuerung: kommt lange kein Tipp, läuft sie mit halber Kraft weiter (bleibt nie stehen, stört den Takt nicht)
-    if (R.simple && !R.tuck && R.tp > cycle(sl, R) * 1.2) {
+    // ohne Tippen kein Vortrieb (Mat, 12.11.): sie gleitet aus und bleibt stehen; früher lief sie in „Einfach“ mit halber Kraft weiter
+    if (R.selfRun && R.simple && !R.tuck && R.tp > cycle(sl, R) * 1.2) {
       const eff = Math.pow(Math.max(0, 1 - R.v / P.VMAX), 1.4) * clamp(1 + sl * 9, 0.15, 1);
       a += 0.5 * P.J * eff / P.m / cycle(sl, R); R.rate += 0.55 * DT / cycle(sl, R); R.selfT += DT;
     }
     if (R.pend > 0) { const q = Math.min(R.pend, R.pendRate * DT); R.v += q; R.pend -= q; }
-    R.v = Math.max(0.6, R.v + a * DT);
+    // wer tippt, kommt (zäh) jeden Hang hinauf; wer nicht mehr tippt, gleitet aus und bleibt stehen
+    R.v = Math.max(R.tp < 1.5 ? 0.6 : 0, R.v + a * DT);
     R.s += R.v * DT; R.dist += R.v * DT; R.t += DT; R.tp += DT;
     if (R.offLine) R.offT += DT;
     R.stride += DT / cycle(sl, R);
@@ -4366,8 +4367,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const PK = root.TMPlakat, I = PK.INK, mix = PK.mix;
   const TAU = Math.PI * 2;
   const flakes = [];
-  const GW = [-4, -3, -2, -1, 0, 1, 2, 3, 4].map((i) => Math.exp(-i * i / 8));   // Glättung des gezeichneten Geländes
-  const EX = 2.6;   // Überhöhung der Steigungen (Höhen sind wie die Strecke 1 : 12 kleiner); gezeichnet geglättet, siehe hDraw
+  // Glättung des gezeichneten Geländes: ±12,5 Spiel-m, so dass ein Ski (rund 4 m) überall aufliegt (Abstand unter 1 px, geprüft für alle Stellen der Runde)
+  const GW = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5].map((i) => Math.exp(-i * i / 12.5));
+  const EX = 2.2;   // Überhöhung der Steigungen (Höhen sind wie die Strecke 1 : 12 kleiner); gezeichnet geglättet, siehe hDraw
 
   // Hochfilzen: Kalkwände der Steinberge über dem Tal, davor bewaldete Rücken, Dorf mit Spitzturm, im Talboden eine Loipe
   const PLAKAT = {
@@ -4594,13 +4596,34 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         if (snow > 0.4 || i % 2 === 0) poly([[xs - ww * (0.35 + 0.35 * snow), yb - h * 0.06 * snow - h * 0.04], [xs + lean * 0.3, yt], [xs + ww * (0.15 + 0.3 * snow), yb - h * 0.1 * snow - h * 0.04]], I.papier);
       }
     }
-    function person(x, y, h, col, hat, wave, t) {
-      seg([x - h * 0.08, y], [x - h * 0.05, y - h * 0.45], I.tinte, h * 0.12);
-      seg([x + h * 0.08, y], [x + h * 0.05, y - h * 0.45], I.tinte, h * 0.12);
-      poly([[x - h * 0.16, y - h * 0.4], [x - h * 0.12, y - h * 0.82], [x + h * 0.12, y - h * 0.82], [x + h * 0.16, y - h * 0.4]], col);
-      if (wave) { const a = Math.sin(t * 6 + x) * 0.5; seg([x + h * 0.1, y - h * 0.78], [x + h * (0.25 + 0.05 * a), y - h * 1.08], col, h * 0.09); }
-      disc(x, y - h * 0.92, h * 0.11, mix(I.papier, I.gluehen, 0.5));
-      poly([[x - h * 0.12, y - h * 0.95], [x, y - h * 1.12], [x + h * 0.12, y - h * 0.95]], hat);
+    // Zuschauerin/Zuschauer im Plakatstil: Stiefel, Hose, Wintermantel mit Schattenseite, Schal, Fäustlinge, Mütze mit Bommel;
+    // seed (fest in der Welt) wählt Haltung: winken, Fähnchen, Hände in den Taschen, Kind auf den Schultern ist zu viel – bleibt weg
+    function person(x, y, h, col, hat, wave, t, seed) {
+      seed = seed || 0;
+      const v = hsh(seed * 3 + 1), skin = [mix(I.papier, I.gluehen, 0.5), mix(I.gluehen, I.dach, 0.35), mix(I.dach, I.tinte, 0.25)][Math.floor(hsh(seed * 5 + 2) * 3)];
+      const pants = mix(I.tinte, I.navy, 0.4 * v), coatD = mix(col, I.tinte, 0.3), lw = h * 0.1;
+      // Stiefel und Beine
+      seg([x - h * 0.07, y - h * 0.02], [x - h * 0.06, y - h * 0.38], pants, lw); seg([x + h * 0.07, y - h * 0.02], [x + h * 0.06, y - h * 0.38], pants, lw);
+      for (const d of [-1, 1]) poly([[x + d * h * 0.07 - h * 0.06, y], [x + d * h * 0.07 + h * 0.08, y], [x + d * h * 0.07 + h * 0.06, y - h * 0.07], [x + d * h * 0.07 - h * 0.05, y - h * 0.07]], I.tinte);
+      // Mantel (bis übers Knie), Schattenseite, Knopfleiste
+      poly([[x - h * 0.19, y - h * 0.3], [x - h * 0.14, y - h * 0.78], [x + h * 0.14, y - h * 0.78], [x + h * 0.19, y - h * 0.3]], col);
+      poly([[x + h * 0.03, y - h * 0.3], [x + h * 0.04, y - h * 0.78], [x + h * 0.14, y - h * 0.78], [x + h * 0.19, y - h * 0.3]], coatD);
+      seg([x, y - h * 0.34], [x, y - h * 0.74], mix(col, I.papier, 0.35), h * 0.02);
+      // Arme: winken (Fäustling oben), Fähnchen schwenken oder Hände vorm Bauch
+      const sh = [x, y - h * 0.74];
+      if (wave) {
+        const a = Math.sin(t * 6 + seed) * 0.35;
+        seg([sh[0] + h * 0.12, sh[1]], [x + h * (0.3 + 0.06 * a), y - h * 1.02], col, lw * 0.95); disc(x + h * (0.31 + 0.06 * a), y - h * 1.05, h * 0.055, hat);
+        if (v > 0.6) { const fx = x + h * (0.31 + 0.06 * a), fy = y - h * 1.05; seg([fx, fy], [fx, fy - h * 0.42], I.tinte, h * 0.02); poly([[fx, fy - h * 0.42], [fx + h * (0.28 + 0.04 * Math.sin(t * 9 + seed)), fy - h * 0.36], [fx, fy - h * 0.28]], hat); }
+      } else seg([sh[0] + h * 0.13, sh[1]], [x + h * 0.06, y - h * 0.48], coatD, lw * 0.9);
+      seg([sh[0] - h * 0.13, sh[1]], [x - h * 0.06, y - h * 0.48], coatD, lw * 0.9);
+      // Schal, Kopf, Mütze mit Umschlag und Bommel
+      poly([[x - h * 0.12, y - h * 0.76], [x + h * 0.12, y - h * 0.76], [x + h * 0.1, y - h * 0.83], [x - h * 0.1, y - h * 0.83]], hat);
+      seg([x + h * 0.06, y - h * 0.78], [x + h * 0.1, y - h * 0.6], hat, h * 0.05);
+      disc(x, y - h * 0.92, h * 0.1, skin);
+      poly([[x - h * 0.11, y - h * 0.94], [x - h * 0.08, y - h * 1.07], [x + h * 0.08, y - h * 1.07], [x + h * 0.11, y - h * 0.94]], hat);
+      seg([x - h * 0.115, y - h * 0.95], [x + h * 0.115, y - h * 0.95], mix(hat, I.papier, 0.35), h * 0.04);
+      disc(x, y - h * 1.1, h * 0.04, mix(hat, I.papier, 0.55));
     }
 
     // ---------------------------------------------------------------- Strecke und Läuferin
@@ -4649,7 +4672,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // wird das Gelände breiter gezeichnet und weich geglättet (Mulde breiter als ein Ski), die Physik bleibt unverändert.
       const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 6 * k;
       const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
-      const hAt = (s) => { let a = 0, w = 0; for (let i = -4; i <= 4; i++) { const g = GW[i + 4]; a += hRaw(s + i * 1.4) * g; w += g; } return a / w; };
+      const hAt = (s) => { let a = 0, w = 0; for (let i = -5; i <= 5; i++) { const g = GW[i + 5]; a += hRaw(s + i * 2.5) * g; w += g; } return a / w; };
       const h0 = hAt(V.s);
       // Kamera: folgt der Höhe vor der Läuferin, ruhig
       let ahead = 0; for (let d = -4; d <= 14; d += 3) ahead += hAt(V.s + d); ahead /= 7;
@@ -5295,7 +5318,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.14.4";
+  const VERSION = "0.14.5";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -5611,7 +5634,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       return;
     }
     mode = "run"; $("rhud").hidden = true; $("hud").hidden = false;
-    Rc.R.hr = Rc.G.hr; Rc.R.v = 3; Rc.R.tp = 0.8; Rc.R.tuck = false;
+    // zurück auf die Strecke: erster Abstoß gleich im Takt (wie mitten im Lauf), Klacken läuft sofort wieder
+    Rc.R.hr = Rc.G.hr; Rc.R.v = 3; Rc.R.tuck = false; Rc.R.tp = Ph.cycle(Rc.L.slope(0), Rc.R) * 0.8; Rc.tickAt = null; Rc.R.pend = 0;
     if (Rc.hunt) {
       // keine Strafrunde: Strafzeit aufs Papier, Kill-Zone gibt Zeit gut
       const HU = Rc.FM.hunt, kl = Ph.kills(G), d = miss * HU.penSec - kl * HU.killSec;
@@ -6111,7 +6135,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const { X, Y, k, s0, s1, ctx, person, poly, seg, I, hsh, mix } = D;
       const t = performance.now() / 1000;
       // Zuschauer: Abschnitte im Stadion und an der Strecke
-      for (let s = Math.floor(s0); s < s1; s += 1.1) {
+      for (let s = Math.floor(s0 / 1.1) * 1.1; s < s1; s += 1.1) {   // Raster fest in der Welt (sonst springen Zuschauer an/aus)
         const q = ((s % L.L) + L.L) % L.L;
         const cr = pen || inStadium(s) || (!hunt && crowd.some(([a, b]) => q >= a && q <= b));
         if (!cr) continue;
@@ -6121,7 +6145,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         if (stad && !pen && !hunt && q > L.L - 25 && q < L.L - 7) continue;   // den Schießstand frei lassen
         const x = X(s), y = Y(s) - (stad ? 12 : 4) * k, hh = (stad ? 30 : 36) * k + 7 * hsh(Math.round(s * 11)) * k;
         if (!stad) { ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = I.tief; ctx.beginPath(); ctx.ellipse(x + 2 * k, y + 1 * k, hh * 0.22, 2.2 * k, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
-        person(x, y, hh, PEOPLE[Math.floor(hsh(Math.round(s * 3)) * PEOPLE.length)], PEOPLE[Math.floor(hsh(Math.round(s * 17)) * PEOPLE.length)], hsh(Math.round(s * 5)) > 0.7, t);
+        person(x, y, hh, PEOPLE[Math.floor(hsh(Math.round(s * 3)) * PEOPLE.length)], PEOPLE[Math.floor(hsh(Math.round(s * 17)) * PEOPLE.length)], hsh(Math.round(s * 5)) > 0.6, t, Math.round(s * 13));
       }
       // Bande im Stadion
       for (let s = Math.floor(s0 / 4) * 4; s < s1; s += 4) {
