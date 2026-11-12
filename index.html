@@ -5751,9 +5751,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // Bein: [u, Fuß x (vor der Hüfte +), Fuß hoch, Kniebeugung in Grad (nur mit Last), Last]
       const LEG = [[0.00, 0.19, 0, 28, 1], [0.25, 0.05, 0, 24, 1], [0.44, -0.09, 0, 44, 1], [0.56, -0.31, 0.012, 16, 0.6],
         [0.70, -0.30, 0.055, 55, 0], [0.86, -0.02, 0.04, 45, 0]];
-      const ARM = [[0.00, -0.30, 0.36], [0.22, 0.02, 0.2], [0.46, 0.30, 0.07], [0.60, 0.16, 0.19], [0.80, -0.14, 0.33]];   // [u, Hand x, Hand y unter der Schulter]
+      // Arm wie beim echten Diagonalschritt: Einstich vorn auf Brusthöhe mit gebeugtem Ellbogen (nicht gestreckt, nicht vors Gesicht),
+      // Schub nach unten-hinten, hinter der Hüfte ausgestreckt, dann locker gestreckt nach vorn pendeln (Hand tief, steigt erst zum Einstich)
+      const ARM = [[0.05, -0.24, 0.40], [0.25, 0.04, 0.36], [0.46, 0.24, 0.19], [0.62, 0.05, 0.32], [0.80, -0.27, 0.39], [0.92, -0.32, 0.38]];   // [u, Hand x, Hand y unter der Schulter]
       const spl = (K, u, c) => {   // periodische Catmull-Rom-Spline über Stützstellen K (Spalte c)
         const n = K.length; let i = n - 1;
+        if (u < K[0][0]) u += 1;   // vor der ersten Stützstelle: zum Abschnitt über das Zyklusende
         for (let q = 0; q < n; q++) if (K[q][0] <= u) i = q;
         const P = (q) => K[((q % n) + n) % n], uq = (q) => P(q)[0] + Math.floor(q / n) * 1;
         const u0 = uq(i), u1 = i + 1 < n ? P(i + 1)[0] : 1 + P(0)[0], t = (u - u0) / (u1 - u0);
@@ -6328,7 +6331,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.16.2";
+  const VERSION = "0.16.3";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
