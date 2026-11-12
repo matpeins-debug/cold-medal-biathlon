@@ -6331,7 +6331,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.16.3";
+  const VERSION = "0.16.4";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6984,7 +6984,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (Rc.phase === "mat") return tickMat(dt);
     Ph.step(R, L); Rc.ski += dt;
     // vor dem Schießstand: ausrollen bis zur Matte (nicht in Erste Schritte und Training)
-    if (Rc.lap < Rc.stages.length && Rc.kind !== "learn" && R.s >= L.L - (Rc.hunt ? 15 : 22) && R.s < L.L) { Rc.phase = "mat"; Rc.matT = 0; Rc.matStop = L.L - (Rc.hunt ? 9 : 15.5); R.tuck = false; inp.ptrs.clear(); return; }
+    if (Rc.lap < Rc.stages.length && Rc.kind !== "learn" && R.s >= L.L - (Rc.hunt ? 12 : 18.5) && R.s < L.L) { Rc.phase = "mat"; Rc.matT = 0; Rc.matA = null; Rc.matAt = null; Rc.matStop = L.L - (Rc.hunt ? 9 : 15.5); R.tuck = false; inp.ptrs.clear(); return; }
     if (Rc.kind === "learn") learnTick(dt);
     // Taktgeber für Anfänger: leises Klacken, wenn der Abstoß ideal wäre
     // Takt zum Hören und Fühlen (für alle): leises Klack und ein kurzer Ruck am Handy, wenn der Abstoß ideal wäre
@@ -6999,20 +6999,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
   }
   // Ankunft am Schießstand: ausrollen bis zur Matte, abschnallen, hinlegen (liegend) oder hinstellen; die Uhr läuft weiter
+  // Ankunft am Schießstand: auf den letzten 3 m gleichmäßig abbremsen bis zur Matte und dabei schon hinknien (liegend) oder
+  // aufrichten, ohne Stillstand davor; nach 0,2 s an der Matte der Blick durchs Visier. Die Uhr läuft weiter (0.16.4, Mat: Pause war komisch)
   function tickMat(dt) {
-    const R = Rc.R, L = Rc.L;
+    const R = Rc.R, st = Rc.stages[Rc.lap];
     Rc.range += dt; Rc.matT += dt;
-    if (R.s < Rc.matStop) {
-      R.v = Math.max(2.4, R.v * Math.exp(-dt / 0.6));
+    if (Rc.matA == null) { const dist = Math.max(0.5, Rc.matStop - R.s); R.v = Math.max(R.v, 3); Rc.matA = R.v * R.v / (2 * dist); Rc.matD = dist; }
+    if (R.s < Rc.matStop - 1e-3) {
+      R.v = Math.max(0.6, R.v - Rc.matA * dt);
       R.s = Math.min(Rc.matStop, R.s + R.v * dt);
-      R.tp = Ph.P.push; R.hr = Math.max(0.3, R.hr - 0.01 * dt);
-      if (R.s >= Rc.matStop) { Rc.matAt = Rc.matT; Snd.push("double"); }
-      return;
-    }
-    R.v = 0;
-    const k = clamp((Rc.matT - Rc.matAt) / 0.7, 0, 1), st = Rc.stages[Rc.lap];
-    R.matK = st === "prone" ? k * 0.95 : st === "kneel" ? k * 0.6 : 0.12 * Math.sin(k * Math.PI);
-    if (Rc.matT - Rc.matAt >= 0.85) { R.matK = 0; R.s = L.L; enterRange(st, R.hr); }
+      R.tp = Ph.P.push;
+      if (R.s >= Rc.matStop - 1e-3) Rc.matAt = Rc.matT;
+    } else if (Rc.matAt == null) Rc.matAt = Rc.matT;
+    const k = clamp(1 - (Rc.matStop - R.s) / Rc.matD, 0, 1);
+    R.matK = st === "prone" ? k * 0.95 : st === "kneel" ? k * 0.6 : 0;
+    if (Rc.matAt != null) { R.v = 0; if (Rc.matT - Rc.matAt >= 0.2) { R.matK = 0; Rc.matA = null; Rc.matAt = null; R.s = Rc.L.L; enterRange(st, R.hr); } }
   }
   function tickRange(dt) {
     const G = Rc.G;
@@ -7321,7 +7322,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     watchFrames(now);
     advanceTo(now);
     // Gleitgeräusch nur beim Laufen (Menü, Schießstand, Pause, Ziel: still)
-    Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen"), Rc ? (Rc.watch ? 0.8 : Rc.flow || 0) : 0);
+    Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen" || Rc.phase === "mat"), Rc ? (Rc.watch ? 0.8 : Rc.flow || 0) : 0);
     renderer.clear();
     const t = now / 1000;
     if (mode === "menu" || (!Rc && mode !== "result")) { renderer.drawMenu(t); return; }
