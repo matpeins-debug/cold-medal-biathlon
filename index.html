@@ -4649,7 +4649,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // wird das Gelände breiter gezeichnet und weich geglättet (Mulde breiter als ein Ski), die Physik bleibt unverändert.
       const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 6 * k;
       const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
-      const hAt = (s) => { let a = 0, w = 0; for (let i = -4; i <= 4; i++) { const g = GW[i + 4]; a += hRaw(s + i * 1.1) * g; w += g; } return a / w; };
+      const hAt = (s) => { let a = 0, w = 0; for (let i = -4; i <= 4; i++) { const g = GW[i + 4]; a += hRaw(s + i * 1.4) * g; w += g; } return a / w; };
       const h0 = hAt(V.s);
       // Kamera: folgt der Höhe vor der Läuferin, ruhig
       let ahead = 0; for (let d = -4; d <= 14; d += 3) ahead += hAt(V.s + d); ahead /= 7;
@@ -4657,6 +4657,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       camY = camY == null ? want : camY + (want - camY) * (1 - Math.exp(-dt / 0.28));
       const yr = H * 0.7 + camY;
       const X = (s) => xr + (s - V.s) * ppm, Y = (s) => yr - (hAt(s) - h0) * ppm * EX;
+      // Ski liegt als gerades Brett auf dem Schnee: Winkel aus Ende und Spitze (Sehne), in einer Mulde überbrückt er sie,
+      // auf einer Kuppe liegt er in der Mitte auf; so taucht er nie in den Schnee ein. Ski: 36 hinter, 44 vor dem Knöchel (Figur-Einheiten).
+      const skiFit = (s, h) => {
+        if (!V.T || V.pen) return [Y(s), 0];
+        const b = 36 * FK * h / ppm, f = 44 * FK * h / ppm, ya = Y(s - b), yb = Y(s + f), ym = ya + (yb - ya) * b / (b + f);
+        return [Math.min(Y(s), ym), Math.atan2(yb - ya, (b + f) * ppm)];
+      };
       const hor = H * 0.4 + camY * 0.25;
       drawPano(V.f, hor, V.t);
       drawMid(V, hor, ppm, V.t);
@@ -4721,7 +4728,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (!oB) for (const o of others) { const d = o.s - V.s; if (d < -0.5 && d > -12 && (!oB || d > oB.s - V.s)) oB = o; }
       tagA = oA ? oA.bib : null; tagB = oB ? oB.bib : null;
       for (const o of others) {
-        const x = X(o.s), y = Y(o.s), sl2 = V.T && !V.pen ? (Y(o.s + 0.6) - Y(o.s - 0.6)) / (1.2 * ppm) : 0, gs = V.T && !V.pen ? V.T.slope(o.s) : 0;
+        const [y, aR] = skiFit(o.s, 56 * k), x = X(o.s), gs = V.T && !V.pen ? V.T.slope(o.s) : 0;
         // eigener Schrittzyklus je Gegner, fortlaufend (ein Modulo mit wechselnder Zykluslänge würde springen), Hocke und Technik weich
         let A = rivAnim.get(o.bib);
         if (!A) { A = { ph: (o.bib * 0.37) % 1, n: o.bib, tuck: gs < -0.04 ? 1 : 0, dbl: Math.abs(gs) < 0.035 ? 1 : 0 }; rivAnim.set(o.bib, A); }
@@ -4730,7 +4737,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         A.ph += dt / cyc * (1 - A.tuck); if (A.ph >= 1) { A.ph -= 1; A.n++; }
         const P = poseAt(A.ph, A.dbl > 0.5, A.n % 2 ? 1 : -1); P.tuck = A.tuck; P.dbl = A.dbl;
         if (V.classic) { P.classic = 1; P.cph = A.ph; }
-        skier(x, y, 56 * k, Math.atan(sl2), P, SUIT[o.nat], V.retro, faceFor(o.name));
+        skier(x, y, 56 * k, aR, P, SUIT[o.nat], V.retro, faceFor(o.name));
         if (o === oA || o === oB) tag(x, y - 70 * k, o.name, k);
       }
       // Stöcke stechen ein (der ideale Moment): ein kleines Schneewölkchen an den Stockspitzen
@@ -4743,8 +4750,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       for (const p of parts) { ctx.globalAlpha = Math.min(1, p.life * 3); const px = X(p.s), py = Y(p.s) - p.y * ppm * 0.9 - 2 * k; disc(px, py, p.r * k * 1.9, I.schatten); disc(px - 0.4 * k, py - 0.4 * k, p.r * k * 1.2, "#FFFFFF"); }
       ctx.globalAlpha = 1;
       // Läuferin
-      const sl = V.T && !V.pen ? (Y(V.s + 0.6) - Y(V.s - 0.6)) / (1.2 * ppm) : 0;
-      skier(xr, yr, 62 * k, Math.atan(sl), playerPose(V, dt), V.suit, V.retro, faceFor(V.name || "Ich"));
+      const [yP, aP] = skiFit(V.s, 62 * k);
+      skier(xr, yP, 62 * k, aP, playerPose(V, dt), V.suit, V.retro, faceFor(V.name || "Ich"));
       // Markierung über dir, sobald andere auf der Strecke sind
       if (others.length) { const yy = yr - (V.run.tuck ? 52 : 82) * k; poly([[xr - 7 * k, yy - 9 * k], [xr + 7 * k, yy - 9 * k], [xr, yy]], I.ocker); }
       // vorn: vereinzelte verschneite Fichten am unteren Rand (ziehen schneller vorbei, geben Tiefe)
@@ -5288,7 +5295,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.14.2";
+  const VERSION = "0.14.3";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
