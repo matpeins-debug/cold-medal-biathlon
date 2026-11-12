@@ -4630,7 +4630,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // V: Ansicht { T: lap oder null (flach), s, lapIdx, f, run: Läufer, suit, t, stadium: true/false, pen: Strafrunde }
     let camY = null;
     // Spielgefühl: Schnee spritzt bei jedem Abstoß, die Kamera gibt einen kleinen Ruck, bei Tempo zoomt sie leicht auf
-    let parts = [], kick = 0, kickV = 0, lastT = null, zoom = 1, PP = null;
+    let parts = [], kick = 0, kickV = 0, lastT = null, zoom = 1, PP = null, vAvg = null, surge = 0;
     const rivAnim = new Map(); let tagA = null, tagB = null, dblSide = 1, dblLast = null, clSide = 1, clLast = null, PJ = null, PCd = null, PCt = null;
     function burst(kind, tech, v) {
       const good = kind === "beat" || kind === "press" || kind === "double";
@@ -4670,7 +4670,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       zoom += ((1.05 - 0.13 * Math.min(1, (V.run.v || 0) / 13)) - zoom) * Math.min(1, dt * 1.5);
       // Maßstab: die Figur ist viel größer als die Strecke (1 : 12). Damit die Ski in Mulden und über Kuppen passen,
       // wird das Gelände breiter gezeichnet und weich geglättet (Mulde breiter als ein Ski), die Physik bleibt unverändert.
-      const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 6 * k;
+      // Gleitgefühl: nach jedem Abstoß schiebt sich die Läuferin im Bild ein Stück nach vorn und gleitet dann zurück
+      const vNow = (V.run && V.run.v) || 0; vAvg = vAvg == null ? vNow : vAvg + (vNow - vAvg) * (1 - Math.exp(-dt / 1.1));
+      surge += (Math.max(-0.6, Math.min(1.6, vNow - vAvg)) - surge) * (1 - Math.exp(-dt / 0.12));
+      const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 4 * k + surge * 12 * k;
       const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
       const hAt = (s) => { let a = 0, w = 0; for (let i = -5; i <= 5; i++) { const g = GW[i + 5]; a += hRaw(s + i * 2.5) * g; w += g; } return a / w; };
       const h0 = hAt(V.s);
@@ -4855,22 +4858,30 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // am Ende tauschen die Rollen (side wechselt), alle Lagen schließen nahtlos an.
     function classicJ(ph, side) {
       ph = cl(ph);
-      const lean = 0.7 + 0.12 * Math.sin(Math.PI * cl(ph / 0.5));
-      const hip = [0.02, -0.47 - 0.03 * Math.sin(Math.PI * ph)];
+      // Rhythmus wie beim echten Diagonalschritt: Stockeinsatz und Abstoß kurz und explosiv (0 … 0,22), dann langes Gleiten auf
+      // einem Ski, in dem der Körper sich aufrichtet, das freie Bein locker nach vorn pendelt und der Arm weit vorn ausholt.
+      const pushE = cl(ph / 0.22), glideE = cl((ph - 0.22) / 0.78);
+      // Kompression beim Abstoß (tief, Rumpf weit vor), dann im Gleiten aufrichten; Anfang = Ende (nahtlos)
+      const comp = ph < 0.16 ? easeOut(ph / 0.16) : 1 - easeIO(cl((ph - 0.16) / 0.7));
+      const lean = 0.6 + 0.34 * comp;
+      const hip = [0.03 + 0.04 * comp, -0.5 + 0.06 * comp];
       const d = [Math.sin(lean), -Math.cos(lean)], n = [-Math.cos(lean), -Math.sin(lean)];
       const at = (p, a, b) => [p[0] + d[0] * a + n[0] * b, p[1] + d[1] * a + n[1] * b];
+      // Abstoßbein: schnellt nach hinten und hebt den Ski (Ferse hoch), schwingt dann im Gleiten weit nach vorn und wird Gleitbein
       let kx, ky, lk;
-      // Abstoß kurz und kräftig, dann langes Gleiten: das Abstoßbein schwingt weit nach vorn und wird zum Gleitbein
-      if (ph < 0.28) { const k = easeOut(ph / 0.28); kx = 0.06 - 0.56 * k; ky = -0.08 * k * k; lk = 0.12 * k; }
-      else { const k = easeIO((ph - 0.28) / 0.72); kx = -0.5 + 0.76 * k; ky = -0.08 * (1 - k) - 0.04 * Math.sin(Math.PI * k); lk = 0.12 * (1 - k); }
-      const footK = [kx, ky], footG = [0.26 - 0.2 * ph, 0];
+      if (ph < 0.22) { const k = easeOut(pushE); kx = 0.04 - 0.66 * k; ky = -0.1 * k * k; lk = 0.17 * k; }
+      else { const k = easeIO(glideE); kx = -0.62 + 0.94 * k; ky = -0.1 * (1 - k) - 0.035 * Math.sin(Math.PI * k); lk = 0.17 * (1 - k) * (1 - k); }
+      // Gleitbein: steht vorn und wandert unter dem Körper durch (die Läuferin gleitet über ihren Fuß hinweg)
+      const footK = [kx, ky], footG = [0.32 - 0.28 * ph, 0];
       const knee = (f, b) => [(hip[0] + f[0]) / 2 + b, (hip[1] + f[1]) / 2 + 0.02];
-      const kneeK = knee(footK, kx > -0.15 ? 0.1 : 0.03), kneeG = knee(footG, 0.12);
-      const sh = at(hip, 0.42, 0), head = at(hip, 0.56, -0.03);
-      const swK = 0.9 - 1.9 * easeOut(cl(ph / 0.6)), swG = -1 + 1.9 * easeIO(ph);
-      const liftK = ph < 0.6 ? 0 : 0.08 * Math.sin(Math.PI * (ph - 0.6) / 0.4), liftG = 0.1 * Math.sin(Math.PI * ph);
-      const hand = (sw) => [sh[0] + 0.36 * sw + 0.04, sh[1] + 0.2 + 0.06 * Math.abs(sw) - (sw < 0 ? 0.06 * sw : 0)];
-      const pole = (hd, sw, l) => [hd[0] - 0.3 + 0.12 * sw, -l];
+      const kneeK = knee(footK, kx > -0.2 ? 0.11 : 0.02), kneeG = knee(footG, 0.08 + 0.1 * comp);
+      const sh = at(hip, 0.42, 0), head = at(hip, 0.56, -0.04 + 0.03 * comp);
+      // Arme gegengleich mit Schwung: Stockarm drückt kräftig durch und schwingt hinten hoch aus (Nachschwung),
+      // der freie Arm holt vorn weit aus (Hand auf Kopfhöhe) und sticht am Ende ein
+      const swK = 1 - 2.25 * easeOut(cl(ph / 0.5)), swG = -1.25 + 2.25 * (ph < 0.85 ? easeOut(cl(ph / 0.85)) * 1.04 : 1.04 - 0.04 * (ph - 0.85) / 0.15);
+      const liftK = ph < 0.42 ? 0 : 0.1 * Math.sin(Math.PI * cl((ph - 0.42) / 0.58)), liftG = 0.14 * Math.sin(Math.PI * ph);
+      const hand = (sw) => [sh[0] + 0.4 * sw + 0.03, sh[1] + 0.24 - 0.13 * Math.max(0, sw) - 0.09 * Math.max(0, -sw - 0.6)];
+      const pole = (hd, sw, l) => [hd[0] - 0.26 + 0.14 * sw, -l];
       const hK = hand(swK), hG = hand(swG), pK = pole(hK, swK, liftK), pG = pole(hG, swG, liftG);
       const near = side < 0;
       return { hip, sh, head, lean, hand: near ? hK : hG, handB: near ? hG : hK, pole: near ? pK : pG, poleB: near ? pG : pK,
@@ -5281,9 +5292,24 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const o = ac.createOscillator(); o.type = type || "sine"; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
       const g = ac.createGain(); env(g, t, 0.004, peak, dur); o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.05);
     }
+    // Gleiten: leises, durchgehendes Rauschen der Ski im Schnee, lauter mit dem Tempo (ein Knoten, nur die Lautstärke wandert)
+    let gl = null;
+    function glide(v, run) {
+      if (!ok()) return;
+      if (!gl) {
+        const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+        const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 2600; f.Q.value = 0.6;
+        const g = ac.createGain(); g.gain.value = 0;
+        s.connect(f); f.connect(g); g.connect(master); s.start();
+        gl = { g, f };
+      }
+      const target = run ? Math.min(0.07, 0.008 + (v / 14) * 0.06) : 0;
+      gl.g.gain.setTargetAtTime(target, ac.currentTime, 0.08);
+      gl.f.frequency.setTargetAtTime(1800 + v * 140, ac.currentTime, 0.1);
+    }
     const MEL = [0, 4, 7, 9, 7, 4, 2, 4, 0, 4, 7, 12, 9, 7, 4, 7, 9, 12, 14, 12, 9, 7, 4, 2, 4, 7, 4, 2, 0, 2, 4, 0];
     const Snd = {
-      unlock,
+      unlock, glide,
       push(kind) { if (!ok()) return; const t = ac.currentTime; noise(t, 0.16, kind === "press" ? 1500 : kind === "double" ? 800 : 1100, 0.9, kind === "early" || kind === "wrong" ? 0.1 : 0.18); },
       // Takt als Musik: jeder gute Abstoß spielt den nächsten Ton einer Ländler-Melodie (D-Dur, pentatonisch);
       // ab 8 im Takt kommt die Quint dazu, ab 16 der Bass. Patzer: dumpfer Schlag, die Melodie bleibt stehen.
@@ -5318,7 +5344,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.14.5";
+  const VERSION = "0.15.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6234,6 +6260,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     requestAnimationFrame(frame);
     watchFrames(now);
     advanceTo(now);
+    // Gleitgeräusch nur beim Laufen (Menü, Schießstand, Pause, Ziel: still)
+    Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen"));
     renderer.clear();
     const t = now / 1000;
     if (mode === "menu" || (!Rc && mode !== "result")) { renderer.drawMenu(t); return; }
