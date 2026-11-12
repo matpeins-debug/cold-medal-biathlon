@@ -279,6 +279,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* Abblende beim Ortswechsel */
 .fade { position: absolute; inset: 0; background: #141B25; opacity: 0; pointer-events: none; }
 
+/* Live-Rangliste (links unter der Vorschau): Spitze, dann du mit deinen Nachbarn; Antippen klappt sie auf deine Zeile zu */
+.h-board { position: absolute; left: 12px; top: 136px; width: 178px; padding: 4px 8px 5px; pointer-events: auto; cursor: pointer; }
+.h-board .lb-head { font-family: var(--font-label); font-weight: 700; font-size: 10px; letter-spacing: 0.14em; color: var(--accent, #DDA43B); margin-bottom: 1px; }
+.h-board .lb-row { display: grid; grid-template-columns: 22px 1fr auto; gap: 4px; align-items: baseline; font-family: var(--font-label); font-size: 12.5px; line-height: 16px; color: var(--text); }
+.h-board .lb-r { text-align: right; font-weight: 700; opacity: 0.8; }
+.h-board .lb-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h-board .lb-t { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.h-board .lb-row.me { color: #141B25; background: #DDA43B; border-radius: 3px; margin: 1px -4px; padding: 0 4px; font-weight: 700; }
+.h-board .lb-gap { text-align: center; font-size: 10px; line-height: 8px; opacity: 0.6; }
+.h-board.small .lb-row:not(.me), .h-board.small .lb-gap { display: none; }
+
 </style>
 </head>
 <body>
@@ -363,6 +374,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 <div id="hud" hidden>
   <div class="panel hud-tl"><span id="hFlag" class="flag"></span><span id="hName" class="h-name">MAT</span><span id="hBib" class="bib">7</span></div>
   <div class="panel h-prev"><canvas id="hPrev" width="200" height="50" aria-hidden="true"></canvas><span id="hPrevTxt" class="prev-txt"></span></div>
+  <div class="panel h-board" id="hBoard" hidden aria-label="Live-Rangliste"></div>
   <div class="panel h-map"><canvas id="hMap" width="84" height="56" aria-label="Streckenplan"></canvas></div>
   <div class="panel hud-tc"><span id="hTime" class="num h-time">0:00,0</span><span id="hSplit" class="h-split" hidden></span><span id="hRival" class="h-rival"></span></div>
   <div class="hud-cues"><span id="hCue" class="h-cue" hidden></span><span id="hToast" class="h-toast" hidden></span><span id="hDraft" class="chip draft" hidden>WINDSCHATTEN</span></div>
@@ -5116,7 +5128,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.11.2";
+  const VERSION = "0.12.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -5164,7 +5176,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
   // ------------------------------------------------------------------ Spielstand (nur auf diesem Gerät)
   const KEY = "coldmedal-biathlon";
-  const DEF = { name: "", sex: "w", nat: "AUT", help: "anf", ctrl: "easy", style: "classic", sight: "kreuz", level: "normal", sound: 1, best: {}, tips: {}, races: 0 };
+  const DEF = { name: "", sex: "w", nat: "AUT", help: "anf", ctrl: "easy", style: "classic", sight: "kreuz", board: "on", level: "normal", sound: 1, best: {}, tips: {}, races: 0 };
   function sanitize(o) {
     const S = Object.assign({}, DEF);
     if (o && typeof o === "object") {
@@ -5175,6 +5187,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (o.ctrl === "pro" || o.ctrl === "easy") S.ctrl = o.ctrl;
       if (o.style === "classic" || o.style === "skate") S.style = o.style;
       if (o.sight === "kreuz" || o.sight === "ring") S.sight = o.sight;
+      if (o.board === "on" || o.board === "off") S.board = o.board;
+      S.boardSmall = !!o.boardSmall;
       S.sound = o.sound === 0 ? 0 : 1;
       if (o.best && typeof o.best === "object") for (const k of Object.keys(o.best)) { const b = o.best[k]; if (b && isFinite(b.t)) S.best[k] = { t: +b.t, rank: +b.rank || 0 }; }
       if (o.tips && typeof o.tips === "object") for (const k of Object.keys(o.tips)) S.tips[k] = +o.tips[k] || 0;
@@ -5305,6 +5319,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   $("trLearn").addEventListener("click", () => startRace("learn"));
   $("trShoot").addEventListener("click", () => startRace("shoot"));
   $("trRun").addEventListener("click", () => startRace("lap"));
+  // Live-Rangliste antippen: auf die eigene Zeile zuklappen und wieder auf
+  $("hBoard").addEventListener("click", () => { S.boardSmall = !S.boardSmall; $("hBoard").classList.toggle("small", !!S.boardSmall); save(); });
+  $("hBoard").classList.toggle("small", !!S.boardSmall);
   $("btnPause").addEventListener("click", pause); $("btnPause2").addEventListener("click", pause);
   $("pResume").addEventListener("click", resume);
   $("pRestart").addEventListener("click", () => startRace(Rc.kind));
@@ -5553,7 +5570,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
   const zone = (x) => (x < W / 3 ? -1 : x > W * 2 / 3 ? 1 : 0);
-  const onUi = (e) => e.target.closest && e.target.closest("button, input, select, .screen:not(#hud):not(#rhud), .res-list");
+  const onUi = (e) => e.target.closest && e.target.closest("button, input, select, .screen:not(#hud):not(#rhud), .res-list, .h-board");
   stage.addEventListener("pointerdown", (e) => {
     if (onUi(e) || paused) return;
     if (turnEl) return;
@@ -5856,6 +5873,45 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     let r = 1; for (const a of Rc.ai) if (C.progress(Rc.ref, a, D + Rc.off - a.off) > me) r++;
     return r;
   }
+  // Live-Rangliste wie im Fernsehen: Zeit jeder Gegnerin an genau deiner Stelle (Binärsuche über ihren Rennverlauf).
+  // Sprint: gelaufene Zeit; Verfolgung: dazu der Startrückstand; Jagd: dazu die Strafzeit der schon passierten Stationen.
+  let lbCache = { at: -1, list: null };
+  function liveBoard() {
+    const now = performance.now();
+    if (lbCache.list && now - lbCache.at < 400) return lbCache.list;
+    const L = Rc.L.L, D = dispTime(), pur = Rc.kind === "pursuit";
+    const me = mode === "range" ? (Rc.lap + 1) * L : Rc.phase === "pen" ? (Rc.lap + 1) * L + 0.5 * (Rc.penS / (Rc.penN * Rc.L.penaltyL)) : Rc.lap * L + Rc.R.s;
+    const passed = Math.floor(me / L + 1e-6);   // Schießen, die an dieser Stelle schon hinter dir liegen
+    const list = [{ name: myName(), nat: S.nat, t: D + (pur ? Rc.off : 0), me: true }];
+    for (const a of Rc.ai) {
+      let lo = 0, hi = a.total;
+      if (C.progress(Rc.ref, a, hi - 1e-3) < me) { list.push({ name: a.name, nat: a.nat, t: a.total + (pur ? a.off : 0) + 1e-3, a }); continue; }
+      for (let i = 0; i < 22; i++) { const mid = (lo + hi) / 2; if (C.progress(Rc.ref, a, mid) >= me) hi = mid; else lo = mid; }
+      let tp = 0; if (Rc.hunt) for (let j = 0; j < Math.min(passed, a.segs.length); j++) tp += a.segs[j].tpen || 0;
+      list.push({ name: a.name, nat: a.nat, t: hi + tp + (pur ? a.off : 0), a });
+    }
+    list.sort((x, y) => x.t - y.t);
+    lbCache = { at: now, list };
+    return list;
+  }
+  function hudBoard() {
+    const box = $("hBoard");
+    const show = Rc.ai && Rc.kind !== "learn" && Rc.phase !== "count" && S.board !== "off";
+    box.hidden = !show; if (!show) return;
+    const list = liveBoard(), mi = list.findIndex((x) => x.me), lead = list[0].t;
+    const idx = [0, 1, 2];
+    for (const i of [mi - 1, mi, mi + 1]) if (i >= 0 && i < list.length && idx.indexOf(i) < 0) idx.push(i);
+    idx.sort((a, b) => a - b);
+    const short = (n) => { const p = n.split(" "); return p.length > 1 ? p[0][0] + ". " + p.slice(1).join(" ") : n; };
+    let html = "", last = -1;
+    for (const i of idx) {
+      if (last >= 0 && i > last + 1) html += '<div class="lb-gap">···</div>';
+      const x = list[i];
+      html += `<div class="lb-row${x.me ? " me" : ""}"><span class="lb-r">${i + 1}</span><span class="lb-n">${nb(x.me ? "DU" : short(x.name))}</span><span class="lb-t">${i === 0 ? "" : fmtB(x.t - lead)}</span></div>`;
+      last = i;
+    }
+    if (box.dataset.h !== html) { box.dataset.h = html; box.innerHTML = `<div class="lb-head">LIVE · ${list.length} am Start</div>` + html; }
+  }
   // Abstand (Spiel-m) einer KI zu dir, positiv = vor dir
   function gap(r) {
     const pen = Rc.phase === "pen", L = pen ? Rc.L.penaltyL : Rc.L.L, me = pen ? Rc.penS % L : Rc.R.s;
@@ -6082,7 +6138,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     setText($("hPrevTxt"), nb(next ? `in ${Math.round(dn * T.SCALE / 10) * 10} m ${NAME[next]}` : NAME[now]));
   }
   function hudRun() {
-    if (performance.now() - prevT > 90) { prevT = performance.now(); drawPreview(); drawMap(); }
+    if (performance.now() - prevT > 90) { prevT = performance.now(); drawPreview(); drawMap(); hudBoard(); }
     const R = Rc.R, L = Rc.L;
     if (Rc.kind !== "learn") setText($("hTime"), fmtT(dispTime()));
     if (Rc.kind === "learn") { setText($("hLap"), "Erste Schritte"); setText($("hKm"), nb(`${stepOf().sl > 0.02 ? "bergauf" : stepOf().sl < -0.02 ? "bergab" : "flach"}`)); }
