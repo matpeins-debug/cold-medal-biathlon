@@ -533,7 +533,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <button type="button" id="btnCode" class="chip-btn" aria-label="Dein Code" hidden><i class="ico" data-i="key"></i><span>Code</span></button>
     <button type="button" id="btnSet" class="chip-btn" aria-label="Einstellungen"><i class="ico" data-i="gear"></i></button>
   </div>
-  <button type="button" id="btnXc" class="btn xc"><span class="hk">LANGLAUF</span><b>OHNE GEWEHR</b><span class="hs" id="xcSub">10 km klassisch · Einzelstart</span></button>
+  <button type="button" id="btnXc" class="btn xc"><span class="hk">LANGLAUF</span><b>OHNE GEWEHR</b><span class="hs" id="xcSub">10 km · Einzelstart</span></button>
   <button type="button" id="btnHunt" class="btn hunt"><span class="hk">NOSTALGIE</span><b>JAGD 1960</b><span class="hs">Kimme und Korn · 3D-Attrappen</span></button>
   <div class="foot"><span id="verLine">Version 0.1 · Fanspiel</span> · <button type="button" id="btnInfo" class="link">Info</button></div>
 </section>
@@ -5479,29 +5479,27 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       for (let i = 0; i < n; i++) parts.push({ s: null, ds: at[0] + Math.random() * (at[1] - at[0]), vs: -(1 + Math.random() * 2.5) - (v || 0) * 0.1, y: 0, vy: 1.5 + Math.random() * (kind === "press" ? 4 : 3), life: 0.45 + Math.random() * 0.35, r: 1 + Math.random() * (good ? 1.6 : 0.9) });
     }
     // Haltung der Läuferin: Ziel aus Abstoßzeit und Takt, jede Größe weich nachgeführt
+    // Läuferin: Schrittphase läuft stetig mit dem eigenen Takt (Abstand der letzten Abstöße), ein Abstoß zieht die Phase nur sanft
+    // nach (kein Zurückspringen); ohne Abstöße klingt der Ausschlag weich aus (Gleiten), Hocke und Doppelstock werden eingeblendet.
+    const G = { th: 0, A: 0, dbl: 0, tuck: 0, stepT: 0.75, last: null, lastAt: -9, err: 0 };
     function playerPose(V, dt) {
-      const Rn = V.run, gs = V.T && !V.pen ? V.T.slope(V.s) : 0, cyc = root.BIPhys.cycle(gs, Rn);
-      const st = root.BIPhys.P.push;
-      const ph = Rn.tp < st ? 0.3 * Rn.tp / st : 0.3 + 0.7 * cl((Rn.tp - st) / Math.max(0.2, cyc * 0.85 - st));
-      // Eintakt: bei jedem Doppelstock skatet das andere Bein
-      if (Rn.tech === "double" && Rn.lastT !== dblLast) { dblLast = Rn.lastT; dblSide = -dblSide; }
-      if (V.classic) {
-        // klassisch: bei jedem Abstoß wechselt das Bein; Gelenke weich nachgeführt (ein früher Abstoß springt nicht)
-        if (Rn.lastT !== clLast) { clLast = Rn.lastT; clSide = -clSide; }
-        const T = poseAt(ph, Rn.tech === "double", clSide); T.classic = 1; T.cph = ph; T.tuck = Rn.tuck ? 1 : Rn.matK || 0;
-        if (PCd == null) PCd = T.dbl; if (PCt == null) PCt = T.tuck;
-        PCd += (T.dbl - PCd) * (1 - Math.exp(-dt / 0.11)); PCt += (T.tuck - PCt) * (1 - Math.exp(-dt / 0.11)); T.dbl = PCd; T.tuck = PCt;
-        const J = joints(T);
-        if (!PJ || dt === 0) PJ = J; else PJ = mixJ(PJ, J, 1 - Math.exp(-dt / 0.045));
-        return { J: PJ };
+      const Rn = V.run, gs = V.T && !V.pen ? V.T.slope(V.s) : 0;
+      if (Rn.lastT !== G.last) {
+        if (G.last != null && Rn.lastT - G.last > 0.25 && Rn.lastT - G.last < 2) G.stepT += (Math.min(1.2, Math.max(0.42, Rn.lastT - G.last)) - G.stepT) * 0.35;
+        G.last = Rn.lastT; G.lastAt = Rn.t;
+        // ein Abstoß gehört auf einen Halbschritt (th = Vielfaches von π): Abweichung über den nächsten Schritt ausgleichen
+        const r = G.th / Math.PI; G.err = Math.round(r) - r;
       }
-      const T = poseAt(ph, Rn.tech === "double", Rn.tech === "double" ? dblSide : Rn.side || 1); T.tuck = Rn.tuck ? 1 : Rn.matK || 0;   // matK: am Schießstand auf die Matte
-      if (!PP || dt === 0) { PP = Object.assign({}, T); return PP; }
-      const f = 1 - Math.exp(-dt / 0.04), fs = 1 - Math.exp(-dt / 0.11);
-      for (const key of ["sw", "ext", "lift", "lean", "flift"]) PP[key] += ((T[key] || 0) - (PP[key] || 0)) * f;
-      PP.dbl += (T.dbl - PP.dbl) * fs; PP.tuck += (T.tuck - PP.tuck) * fs;
-      if (PP.side !== T.side && PP.ext < 0.15) PP.side = T.side;
-      return PP;
+      const pushing = Rn.t - G.lastAt < Math.max(1.2, G.stepT * 1.8) && !Rn.tuck && (Rn.v || 0) > 0.5;
+      const fa = (tau) => 1 - Math.exp(-dt / tau);
+      G.A += ((pushing ? 1 : 0.15) - G.A) * fa(0.35);
+      G.dbl += ((Rn.tech === "double" ? 1 : 0) - G.dbl) * fa(0.3);
+      G.tuck += ((Rn.tuck ? 1 : Rn.matK || 0) - G.tuck) * fa(0.18);
+      const corr = G.err * Math.min(1, dt / Math.max(0.2, G.stepT)) * Math.PI;
+      G.err -= corr / Math.PI;
+      G.th += dt * Math.PI / G.stepT * (0.35 + 0.65 * G.A) * (1 - G.tuck) + corr;
+      const J = joints({ stride: 1, th: G.th, A: G.A, dbl: G.dbl, tuck: G.tuck }); R.poseJ = J;   // R.poseJ: für Tests
+      return { J };
     }
     function drawRun(V) {
       const dt = lastT == null ? 0 : Math.min(0.05, Math.max(0, V.t - lastT)); lastT = V.t;
@@ -5513,7 +5511,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // Gleitgefühl: nach jedem Abstoß schiebt sich die Läuferin im Bild ein Stück nach vorn und gleitet dann zurück
       const vNow = (V.run && V.run.v) || 0; vAvg = vAvg == null ? vNow : vAvg + (vNow - vAvg) * (1 - Math.exp(-dt / 1.1));
       surge += (Math.max(-0.6, Math.min(1.6, vNow - vAvg)) - surge) * (1 - Math.exp(-dt / 0.12));
-      const ppm = 15 * k * zoom, xr = W * 0.36 + kick * 3 * k + surge * 7 * k;
+      const ppm = 15 * k * zoom, xr = W * 0.36;   // Läuferin fest im Bild (kein Ruck, kein Vor und Zurück: das wirkte wie Hüpfen)
       const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
       const hAt = (s) => { let a = 0, w = 0; for (let i = -5; i <= 5; i++) { const g = GW[i + 5]; a += hRaw(s + i * 2.5) * g; w += g; } return a / w; };
       const h0 = hAt(V.s);
@@ -5601,8 +5599,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         const cyc = root.BIPhys.cycle(gs) * (V.classic ? 1.2 : 1), fa = 1 - Math.exp(-dt / 0.18);
         A.tuck += ((gs < -0.04 ? 1 : 0) - A.tuck) * fa; A.dbl += ((Math.abs(gs) < 0.035 ? 1 : 0) - A.dbl) * fa;
         A.ph += dt / cyc * (1 - A.tuck); if (A.ph >= 1) { A.ph -= 1; A.n++; }
-        const P = poseAt(A.ph, A.dbl > 0.5, A.n % 2 ? 1 : -1); P.tuck = A.tuck; P.dbl = A.dbl;
-        if (V.classic) { P.classic = 1; P.cph = A.ph; }
+        const P = { J: joints({ stride: 1, th: (A.ph + A.n) * Math.PI, A: 1 - A.tuck, dbl: A.dbl, tuck: A.tuck }) };
         // Geister (Gruppen): im Aussehen aus ihrem Pass, halb durchsichtig
         if (o.ghost) ctx.globalAlpha = 0.55;
         skier(x, y, 56 * k, aR, P, o.look ? [o.look.suit, o.look.accent] : SUIT[o.nat] || SUIT.AUT, V.retro, o.look || faceFor(o.name));
@@ -5742,8 +5739,38 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
     const JK = ["hip", "sh", "head", "hand", "handB", "pole", "poleB", "kneeF", "footF", "kneeB", "footB"], JN = ["lean", "extF", "extB", "liftF", "liftB"];
     function mixJ(A, B, t) { const J = Object.assign({}, A); for (const key of JK) J[key] = lerp2(A[key], B[key], t); for (const key of JN) J[key] = A[key] + (B[key] - A[key]) * t; return J; }
+    // Gleichmäßiger Schritt (seit 0.16.1, Mat: „muss einfach flüssig wirken“, Technik ist bei der abstrakten Figur egal):
+    // th läuft stetig (zwei Schritte je 2π), nie zurückgesetzt; A = Ausschlag (0 = Gleiten auf beiden Ski), dbl = Doppelstock.
+    // Beine und Arme als Sinus gegengleich, keine Sprünge in der Haltung, Hüfte fast ruhig.
+    function strideJ(th, A, dbl) {
+      const sn = Math.sin(th), cs = Math.cos(th), L1 = 0.27, L2 = 0.27;
+      const lean = 0.6 + 0.05 * A * (1 - dbl) + dbl * (0.12 + 0.16 * (0.5 - 0.5 * Math.cos(2 * th))) * A;
+      const hip = [0.02, -0.5 + 0.006 * A * Math.cos(2 * th) + 0.03 * dbl * A * (0.5 - 0.5 * Math.cos(2 * th))];
+      const d = [Math.sin(lean), -Math.cos(lean)], n = [-Math.cos(lean), -Math.sin(lean)];
+      const at = (q, a, b) => [q[0] + d[0] * a + n[0] * b, q[1] + d[1] * a + n[1] * b];
+      const legA = A * (1 - 0.85 * dbl);
+      // Fuß: vor und zurück, der zurückschwingende Ski hebt knapp ab
+      const foot = (x) => { const f = Math.sin(x), back = Math.cos(x); return [0.03 + 0.22 * legA * f, 0]; };
+      const lift = (x) => 0.04 * legA * Math.max(0, Math.cos(x));
+      const fN = foot(th), fF = foot(th + Math.PI);
+      const knee = (f) => {
+        const dx = f[0] - hip[0], dy = f[1] - hip[1], dd = Math.min(L1 + L2 - 1e-4, Math.hypot(dx, dy));
+        const base = Math.atan2(dy, dx), a = Math.acos((L1 * L1 + dd * dd - L2 * L2) / (2 * L1 * dd));
+        return [hip[0] + Math.cos(base - a) * L1, hip[1] + Math.sin(base - a) * L1];
+      };
+      const sh = at(hip, 0.42, 0), head = at(hip, 0.56, -0.03);
+      // Arme gegengleich zum Bein derselben Seite; Doppelstock: beide Arme zusammen, zwei Stockschübe je Zyklus
+      const armN = (1 - dbl) * Math.sin(th + Math.PI) + dbl * Math.cos(2 * th), armF = (1 - dbl) * Math.sin(th) + dbl * Math.cos(2 * th);
+      const hand = (w) => [sh[0] + 0.08 + 0.28 * A * w, sh[1] + 0.22 - 0.05 * A * Math.max(0, w)];
+      const hN = hand(armN), hF = hand(armF);
+      const pole = (h, w) => [h[0] - 0.36 + 0.12 * A * w, -0.03 * A * Math.max(0, -w)];
+      return { hip, sh, head, lean, hand: hN, handB: [hF[0] - 0.03, hF[1] + 0.01], pole: pole(hN, armN), poleB: pole(hF, armF),
+        kneeF: knee(fN), footF: fN, kneeB: knee(fF), footB: fF, extF: 0, extB: 0, liftF: lift(th), liftB: lift(th + Math.PI) };
+    }
     function joints(P) {
       let J;
+      if (P.stride) J = strideJ(P.th, P.A, P.dbl);
+      else
       if (P.classic) { J = classicJ(P.cph || 0, P.side || 1); if (P.dbl > 0) J = mixJ(J, jointsBase(Object.assign({}, P, { dbl: 1 })), P.dbl); }
       else J = jointsBase(P);
       if (P.tuck > 0) {
@@ -6277,7 +6304,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.16.0";
+  const VERSION = "0.16.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6433,7 +6460,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     $("venueBest").textContent = b ? nb(`Bestzeit ${fmtT(b.t)}`) : "";
     $("verLine").textContent = `Version ${VERSION} · Fanspiel`;
     refreshBadge(); loadMyClubs(); flushPending();
-    const X = T.FORMATS.xc[S.sex]; $("xcSub").textContent = nb(`${dec(X.km, 0)} km ${S.style === "skate" ? "Skating" : "klassisch"} · Einzelstart`);
+    const X = T.FORMATS.xc[S.sex]; $("xcSub").textContent = nb(`${dec(X.km, 0)} km · Einzelstart`);
     drawSketch();
   }
   function drawSketch() {
@@ -6539,9 +6566,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       bib: 1 + Math.floor(Ph.rng(seed)() * FM.field), wind: { base: (Ph.rng(seed ^ 3)() - 0.4) * 2.6, gust: 0.8 + Ph.rng(seed ^ 5)() * 1.2, ph: Ph.rng(seed ^ 9)() * 6 },
       penLeft: 0, penN: 0, penS: 0, trainRounds: [], shift: 0, shiftY: 0, decor: null, beats: 0, tpen: 0, kills: 0, hunt: !!FM.hunt && race,
     };
-    // Technik je Rennen: Weltcup im Skating, Langlauf und Jagd 1960 klassisch; „Technik“ unter Deine Figur kann das festlegen
-    Rc.classic = S.style === "classic" || (S.style !== "skate" && (Rc.hunt || fmt === "xc") && race);
-    Rc.R.cycK = Rc.classic ? 1.2 : 1;
+    // Eine Bewegung für alle Rennen (Mat, 0.16.1: die Figur ist abstrakt, sie soll nur flüssig laufen); klassisch heißt nur noch:
+    // gespurte Loipe im Bild (Langlauf, Jagd 1960)
+    Rc.classic = (Rc.hunt || fmt === "xc") && race;
+    Rc.R.cycK = 1;
     Rc.FM = FM; Rc.R.footQ = S.help === "anf" ? 0.85 : 0.6; Rc.R.simple = easy(); Rc.simple = easy(); Rc.R.acidMul = level === "easy" ? 0.5 : 1;
     Rc.rec = race && kind !== "pursuit" && !Rc.watch ? { P: [], next: 0, hits: [], kills: [] } : null;   // Rennverlauf (Geist für die Gruppe)
     Rc.together = kind === "mass" || kind === "pursuit";   // Platz nach Fortschritt: wer zuerst ins Ziel kommt
@@ -6703,7 +6731,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const stat = (a, b) => `<div class="stat"><span>${a}</span><b>${nb(b)}</b></div>`;
     const noGun = !Rc.stages.length;
     if (noGun) {
-      const p0 = [`${Rc.classic ? "Klassisch" : "Skating"}, ${dec(Rc.L.km, 0)} km ohne Gewehr: hier zählt nur der Takt.`];
+      const p0 = [`${dec(Rc.L.km, 0)} km ohne Gewehr: hier zählt nur der Takt.`];
       if (K.early / n > 0.2) p0.push("Viele Abstöße kamen zu früh. Warte aufs Klack: das bringt mehr Tempo und spart Kraft.");
       if (pb && old) p0.push(nb(`Neue Bestzeit: ${fmtB(old.t - me.total).replace("+", "")} schneller als bisher.`));
       return stat("Laufzeit", fmtT(me.ski)) + stat("Abstöße im Takt", `${Math.round((K.beat + K.press) / n * 100)} %`) + stat("höchster Puls", String(bpm(Rc.maxHr || 0))) + p0.map((x) => `<p>${esc(x)}</p>`).join("");
@@ -7504,9 +7532,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     personHint: "Gilt in allen Spielen von Cold Medal.",
     tabs: [{ id: "bi", label: "Biathlon", rows: [
       { type: "seg", label: "Rennen", list: [["w", "Damen"], ["m", "Herren"]], get: () => S.sex, set: (v) => { S.sex = v; save(); } },
-      { type: "seg", label: "Technik", list: [["auto", "Je Rennen"], ["classic", "Klassisch"], ["skate", "Skating"]], get: () => S.style, set: (v) => { S.style = v; save(); } },
       { type: "seg", label: "Visier", list: [["kreuz", "Kreuz"], ["ring", "Ring"]], get: () => S.sight, set: (v) => { S.sight = v; save(); } },
-      { type: "hint", text: "Gibt es nur im Biathlon. Je Rennen: Weltcup im Skating, Langlauf und Jagd 1960 klassisch." }] }],
+      { type: "hint", text: "Gibt es nur im Biathlon." }] }],
     code: ON ? codeTab() : null,
     dpr: () => Math.min(3, (window.devicePixelRatio || 1) * uiS),
     onDone() {
@@ -8009,7 +8036,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   window.__bi = {
     get S() { return S; }, get Rc() { return Rc; }, get mode() { return mode; }, VERSION, T, Ph, C,
     startRace, toMenu, press, release, aimMove, finish, advanceTo,
-    ghostPack, ghostUnpack, ghostFrom, gPos, clubFrom, showClub, openFigure, liveBoard, get club() { return club; }, set club(k) { club = k; }, PASS,
+    renderer, ghostPack, ghostUnpack, ghostFrom, gPos, clubFrom, showClub, openFigure, liveBoard, get club() { return club; }, set club(k) { club = k; }, PASS,
     // Rennen im Zeitraffer laufen lassen (Test): Takt-Abstöße, Hocke in steilen Abfahrten
     autoRun(seconds, phase) {
       const end = simT + seconds;
