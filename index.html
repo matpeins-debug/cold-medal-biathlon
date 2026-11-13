@@ -958,11 +958,20 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       ph: [r() * 6.3, r() * 6.3, r() * 6.3, r() * 6.3], breathPh: r() * 6.3, frozen: 0, after: 0, done: false, gust: 0, gustT: 0 };
   }
   // Schwanken ohne Haltepunkt (mm), abhängig von Puls, Atem und Luftanhalten
-  function sway(G) {
+  // Langsames Schwanken (Puls, Atem): lässt sich mit dem Finger ausgleichen. Dazu kommt Zittern (zu schnell zum Ausgleichen) und beim
+  // Abdrücken ein kleines Verreißen; beides wächst mit dem Puls (seit 0.17: vorher war jeder Schuss mit ruhiger Hand ein Treffer).
+  // G.ease: Anfänger-Hilfen (0.6), sonst 1.
+  function sway(G) { const a = swaySlow(G), b = tremor(G); return { x: a.x + b.x, y: a.y + b.y }; }
+  function tremor(G) {
+    const t = G.t, A = G.st.hit * TREM * (G.stance === "stand" ? 1.12 : 1) * (0.45 + 0.9 * clamp(G.hr, 0, 1.1)) * (G.ease || 1) * (G.hold && G.holdT > 0.45 && G.holdT < 2.2 ? 0.8 : 1) * (1 + (G.after || 0));
+    return { x: A * (0.6 * Math.sin(8.1 * t + G.ph[0] * 2) + 0.4 * Math.sin(13.7 * t + G.ph[1] * 3)), y: A * (0.6 * Math.sin(9.3 * t + G.ph[2] * 2) + 0.4 * Math.sin(12.1 * t + G.ph[3] * 3)) };
+  }
+  const TREM = 0.8, FLINCH = 0.7;
+  function swaySlow(G) {
     const st = G.st, t = G.t;
     const k = 0.35 + 1.15 * clamp(G.hr, 0, 1.1);
     let hf = 1;
-    if (G.hold) hf = G.holdT < 0.45 ? 1 - 0.5 * G.holdT / 0.45 : G.holdT < 3 ? 0.5 : Math.min(1.6, 0.5 + (G.holdT - 3) * 0.55);
+    if (G.hold) hf = G.holdT < 0.45 ? 1 - 0.4 * G.holdT / 0.45 : G.holdT < 2.2 ? 0.6 : Math.min(1.8, 0.6 + (G.holdT - 2.2) * 0.8);   // Luft anhalten hilft nur kurz
     if (G.after > 0) hf *= 1 + G.after * 0.8;   // nach dem Schuss: Rückstoß
     const A = st.sway * k * hf;
     const x = A * (0.6 * Math.sin(1.3 * t + G.ph[0]) + 0.4 * Math.sin(2.9 * t + G.ph[1]));
@@ -990,9 +999,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const s = sway(G);
     return { x: G.aim.x + s.x + windAt(G) * WIND_MM, y: G.aim.y + s.y };
   }
+  // Verreißen beim Abdrücken: zufällig, mehr mit hohem Puls
+  function flinch(G) {
+    const a = G.r() * 6.283, m = G.st.hit * FLINCH * (G.stance === "stand" ? 1.12 : 1) * (0.35 + 0.8 * clamp(G.hr, 0, 1.1)) * (G.ease || 1) * Math.sqrt(G.r());
+    return { x: m * Math.cos(a), y: m * Math.sin(a) };
+  }
   function shoot(G) {
     if (G.done) return null;
-    const p = impact(G);
+    const p = impact(G), f = flinch(G); p.x += f.x; p.y += f.y;
     const d = Math.hypot(p.x, p.y);
     const hit = d <= G.st.hit;
     G.shots.push({ i: G.target, x: p.x, y: p.y, hit, t: G.t, d });
@@ -1067,7 +1081,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const r2 = (G) => G.r();
   const kills = (G) => G.shots.filter((s) => s.kill).length;
 
-  const API = { DT, P, KIND, FLAT, simpleK, techQ, upgradeDouble, STANCE, GAP, WIND_MM, rng, clamp, cycle, newRunner, push, step, newRange, sway, windAt, rangeStep, holdStart, impact, shoot, misses,
+  const API = { DT, P, KIND, FLAT, simpleK, techQ, upgradeDouble, STANCE, GAP, WIND_MM, rng, clamp, cycle, newRunner, push, step, newRange, sway, swaySlow, tremor, windAt, rangeStep, holdStart, impact, shoot, misses,
     ANIMALS, EYE, animalGeo, newHunt, huntImpact, huntShoot, kills, drop, drift };
   if (typeof module !== "undefined" && module.exports) module.exports = API; else root.BIPhys = API;
 })(typeof window !== "undefined" ? window : globalThis);
@@ -5976,7 +5990,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (opt.sight !== "ring") {
         // Fadenkreuz (Absehen wie im Zielfernrohr): außen kräftige Balken, innen feine Linien mit Lücke, Mittelpunkt.
         // Liegt die Mitte über der Trefferzone (Wind nicht eingerechnet), wird das Kreuz grün: gleich abdrücken oder Wind vorhalten.
-        const on = !sh && Math.hypot(ax, ay) <= G.st.hit && !G.done;
+        const on = opt.help && !sh && Math.hypot(ax, ay) <= G.st.hit && !G.done;   // grün nur mit Anfänger-Hilfen (0.17)
         const col = on ? "#3E7A4A" : "rgba(20,27,37,0.95)", gap = 9 * k, thin = Math.max(1, 1.3 * k), thick = 4.5 * k, inner = 70 * k;
         ctx.lineCap = "butt";
         // heller Saum, damit das Kreuz auch auf der schwarzen Scheibe sichtbar bleibt
@@ -6331,7 +6345,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.16.5";
+  const VERSION = "0.17.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6657,6 +6671,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const k = Rc.stages.indexOf(stance) >= 0 ? Rc.rangeT.length : Rc.trainRounds.length;
     Rc.G = (Rc.hunt ? Ph.newHunt : Ph.newRange)(stance, hr, { base: Rc.wind.base, gust: Rc.wind.gust, ph: Rc.wind.ph + k * 1.7 }, Rc.seed ^ (k + 1) * 7919);
     Rc.G.t = k * 40;   // andere Böen als beim letzten Mal
+    Rc.G.ease = Rc.kind === "learn" ? 0.45 : S.help === "anf" ? 0.65 : 1;   // Zittern und Verreißen: mit Anfänger-Hilfen schwächer
     Rc.rangeStart = Rc.range; Rc.arriveHr.push(hr);
     mode = "range"; Rc.phase = "in"; Rc.pt = 0; Rc.shift = 0; inp.ptrs.clear(); inp.rangeId = null;
     $("hud").hidden = true; $("rhud").hidden = false;
@@ -6905,7 +6920,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const m = renderer.MM * (Hs / 390);
     const hk = Rc.G.hunt ? renderer.MM / renderer.MMH : 1;   // Jagd: kleinerer Maßstab, gleiche Fingerwege am Bildschirm
     // Feinzielen: nah an der Scheibe bewegt sich das Visier langsamer (wie die Zielhilfe in Scharfschützenspielen), der Finger bleibt genau
-    const G = Rc.G, fine = !G.hunt && Math.hypot(G.aim.x, G.aim.y) < G.st.hit * 2.2 ? 0.42 : 0.6;
+    const G = Rc.G, fine = !G.hunt && S.help === "anf" && Math.hypot(G.aim.x, G.aim.y) < G.st.hit * 2.2 ? 0.42 : 0.6;   // Zielhilfe nur für Anfänger
     G.aim.x = G.aim.x + dx / m * fine * hk; G.aim.y = G.aim.y + dy / m * fine * hk; clampAim(G);
   }
   function clampAim(G) {
@@ -7023,7 +7038,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (Rc.shift) { Rc.shift *= Math.exp(-dt / 0.09); if (Math.abs(Rc.shift) < 0.5) Rc.shift = 0; }
     if (inp.ax || inp.ay) { const v = G.hunt ? 120 : 70; G.aim.x += inp.ax * v * dt; G.aim.y += inp.ay * v * dt; clampAim(G); }
     // Visier über der Trefferzone (ohne Wind): kurzer Ruck am Handy, das Kreuz färbt sich
-    if (!G.hunt && !G.done) { const sw = Ph.sway(G), on = Math.hypot(G.aim.x + sw.x, G.aim.y + sw.y) <= G.st.hit; if (on && !Rc.onT && Rc.phase === "aim") Hap(6); Rc.onT = on; }
+    if (!G.hunt && !G.done) { const sw = Ph.sway(G), on = Math.hypot(G.aim.x + sw.x, G.aim.y + sw.y) <= G.st.hit; if (on && !Rc.onT && Rc.phase === "aim" && S.help === "anf") Hap(6); Rc.onT = on; }
     if (Rc.shiftY) { Rc.shiftY *= Math.exp(-dt / 0.12); if (Math.abs(Rc.shiftY) < 0.5) Rc.shiftY = 0; }
     if (Rc.phase === "in") { if (Rc.pt >= (Rc.kind === "learn" ? 1.2 : 0.25)) { Rc.phase = "aim"; Rc.pt = 0; } return; }
     if (Rc.phase === "aim") {
@@ -8078,6 +8093,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     },
     autoShoot(perfect) {
       const G = Rc.G; if (!G) return;
+      if (perfect) G.ease = 0;   // Testschütze: ohne Zittern und Verreißen
       while (Rc.phase === "in") { simT += Ph.DT; tick(); }
       while (!G.done && Rc.phase === "aim") {
         for (let i = 0; i < 60; i++) { simT += Ph.DT; tick(); }
