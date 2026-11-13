@@ -5618,22 +5618,30 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // Gegner (hinter dir gezeichnet), Name über den nächsten
       const others = (V.others || []).filter((o) => o.s > s0 - 2 && o.s < s1 + 2).sort((a, b) => Math.abs(b.s - V.s) - Math.abs(a.s - V.s));
       // Namensschilder: der nächste vor und hinter dir; ein Schild bleibt beim selben Gegner, solange er in der Nähe ist (kein Flackern)
-      let oA = others.find((o) => o.bib === tagA && o.s - V.s > 0 && o.s - V.s < 24) || null, oB = others.find((o) => o.bib === tagB && o.s - V.s < 0 && o.s - V.s > -15) || null;
-      if (!oA) for (const o of others) { const d = o.s - V.s; if (d > 0.5 && d < 20 && (!oA || d < oA.s - V.s)) oA = o; }
-      if (!oB) for (const o of others) { const d = o.s - V.s; if (d < -0.5 && d > -12 && (!oB || d > oB.s - V.s)) oB = o; }
+      // Namensschilder nur für die in deiner Runde (die anderen tragen „+1“ / „−1“)
+      const same = others.filter((o) => !o.lapD);
+      let oA = same.find((o) => o.bib === tagA && o.s - V.s > 0 && o.s - V.s < 24) || null, oB = same.find((o) => o.bib === tagB && o.s - V.s < 0 && o.s - V.s > -15) || null;
+      if (!oA) for (const o of same) { const d = o.s - V.s; if (d > 0.5 && d < 20 && (!oA || d < oA.s - V.s)) oA = o; }
+      if (!oB) for (const o of same) { const d = o.s - V.s; if (d < -0.5 && d > -12 && (!oB || d > oB.s - V.s)) oB = o; }
       tagA = oA ? oA.bib : null; tagB = oB ? oB.bib : null;
+      const lapTags = [];   // „+1“ nur einmal je Grüppchen
       for (const o of others) {
         const [y, aR] = skiFit(o.s, 56 * k), x = X(o.s), gs = V.T && !V.pen ? V.T.slope(o.s) : 0;
         // eigener Schrittzyklus je Gegner, fortlaufend (ein Modulo mit wechselnder Zykluslänge würde springen), Hocke und Technik weich
         let A = rivAnim.get(o.bib);
         if (!A) { A = { ph: (o.bib * 0.37) % 1, n: o.bib, tuck: gs < -0.04 ? 1 : 0, dbl: Math.abs(gs) < 0.035 ? 1 : 0 }; rivAnim.set(o.bib, A); }
-        const cyc = root.BIPhys.cycle(gs) * (V.classic ? 1.2 : 1), fa = 1 - Math.exp(-dt / 0.18);
+        const cyc = root.BIPhys.cycle(gs), fa = 1 - Math.exp(-dt / 0.18);
         A.tuck += ((gs < -0.04 ? 1 : 0) - A.tuck) * fa; A.dbl += ((Math.abs(gs) < 0.035 ? 1 : 0) - A.dbl) * fa;
         A.ph += dt / cyc * (1 - A.tuck); if (A.ph >= 1) { A.ph -= 1; A.n++; }
         const P = { J: joints({ stride: 1, th: (A.ph + A.n) * Math.PI, A: 1 - A.tuck, dbl: A.dbl, tuck: A.tuck }) };
         // Geister (Gruppen): im Aussehen aus ihrem Pass, halb durchsichtig
-        if (o.ghost) ctx.globalAlpha = 0.55;
+        // Läufer aus einer anderen Runde (überrundet oder vor dir eine Runde weiter): blass, mit „+1“ / „−1“ über dem Kopf
+        ctx.globalAlpha = (o.ghost ? 0.55 : 1) * (o.lapD ? 0.38 : 1);
         skier(x, y, 56 * k, aR, P, o.look ? [o.look.suit, o.look.accent] : SUIT[o.nat] || SUIT.AUT, V.retro, o.look || faceFor(o.name));
+        if (o.lapD && !lapTags.some((q) => Math.abs(q - x) < 46 * k)) {
+          lapTags.push(x); ctx.globalAlpha = 0.6; ctx.font = `700 ${Math.round(12 * k)}px Futura, 'Avenir Next', 'Segoe UI', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+          ctx.fillStyle = "#24324A"; ctx.fillText(`${o.lapD > 0 ? "+" : "−"}${Math.abs(o.lapD)}`, x, y - 62 * k);
+        }
         ctx.globalAlpha = 1;
         if (o === oA || o === oB) tag(x, y - 70 * k, o.name, k);
       }
@@ -6362,7 +6370,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.17.1";
+  const VERSION = "0.17.2";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7157,7 +7165,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   let rivCache = { D: -1, pen: null, list: [] };
   function rivals() {
     if (!Rc || !Rc.ai) return [];
-    const D = dispTime(), pen = Rc.phase === "pen";
+    // im Countdown laufen die früher Gestarteten schon (die Uhr der anderen läuft 3 s vor deinem Start los)
+    const D = dispTime() - (Rc.phase === "count" ? (3 - Rc.pt) * T.SCALE : 0), pen = Rc.phase === "pen";
     if (rivCache.pen === pen && rivCache.D === D) return rivCache.list;
     const out = [];
     for (const a of Rc.ai) {
@@ -7371,7 +7380,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // zwischen zwei Simulationsschritten weiterschieben (rest = noch nicht gerechnete Zeit), damit nichts ruckelt
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
-      const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost })) : [];
+      const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost, lapD: (r.k == null ? Rc.lap : r.k) - Rc.lap })) : [];
       renderer.drawRun({ T: L, s: sNow, pen, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
