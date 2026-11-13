@@ -1176,8 +1176,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return i >= tr.length - 1 ? tr[tr.length - 1] : tr[i] + (tr[i + 1] - tr[i]) * (x - i);
   }
   // Wo ist eine KI e Anzeige-Sekunden nach ihrem Start? { where: "ski"|"range"|"pen"|"done"|"wait", k, s }
+  // Start aus dem Stand: die ersten Sekunden beschleunigen sie (nur fürs Bild; der Rückstand ist nach rund zwei Minuten Anzeige-Zeit
+  // wieder aufgeholt, Zeiten und Ergebnis bleiben gleich). Anzeige-Sekunden: 12 = eine Sekunde am Bildschirm.
+  const ACC = 12, ACC_OUT = 120;
   function where(ref, a, e) {
     if (e < 0) return { where: "wait" };
+    if (e < ACC_OUT * 6) e = Math.max(0, e - ACC * (1 - Math.exp(-e / ACC)) * Math.exp(-e / ACC_OUT));
     let t = 0;
     for (let k = 0; k < a.segs.length; k++) {
       const g = a.segs[k];
@@ -4102,7 +4106,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     jubel: [[0, POSES.stand], [0.35, POSES.cheer], [0.6, { lean: -2, crouch: 0, sL: [6, 14], fL: [0, 14], aF: [150, 26], aB: [-150, -26], hd: -14 }], [1, POSES.cheer]],
     winken: [[0, POSES.wave], [0.5, Object.assign({}, POSES.wave, { aF: [112, 66] })], [1, POSES.wave]],
   };
-  const KEYS = ["lean", "crouch", "hd", "ao"], PAIRS = ["sL", "fL", "aF", "aB"];
+  // fA/sA Spiel-/Standbein seitlich abgespreizt, aFA/aBA Arm vorn/hinten seitlich gehoben (Grad, frei, Standard 0):
+  // Drehung um die Achse nach vorn durch Hüfte bzw. Schulter – sichtbar, sobald sich die Figur dreht (Eiskunstlauf 0.43)
+  // ao3: Arme seitlich für die 3D-Figur (figur3d.js), unabhängig von der Blickrichtung; 2D nutzt es nicht
+  const KEYS = ["lean", "crouch", "hd", "ao", "fA", "sA", "aFA", "aBA", "ao3"], PAIRS = ["sL", "fL", "aF", "aB"];
   const val = (o, k) => (o[k] == null ? 0 : o[k]);
   function mix(a, b, t) {
     const o = {};
@@ -4112,8 +4119,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
   // Posen als Zahlenreihe (für weiche Kurven durch Schlüsselbilder); lift = Höhe über dem Boden (Sprung)
   const CH = 12;
-  const toVec = (p, lift) => [val(p, "lean"), val(p, "crouch"), val(p, "hd"), p.sL[0], p.sL[1], p.fL[0], p.fL[1], p.aF[0], p.aF[1], p.aB[0], p.aB[1], lift || 0, val(p, "ao")];
-  const toPose = (v) => ({ lean: v[0], crouch: v[1], hd: v[2], sL: [v[3], v[4]], fL: [v[5], v[6]], aF: [v[7], v[8]], aB: [v[9], v[10]], ao: v[12] || 0 });
+  const toVec = (p, lift) => [val(p, "lean"), val(p, "crouch"), val(p, "hd"), p.sL[0], p.sL[1], p.fL[0], p.fL[1], p.aF[0], p.aF[1], p.aB[0], p.aB[1], lift || 0, val(p, "ao"), val(p, "fA"), val(p, "sA"), val(p, "aFA"), val(p, "aBA"), val(p, "ao3")];
+  const toPose = (v) => {
+    const o = { lean: v[0], crouch: v[1], hd: v[2], sL: [v[3], v[4]], fL: [v[5], v[6]], aF: [v[7], v[8]], aB: [v[9], v[10]], ao: v[12] || 0 };
+    ["fA", "sA", "aFA", "aBA", "ao3"].forEach((k, i) => { if (v[13 + i]) o[k] = v[13 + i]; });
+    return o;
+  };
   // Weiche Kurve durch Schlüsselbilder K = [[t, Zahlenreihe], …]: Geschwindigkeit ohne Sprung (Hermite-Kurve), aber kein
   // Überschwingen: an Umkehrpunkten und Haltepunkten steht die Bewegung kurz (Steigung 0). loop: zyklisch, letztes = erstes Bild.
   function spline(K, t, loop) {
@@ -4227,7 +4238,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return o;
   }
   // weich nachführen: Rumpf und Beine zügig, Arme etwas später (fließender Armzug); fast = Sprung, Sturz
-  const RATE = { lean: 9, crouch: 9, hd: 8, ao: 6.5, sL: 13, fL: 11, aF: 6.5, aB: 6 };
+  const RATE = { lean: 9, crouch: 9, hd: 8, ao: 6.5, sL: 13, fL: 11, aF: 6.5, aB: 6, fA: 11, sA: 13, aFA: 6.5, aBA: 6, ao3: 7 };
   function ease(cur, tgt, dt, fast) {
     if (!cur) return tgt;
     const o = {}, m = fast ? 2.4 : 1, a = (k) => 1 - Math.exp(-RATE[k] * m * dt);
@@ -4388,8 +4399,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const split = L.pattern === "split", stripe = L.pattern === "stripe";
     const legN = split ? acc : suit, legF = split ? accD : suitD;
     // Beine: Fuß je nach Ausrüstung; Ski und Stiefel zeichnet derselbe Teil, damit die Reihenfolge stimmt
-    const leg = (pts, z0, z1, w, col, shinDeg, skiDeg, near) => {
-      const q = pts.map((pt, i) => P(pt, z0 + (z1 - z0) * i / (pts.length - 1)));
+    // seitlich abspreizen: Drehung um die Achse nach vorn durch den ersten Punkt (Hüfte, Schulter), nach außen (Seite von z0)
+    const abd = (pt, i, root, z, A, side) => {
+      if (!A || !i) return [pt[1], z];
+      const dy = pt[1] - root[1], a = rad(A);
+      return [root[1] + dy * Math.cos(a), z + side * dy * Math.sin(a)];
+    };
+    const leg = (pts, z0, z1, w, col, shinDeg, skiDeg, near, A) => {
+      const q = pts.map((pt, i) => { const [y, z] = abd(pt, i, pts[0], z0 + (z1 - z0) * i / (pts.length - 1), A, Math.sign(z0) || 1); return P([pt[0], y], z); });
       parts.push({ d: depth(q), f: () => {
         const an = q[q.length - 1];
         if (SKI[K.feet]) ski(ctx, an, skiDeg || 0, c, SKI[K.feet], near, W, skiC);
@@ -4410,18 +4427,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     };
     const sk = o.ski || {};
     // Standbein auf der nahen Seite (zs = 1), die nahe Seite ist heller
-    leg([hip, fKn, fAn], -Z.hip * zs, -Z.hip * zs, 6, zs > 0 ? legF : legN, J.fSh, zs > 0 ? sk.f : sk.n, zs < 0);
-    leg([hip, knee, ank], Z.hip * zs, Z.hip * 0.6 * zs, 6.2, zs > 0 ? legN : legF, J.sKn, zs > 0 ? sk.n : sk.f, zs > 0);
+    leg([hip, fKn, fAn], -Z.hip * zs, -Z.hip * zs, 6, zs > 0 ? legF : legN, J.fSh, zs > 0 ? sk.f : sk.n, zs < 0, p.fA);
+    leg([hip, knee, ank], Z.hip * zs, Z.hip * 0.6 * zs, 6.2, zs > 0 ? legN : legF, J.sKn, zs > 0 ? sk.n : sk.f, zs > 0, p.sA);
     // Arme mit Hand (Haut oder Handschuh) und Stock
     const hand = K.glove === "suit" ? suit : K.glove ? GLOVE : skin;
     // ao (Grad, frei, Standard 0): Arme seitlich vom Körper weg, um die senkrechte Achse durch die Schulter gedreht
     const ao = rad(p.ao || 0), aoC = Math.cos(ao), aoS = Math.sin(ao);
-    const arm = (pts, z0, z1, col, near) => {
+    const arm = (pts, z0, z1, col, near, A) => {
       const q = pts.map((pt, i) => {
-        const z = z0 + (z1 - z0) * i / (pts.length - 1);
-        if (!ao || !i) return P(pt, z);
+        const [y, z] = abd(pt, i, pts[0], z0 + (z1 - z0) * i / (pts.length - 1), A, Math.sign(z0) || 1);
+        if (!ao || !i) return P([pt[0], y], z);
         const dx = pt[0] - pts[0][0];
-        return P([pts[0][0] + dx * aoC, pt[1]], z + Math.sign(z0) * Math.abs(dx) * aoS);
+        return P([pts[0][0] + dx * aoC, y], z + Math.sign(z0) * Math.abs(dx) * aoS);
       });
       parts.push({ d: depth(q), f: () => {
         const h = q[q.length - 1], e = q[q.length - 2], an = Math.atan2(h[1] - e[1], h[0] - e[0]);
@@ -4441,8 +4458,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       let l = POLE; if (dy > 0.05) l = Math.min(l, (GROUND - h[1]) / dy);
       return [h[0] + dx * l, h[1] + dy * l];
     };
-    arm(J.aB, -Z.sh, -Z.sh - 2, suitD, false);
-    arm(J.aF, Z.sh, Z.sh + 2, shade(suit, 1.08), true);
+    arm(J.aB, -Z.sh, -Z.sh - 2, suitD, false, p.aBA);
+    arm(J.aF, Z.sh, Z.sh + 2, shade(suit, 1.08), true, p.aFA);
     // Rumpf: Querschnitt als Ellipse (Tiefe im Profil, Breite von vorn); sichtbare halbe Breite je Höhe
     const hw = (dep, wid) => Math.sqrt((dep * c) ** 2 + (wid * sn) ** 2);
     const lvl = [[2.5, 6.2, 6.8], [-6, 4.6, 5.4], [-18, 7.2, 7.4], [-25.5, 7, 8.6]]; // [y im Rumpf, Tiefe, Breite]
@@ -6345,7 +6362,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.17.0";
+  const VERSION = "0.17.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
