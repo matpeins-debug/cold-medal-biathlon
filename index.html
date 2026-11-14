@@ -370,6 +370,24 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .beat-head .sp-val { font-size: 18px; line-height: 18px; min-width: 26px; }
 .beat-head .streak { margin-left: auto; }
 #clLeave { min-height: 26px; font: 600 12px var(--font-label); border: 0; text-decoration: underline; color: #786D59; letter-spacing: 0; text-transform: none; align-self: flex-start; padding: 2px 0; }
+/* 0.18: Steuerung zum Sehen (oberflaeche/steuerung.css): Puls unten in die Mitte, Taktkasten weg (Taktleiste über der Figur),
+   am Stand Magazin unten Mitte, Puls und Luft oben links unter der Zeit */
+#hud .hud-bc { display: none; }
+#hud .hud-bl { left: 50%; transform: translateX(-50%); bottom: 12px; width: 190px; }
+#hud .zone { display: none !important; }
+#hud.watch .cs-knopf, #hud.watch .cs-takt, #hud.watch .cs-hint { display: none; }
+#rhud .shots { display: none; }
+#rhud .hud-bl { top: 112px; bottom: auto; }
+#learnCard ~ * .cs-hint { display: none; }
+#rhud .cs-hint.cs-oben { top: 10px; max-width: 46%; font-size: 14px; }
+/* 0.18: Startbildschirm mit breiten Schriften (iPhone, tools/layout_audit.py): Karten rechts nicht breiter als 240, Text bricht um;
+   Knöpfe im Raster etwas kleiner, damit der Pfeil im Knopf bleibt */
+.hunt, .xc { max-width: 240px; min-width: 0; width: 240px; box-sizing: border-box; }
+.hunt .hs, .xc .hs { white-space: normal; line-height: 1.2; }
+.menu-grid .btn:not(.big):not(.venue) { font-size: 19px; letter-spacing: 0.03em; padding-left: 14px; padding-right: 10px; gap: 6px; }
+#ui.narrow .menu-grid .btn:not(.big):not(.venue) { font-size: 17px; letter-spacing: 0.02em; }
+.side-cards { position: absolute; right: 24px; bottom: 22px; width: 240px; display: flex; flex-direction: column; gap: 10px; }
+.side-cards .hunt, .side-cards .xc { position: static; width: 100%; }
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -505,6 +523,52 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 @media (prefers-reduced-motion: reduce) { .ps-btn:active, .ps-stage:active { transform: none; } }
 
+/* oberflaeche/steuerung.css – Spielsteuerung (CMSteuer). Farben aus dem Spiel (--ink, --paper, --gold …), sonst Plakatfarben. */
+.cs-knopf, .cs-stick { position: absolute; bottom: 14px; width: 104px; height: 104px; border-radius: 50%; padding: 0;
+  pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+.cs-links { left: 16px; } .cs-rechts { right: 16px; }
+.cs-knopf { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  background: var(--paper, #F3EEE2); color: var(--ink, #1E2734); border: 3px solid var(--ink-deep, #141C28);
+  box-shadow: 0 4px 0 var(--ink-deep, #141C28), 0 8px 18px rgba(0, 0, 0, 0.25); transition: transform 0.05s; }
+.cs-knopf.cs-klein { width: 84px; height: 84px; }
+.cs-knopf.cs-down, .cs-knopf.cs-aktiv { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink-deep, #141C28), 0 4px 10px rgba(0, 0, 0, 0.25); background: #FFF8E8; }
+.cs-ring { position: absolute; inset: -7px; width: calc(100% + 14px); height: calc(100% + 14px); transform: rotate(-90deg); pointer-events: none; }
+.cs-ring circle { fill: none; stroke-width: 6; }
+.cs-ring-bg { stroke: rgba(20, 28, 40, 0.18); }
+.cs-ring-v { stroke: var(--gold, #DDA43B); stroke-linecap: round; transition: stroke 0.08s; }
+.cs-knopf.cs-ok .cs-ring-v { stroke: #4E9A4A; }
+.cs-knopf.cs-ok { border-color: #2F6B2C; }
+.cs-sym svg { width: 38px; height: 38px; display: block; }
+.cs-klein .cs-sym svg { width: 30px; height: 30px; }
+.cs-txt { font: 800 12px/1 var(--font-display, Futura, "Avenir Next", sans-serif); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
+.cs-stick { background: radial-gradient(circle, rgba(243, 238, 226, 0.22) 0 38%, rgba(243, 238, 226, 0.12) 39% 100%); border: 3px solid rgba(243, 238, 226, 0.75);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3); width: 132px; height: 132px; display: flex; align-items: center; justify-content: center; color: var(--paper, #F3EEE2); }
+.cs-stick-knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%;
+  background: var(--paper, #F3EEE2); border: 3px solid var(--ink-deep, #141C28); box-shadow: 0 3px 0 var(--ink-deep, #141C28); }
+.cs-stick .cs-txt { position: absolute; top: -20px; left: 0; right: 0; text-align: center; color: var(--paper, #F3EEE2); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); }
+.cs-stick.cs-down { border-color: var(--gold, #DDA43B); }
+.cs-takt { position: absolute; left: 0; top: 0; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 2px; will-change: transform; }
+.cs-takt-bar { position: relative; width: 112px; height: 12px; border-radius: 6px; background: rgba(20, 28, 40, 0.55); border: 2px solid var(--paper, #F3EEE2); overflow: hidden; }
+.cs-takt-win { position: absolute; top: 0; bottom: 0; background: rgba(110, 175, 100, 0.85); }
+.cs-takt-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--gold, #DDA43B); mix-blend-mode: screen; }
+.cs-takt-fill::after { content: ""; position: absolute; right: -2px; top: -2px; bottom: -2px; width: 4px; background: #FFFFFF; border-radius: 2px; }
+.cs-takt.cs-ok .cs-takt-bar { border-color: #9BD08F; box-shadow: 0 0 8px rgba(155, 208, 143, 0.9); }
+.cs-takt-txt { font: 800 12px/1 var(--font-display, Futura, sans-serif); color: var(--ink, #1E2734); text-shadow: 0 0 3px #FFFFFF, 0 0 2px #FFFFFF; letter-spacing: 0.05em; }
+.cs-mag { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: rgba(20, 28, 40, 0.78); color: var(--paper, #F3EEE2); border: 2px solid var(--paper, #F3EEE2); border-radius: 6px; padding: 4px 14px 7px; pointer-events: none; }
+.cs-mag-n { display: flex; align-items: center; gap: 4px; }
+.cs-mag-n b { font: 800 30px/1 var(--font-display, Futura, sans-serif); }
+.cs-mag-n svg { width: 10px; height: 24px; color: var(--gold, #DDA43B); }
+.cs-mag-dots { display: flex; gap: 6px; }
+.cs-mag-dots i { width: 18px; height: 18px; border-radius: 50%; background: #10151E; border: 2px solid var(--paper, #F3EEE2); }
+.cs-mag-dots i.cs-hit { background: #FFFFFF; }
+.cs-mag-dots i.cs-miss { background: #B23524; }
+.cs-hint { position: absolute; left: 50%; bottom: 128px; z-index: 3; transform: translateX(-50%); max-width: min(560px, 70%); text-align: center;
+  background: var(--paper, #F3EEE2); color: var(--ink, #1E2734); border: 2px solid var(--ink-deep, #141C28); border-radius: 6px; box-shadow: 0 3px 0 var(--ink-deep, #141C28);
+  padding: 6px 12px; font: 600 15px/1.3 var(--font-label, "Avenir Next", sans-serif); pointer-events: none; }
+.cs-hint-k { display: inline-block; margin-right: 8px; padding: 1px 6px; border-radius: 3px; background: var(--red, #B23524); color: #FBF4E4; font: 800 11px/1.4 var(--font-display, Futura, sans-serif); letter-spacing: 0.1em; vertical-align: 1px; }
+.cs-hint.cs-oben { bottom: auto; top: 12px; }
+
 </style>
 </head>
 <body>
@@ -533,8 +597,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <button type="button" id="btnCode" class="chip-btn" aria-label="Dein Code" hidden><i class="ico" data-i="key"></i><span>Code</span></button>
     <button type="button" id="btnSet" class="chip-btn" aria-label="Einstellungen"><i class="ico" data-i="gear"></i></button>
   </div>
+  <div class="side-cards">
   <button type="button" id="btnXc" class="btn xc"><span class="hk">LANGLAUF</span><b>OHNE GEWEHR</b><span class="hs" id="xcSub">10 km · Einzelstart</span></button>
   <button type="button" id="btnHunt" class="btn hunt"><span class="hk">NOSTALGIE</span><b>JAGD 1960</b><span class="hs">Kimme und Korn · 3D-Attrappen</span></button>
+  </div>
   <div class="foot"><span id="verLine">Version 0.1 · Fanspiel</span> · <button type="button" id="btnInfo" class="link">Info</button></div>
 </section>
 
@@ -5656,6 +5722,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       ctx.globalAlpha = 1;
       // Läuferin
       const [yP, aP] = skiFit(V.s, 62 * k);
+      R.player = { x: xr, y: yP, h: 62 * k };   // für die Taktleiste über der Figur (oberflaeche/steuerung.js)
       skier(xr, yP, 62 * k, aP, playerPose(V, dt), V.look ? [V.look.suit, V.look.accent] : V.suit, V.retro, V.look || faceFor(V.name || "Ich"));
       // Markierung über dir, sobald andere auf der Strecke sind
       if (others.length) { const yy = yr - (V.run.tuck ? 52 : 82) * k; poly([[xr - 7 * k, yy - 9 * k], [xr + 7 * k, yy - 9 * k], [xr, yy]], I.ocker); }
@@ -6367,10 +6434,136 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   window.BIOnline = { make, fmtCode, parseCode, groupOk, message, ALPHA };
 })();
 
+// oberflaeche/steuerung.js – Spielsteuerung für alle Spiele der Reihe (global CMSteuer), seit 14.11.2026 (Biathlon 0.18).
+// Mat nach Biathlon Mania: „da ist es einfacher zu wissen, was man machen muss“. Darum sichtbare Bedienelemente statt
+// „irgendwo tippen“: runde Knöpfe mit Takt-Ring, ein Stick zum Zielen, eine Taktleiste über der Figur, ein Magazin und
+// eine Hinweiszeile für das erste Mal. Nur DOM und CSS (steuerung.css), keine Abhängigkeiten, kein Zeichnen auf dem Canvas.
+// Jedes Spiel liefert nur Texte, Symbole und Rückrufe. Abwärtskompatibel erweitern (neue Felder, alte bleiben).
+(function (root) {
+  "use strict";
+  const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  // Symbole (Plakatstil, Strich), in Knöpfen nutzbar: symbol: "lauf" | "hocke" | "feuer" | "links" | "rechts" | "stock"
+  const SYM = {
+    lauf: '<path d="M9 21l3-6 3 2 2 5M12 15l1-5 4 2 2 3M13 10l-4 1-2 3"/><circle cx="15" cy="5" r="2"/><path d="M3 22h18"/>',
+    hocke: '<path d="M5 18c3-1 6-1 9-3l3-4M14 15l-4-3 2-4 4 1"/><circle cx="16" cy="5" r="2"/><path d="M2 21l20-3"/>',
+    feuer: '<circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',
+    links: '<path d="M14 6l-6 6 6 6"/>', rechts: '<path d="M10 6l6 6-6 6"/>',
+    stock: '<path d="M7 3l3 18M17 3l-3 18M5 21h14"/>',
+  };
+  const svg = (k) => (SYM[k] ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SYM[k]}</svg>` : "");
+
+  // Zeiger an ein Element binden: Rückrufe mit pointerId; das Element fängt den Zeiger, das Spielfeld darunter bekommt nichts
+  function grab(node, on) {
+    const ids = new Set();
+    node.addEventListener("pointerdown", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      try { node.setPointerCapture(e.pointerId); } catch (er) { /* egal */ }
+      ids.add(e.pointerId); node.classList.add("cs-down"); if (on.down) on.down(e.pointerId, e);
+    });
+    node.addEventListener("pointermove", (e) => { if (ids.has(e.pointerId) && on.move) { e.preventDefault(); on.move(e.pointerId, e); } });
+    const up = (e) => { if (!ids.delete(e.pointerId)) return; if (!ids.size) node.classList.remove("cs-down"); if (on.up) on.up(e.pointerId, e, e.type === "pointercancel"); };
+    node.addEventListener("pointerup", up); node.addEventListener("pointercancel", up);
+    node.addEventListener("contextmenu", (e) => e.preventDefault());
+    return { release() { for (const id of [...ids]) { ids.delete(id); if (on.up) on.up(id, null, true); } node.classList.remove("cs-down"); } };
+  }
+
+  // Runder Knopf unten links oder rechts. Ring: Takt (fill 0 … 1, ok = im grünen Bereich). o: { seite, text, symbol, klein,
+  // onDown(id, e), onUp(id, e, abgebrochen) }. Rückgabe { el, set({ fill, ok, text, symbol, hidden, aktiv }), release() }
+  function knopf(host, o) {
+    const b = el("button", `cs-knopf cs-${o.seite === "rechts" ? "rechts" : "links"}${o.klein ? " cs-klein" : ""}`);
+    b.type = "button";
+    b.innerHTML = `<svg class="cs-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="cs-ring-bg" cx="50" cy="50" r="46"/><circle class="cs-ring-v" cx="50" cy="50" r="46" pathLength="100" stroke-dasharray="0 100" style="opacity:0"/></svg><span class="cs-sym">${svg(o.symbol)}</span><span class="cs-txt">${esc(o.text || "")}</span>`;
+    b.setAttribute("aria-label", o.text || o.symbol || "Knopf");
+    host.appendChild(b);
+    const g = grab(b, { down: o.onDown && ((id, e) => o.onDown(id, e)), up: o.onUp && ((id, e, c) => o.onUp(id, e, c)) });
+    const ringV = b.querySelector(".cs-ring-v"), txt = b.querySelector(".cs-txt"), sym = b.querySelector(".cs-sym");
+    let last = {};
+    return { el: b, release: g.release, set(s) {
+      if ("hidden" in s && s.hidden !== last.hidden) b.hidden = !!s.hidden;
+      if ("fill" in s) { const f = s.fill == null ? 0 : clamp(s.fill, 0, 1); const v = Math.round(f * 100); if (v !== last.v) { ringV.setAttribute("stroke-dasharray", `${v} ${100 - v}`); ringV.style.opacity = v ? "" : "0"; last.v = v; } }
+      if ("ok" in s && s.ok !== last.ok) b.classList.toggle("cs-ok", !!s.ok);
+      if ("aktiv" in s && s.aktiv !== last.aktiv) b.classList.toggle("cs-aktiv", !!s.aktiv);
+      if ("text" in s && s.text !== last.text) { txt.textContent = s.text; b.setAttribute("aria-label", s.text); }
+      if ("symbol" in s && s.symbol !== last.symbol) sym.innerHTML = svg(s.symbol);
+      last = Object.assign(last, s);
+    } };
+  }
+
+  // Stick zum Zielen wie ein Trackpad: der Finger verschiebt (onMove(dx, dy) in Bildschirm-Pixeln, schon gedreht über o.map),
+  // der Knopf in der Mitte zeigt die Richtung. o: { seite, text, map(dx, dy) → [dx, dy], onDown(id), onUp(id, abgebrochen) }
+  function stick(host, o) {
+    const b = el("div", `cs-stick cs-${o.seite === "links" ? "links" : "rechts"}`, `<span class="cs-stick-knob"></span><span class="cs-txt">${esc(o.text || "")}</span>`);
+    b.setAttribute("role", "slider"); b.setAttribute("aria-label", o.text || "Zielen");
+    host.appendChild(b);
+    const knob = b.querySelector(".cs-stick-knob"); let p = null, off = [0, 0];
+    const place = () => { knob.style.transform = `translate(${off[0]}px, ${off[1]}px)`; };
+    const g = grab(b, {
+      down(id, e) { p = [e.clientX, e.clientY]; off = [0, 0]; place(); if (o.onDown) o.onDown(id, e); },
+      move(id, e) {
+        if (!p) return;
+        let dx = e.clientX - p[0], dy = e.clientY - p[1]; p = [e.clientX, e.clientY];
+        if (o.map) [dx, dy] = o.map(dx, dy);
+        const r = b.clientWidth * 0.3; off = [clamp(off[0] * 0.85 + dx * 1.6, -r, r), clamp(off[1] * 0.85 + dy * 1.6, -r, r)]; place();
+        if (o.onMove) o.onMove(dx, dy);
+      },
+      up(id, e, c) { p = null; off = [0, 0]; place(); if (o.onUp) o.onUp(id, c); },
+    });
+    return { el: b, release: g.release, set(s) { if ("hidden" in s) b.hidden = !!s.hidden; if ("text" in s) b.querySelector(".cs-txt").textContent = s.text; } };
+  }
+
+  // Taktleiste über der Figur: folgt der Figur (x, y in Pixeln der Ebene), fill = Fortschritt bis zum nächsten Abstoß,
+  // win = [von, bis] der grüne Bereich, ok = gerade drin, text = kleine Zeile darunter (z. B. Tempo)
+  function takt(host) {
+    const b = el("div", "cs-takt", `<div class="cs-takt-bar"><i class="cs-takt-win"></i><i class="cs-takt-fill"></i></div><span class="cs-takt-txt"></span>`);
+    host.appendChild(b);
+    const fill = b.querySelector(".cs-takt-fill"), win = b.querySelector(".cs-takt-win"), txt = b.querySelector(".cs-takt-txt");
+    let last = {};
+    return { el: b, set(s) {
+      if ("hidden" in s && s.hidden !== last.hidden) b.hidden = !!s.hidden;
+      if (s.x != null && s.y != null) b.style.transform = `translate(${Math.round(s.x)}px, ${Math.round(s.y)}px) translate(-50%, -100%)`;
+      if ("fill" in s) fill.style.width = `${Math.round(clamp(s.fill || 0, 0, 1) * 100)}%`;
+      if (s.win) { win.style.left = `${s.win[0] * 100}%`; win.style.width = `${Math.max(0, s.win[1] - s.win[0]) * 100}%`; }
+      if ("ok" in s && s.ok !== last.ok) b.classList.toggle("cs-ok", !!s.ok);
+      if ("text" in s && s.text !== last.text) txt.textContent = s.text || "";
+      last = Object.assign(last, s);
+    } };
+  }
+
+  // Magazin unten in der Mitte: übrige Patronen groß, darunter je Schuss ein Punkt (true = Treffer, false = Fehler, null = offen)
+  function magazin(host) {
+    const b = el("div", "cs-mag", `<div class="cs-mag-n"><b>5</b><svg viewBox="0 0 12 28" aria-hidden="true"><path d="M3 10h6v16H3zM3 10c0-4 1.5-7 3-8 1.5 1 3 4 3 8" fill="currentColor"/></svg></div><div class="cs-mag-dots"></div>`);
+    host.appendChild(b);
+    const n = b.querySelector(".cs-mag-n b"), dots = b.querySelector(".cs-mag-dots");
+    return { el: b, set(s) {
+      if ("hidden" in s) b.hidden = !!s.hidden;
+      if (s.shots) {
+        n.textContent = String(s.left != null ? s.left : s.shots.filter((x) => x == null).length);
+        dots.innerHTML = s.shots.map((x) => `<i class="${x === true ? "cs-hit" : x === false ? "cs-miss" : ""}"></i>`).join("");
+      }
+    } };
+  }
+
+  // Hinweiszeile für das erste Mal (unten in der Mitte über den Knöpfen, mit { oben: true } oben in der Mitte): say(text, sekunden) zeigt, clear() blendet aus
+  // o.oben: oben in der Mitte (wenn unten das Ziel oder Magazin liegt)
+  function hinweis(host, o) {
+    const b = el("div", "cs-hint" + (o && o.oben ? " cs-oben" : "")); b.hidden = true; b.setAttribute("role", "status");
+    host.appendChild(b);
+    let t = 0, cur = "";
+    return { el: b, get text() { return b.hidden ? "" : cur; },
+      say(text, sek) { clearTimeout(t); if (text !== cur || b.hidden) { cur = text; b.innerHTML = `<span class="cs-hint-k">TIPP</span>${esc(text)}`; } b.hidden = false; if (sek) t = setTimeout(() => { b.hidden = true; cur = ""; }, sek * 1000); },
+      clear() { clearTimeout(t); b.hidden = true; cur = ""; } };
+  }
+
+  root.CMSteuer = { version: 1, knopf, stick, takt, magazin, hinweis, SYM };
+})(typeof window !== "undefined" ? window : globalThis);
+
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.17.2";
+  const VERSION = "0.18.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6670,7 +6863,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     Rc.phase = "count"; Rc.pt = 0;
     banner(race ? `${Rc.watch ? "ANSEHEN · " : Rc.club ? "GRUPPE · " : ""}${FM.name.toUpperCase()} · ${sex === "m" ? "HERREN" : "DAMEN"}` : "TRAINING", "3", kind === "pursuit" ? `Start als ${Rc.bib}. · ${Rc.off ? fmtB(Rc.off) + " hinter der Ersten" : "du führst"}` : Rc.watch ? `${Rc.watch.n} · antippen: schneller` : Rc.ghosts.length ? `${Rc.ghosts.length} ${Rc.ghosts.length === 1 ? "Geist läuft" : "Geister laufen"} mit` : kind === "jagd" ? `Wie 1960 · vier Stationen · Kimme und Korn` : kind === "xc" ? `Langlauf klassisch · Startnummer ${Rc.bib}` : race ? `Hochfilzen · Startnummer ${Rc.bib}${kind === "mass" ? " · alle zugleich" : ""}` : "Eine Runde");
     Snd.beep(false);
-    if (S.help === "anf" && (S.tips.run2 || 0) < 3) { Rc.pendTip = (Rc.simple ? (canHover() ? "<b>Klicken</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>gedrückt halten</b>" : "<b>Tippen</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>halten</b>") : canHover() ? "<b>Linksklick</b> im Takt (grünes Feld) · flach <b>Rechtsklick</b> · <b>halten</b> = Hocke" : "<b>Links/rechts</b> im Takt (grünes Feld) · flach <b>beide Daumen</b> · <b>halten</b> = Hocke") ; S.tips.run2 = (S.tips.run2 || 0) + 1; save(); }
+    // am Handy erklären seit 0.18 die Knöpfe und die Hinweiszeile
+    if (S.help === "anf" && (S.tips.run2 || 0) < 3 && canHover()) { Rc.pendTip = (Rc.simple ? (canHover() ? "<b>Klicken</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>gedrückt halten</b>" : "<b>Tippen</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>halten</b>") : canHover() ? "<b>Linksklick</b> im Takt (grünes Feld) · flach <b>Rechtsklick</b> · <b>halten</b> = Hocke" : "<b>Links/rechts</b> im Takt (grünes Feld) · flach <b>beide Daumen</b> · <b>halten</b> = Hocke") ; S.tips.run2 = (S.tips.run2 || 0) + 1; save(); }
   }
   const dispTime = () => (Rc.watch ? Rc.we || 0 : (Rc.ski + Rc.pen) * T.SCALE + Rc.range) + (Rc.tpen || 0);
   // Verfolgung: gestartet wird mit dem Rückstand aus dem Sprint. Grundlage ist dein letzter Sprint (gleiches Feld, gleiche Namen);
@@ -7471,6 +7665,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     $("hTuck").hidden = !R.tuck;
     const sl = Rc.phase === "pen" ? 0 : L.slope(R.s);
     const ph = R.tp / Ph.cycle(sl, R);
+    if (!Rc.watch) csRunFrame();
 
     if (beatFlash <= 0) { const e = $("beatLbl"); if (e.textContent) { e.textContent = ""; } }
     if (Rc.together) { $("hSplit").hidden = false; setText($("hSplit"), nb(`Platz ${liveRank()} von ${Rc.ai.length + 1}`)); }
@@ -7524,6 +7719,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
   function hudRange(t) {
     const G = Rc.G;
+    csRangeFrame();
     setText($("rTime"), fmtT(dispTime()));
     if (!Rc.together) setText($("rSub"), Rc.kind === "shoot" ? nb(`Training · ${Rc.trainRounds.length + 1}. Serie`) : G.hunt ? nb(`Station · ${dec(Rc.range - Rc.rangeStart, 1)} s${Rc.tpen ? " · Strafzeit " + (Rc.tpen > 0 ? "+" : "−") + fmtT(Math.abs(Rc.tpen)) : ""}`) : nb(`Schießstand · ${dec(Rc.range - Rc.rangeStart, 1)} s`));
     setText($("rHr"), String(bpm(G.hr)));
@@ -7545,6 +7741,56 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const b = $("rBreath"); b.style.width = air * 100 + "%"; b.className = G.hold && G.holdT > 3 ? "low" : "";
     const dots = $("rShots").children;
     for (let i = 0; i < (G.n || 5); i++) if (!dots[i].classList.contains("hit") && !dots[i].classList.contains("miss")) dots[i].className = i === G.target && !G.done ? "now" : "";
+  }
+
+  // ================================================================== Steuerung zum Sehen (oberflaeche/steuerung.js, seit 0.18)
+  // Mat nach Biathlon Mania: man soll sehen, was man tun muss. Laufen: links „Abstoß“ (Ring füllt sich bis zum Takt, grün = jetzt),
+  // rechts „Hocke“ halten; Profi: links und rechts je ein Bein, beide zugleich = Doppelstock. Über der Figur die Taktleiste.
+  // Schießstand: rechts der Stick zum Zielen, links „Feuer“ halten (Luft anhalten) und loslassen = Schuss, unten das Magazin.
+  // Tippen und Ziehen irgendwo auf dem Bild geht weiter wie bisher. Beim ersten Rennen erklärt die Hinweiszeile jeden Schritt.
+  const CS = window.CMSteuer;
+  const csMap = (dx, dy) => (rotated ? [dy, -dx] : [dx, dy]);
+  const csRun = (fn) => (id) => { if (paused || !Rc || Rc.watch || mode !== "run") return; advanceTo(performance.now()); Snd.unlock(); fn("cs" + id); };
+  const kL = CS.knopf($("hud"), { seite: "links", text: "Abstoß", symbol: "lauf",
+    onDown: csRun((id) => { if (Rc.simple) runPress(id, undefined, 0); else runPress(id, -1); }), onUp: (id) => { advanceTo(performance.now()); runRelease("cs" + id); } });
+  const kR = CS.knopf($("hud"), { seite: "rechts", text: "Hocke", symbol: "hocke",
+    onDown: csRun((id) => { if (Rc.simple) inp.ptrs.set(id, { side: 0, t0: simT - 1, noPush: true }); else runPress(id, 1); }), onUp: (id) => { advanceTo(performance.now()); runRelease("cs" + id); } });
+  const tk = CS.takt($("hud"));
+  const csHint = CS.hinweis($("hud"));
+  const rIn = () => { if (Rc && Rc.phase === "in" && Rc.kind !== "learn") { Rc.phase = "aim"; Rc.pt = 0; } };
+  const kF = CS.knopf($("rhud"), { seite: "links", text: "Feuer", symbol: "feuer",
+    onDown: () => { if (paused || mode !== "range" || !Rc) return; advanceTo(performance.now()); Snd.unlock(); rIn(); inp.down = true; inp.downT = simT; if (Rc.phase === "aim" && !Rc.G.hold) { Ph.holdStart(Rc.G); Snd.breath(); } },
+    onUp: (id, e, cancel) => { if (mode !== "range" || !Rc) return; advanceTo(performance.now()); if (cancel) { inp.down = false; if (Rc.G) Rc.G.hold = false; return; } release(); } });
+  const stk = CS.stick($("rhud"), { seite: "rechts", text: "Zielen", map: csMap,
+    onDown: () => { if (mode !== "range" || !Rc || paused) return; advanceTo(performance.now()); Snd.unlock(); rIn(); Rc.csAimed = Rc.csAimed || 0; },
+    onMove: (dx, dy) => { if (mode !== "range" || !Rc || paused || Rc.phase !== "aim") return; aimMove(dx, dy); Rc.csAimed = (Rc.csAimed || 0) + Math.hypot(dx, dy); } });
+  const mag = CS.magazin($("rhud"));
+  const csRHint = CS.hinweis($("rhud"), { oben: true });
+  // je Bild: Ring, Taktleiste über der Figur, Hinweise fürs erste Mal
+  function csRunFrame() {
+    const R = Rc.R, sl = Rc.phase === "pen" ? 0 : Rc.L.slope(R.s), cyc = Ph.cycle(sl, R), ph = R.tp / cyc;
+    const P = Ph.P, a = Rc.simple ? 0.42 : P.press, z = Rc.simple ? 1.08 : P.late, top = z * 1.12;
+    const going = Rc.phase === "go" || Rc.phase === "pen", ok = going && !R.tuck && ph >= a && ph <= z, tuck = R.tuck;
+    kL.set({ fill: going && !tuck ? ph / z : 0, ok, text: Rc.simple ? "Abstoß" : "Links", symbol: Rc.simple ? "lauf" : "links" });
+    kR.set({ fill: Rc.simple ? 0 : going && !tuck ? ph / z : 0, ok: Rc.simple ? false : ok, aktiv: Rc.simple && tuck, text: Rc.simple ? "Hocke" : "Rechts", symbol: Rc.simple ? "hocke" : "rechts" });
+    const pp = renderer.player;
+    if (pp) tk.set({ hidden: !going || Rc.kind === "learn", x: pp.x / uiS, y: (pp.y - pp.h * 1.18) / uiS, fill: tuck ? 0 : ph / top, win: [a / top, z / top], ok, text: nb(`${Math.round(R.v * 3.6)} km/h${tuck ? " · Hocke" : R.streak >= 3 ? " · Serie " + R.streak : ""}`) });
+    // Hinweise beim ersten Rennen (nicht in Erste Schritte und beim Ansehen)
+    if (Rc.kind === "learn" || Rc.phase === "count") return;
+    const T = S.tips;
+    if (!T.csRun) { csHint.say(Rc.simple ? "Tippe auf „Abstoß“, wenn der Ring grün wird: im Takt läufst du schneller und sparst Kraft." : "Links und rechts abwechselnd tippen, wenn der Ring grün wird; beide zugleich = Doppelstock."); if (R.streak >= 4) { T.csRun = 1; save(); csHint.say("Gut so, im Takt!", 1.5); } }
+    else if (!T.csTuck && sl < -0.04 && going) { csHint.say(Rc.simple ? "Bergab: „Hocke“ gedrückt halten." : "Bergab: einen Finger liegen lassen = Hocke."); if (R.tuck) { T.csTuck = 1; save(); csHint.clear(); } }
+    else if (csHint.text && T.csRun && (T.csTuck || sl >= -0.04) && csHint.text.indexOf("Gut so") < 0) csHint.clear();
+  }
+  function csRangeFrame() {
+    const G = Rc.G, n = G.n || 5, shots = [];
+    for (let i = 0; i < n; i++) shots.push(G.shots[i] ? !!G.shots[i].hit : null);
+    mag.set({ shots, left: n - G.shots.length });
+    kF.set({ ok: G.hold && G.holdT > 0.45 && G.holdT < 2.2, aktiv: !!G.hold, fill: G.hold ? clamp(G.holdT / 2.2, 0, 1) : 0 });
+    if (Rc.kind === "learn") return;
+    const T = S.tips;
+    if (!T.csAim) { csRHint.say(G.hunt ? "Rechts ziehen: Kimme und Korn aufs Tier." : "Rechts am Stick ziehen: Kreuz auf die schwarze Scheibe."); if ((Rc.csAimed || 0) > 40) { T.csAim = 1; save(); } }
+    else if (!T.csFire) { csRHint.say("Links „Feuer“ halten (Luft anhalten), loslassen = Schuss."); if (G.shots.length) { T.csFire = 1; save(); csRHint.say("Treffer machen die Scheibe weiß. Fehler kosten Zeit.", 2.5); } }
   }
 
   // ================================================================== Deine Figur, Online, Gruppen (seit 0.16)
