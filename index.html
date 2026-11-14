@@ -441,6 +441,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .rp-w.on { border-color: var(--ink); background: #fff; box-shadow: inset 0 0 0 1px var(--ink); }
 .rp-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .rp-btns .btn { min-width: 120px; }
+/* 0.21.1: Wachs zugeklappt, unauffällig unter dem Wetter */
+.rp-waxbtn { justify-self: start; display: inline-flex; align-items: center; gap: 7px; background: none; border: 0; padding: 4px 0; font: inherit;
+  font-size: 13px; color: var(--muted); cursor: pointer; min-height: 32px; }
+.rp-waxbtn i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--ink); }
+.rp-waxbtn b { font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -780,8 +785,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div class="card panel-strong rp-card">
     <span class="kicker" id="rpKick">SCHNEEBERICHT</span>
     <div class="rp-head"><i id="rpIcon" class="rp-ico"></i><div><h2 id="rpTitle">Sonnig · −5 °C</h2><p id="rpSub" class="rp-sub"></p></div></div>
-    <span class="kicker rp-k2">WACHS</span>
-    <div id="rpWax" class="rp-wax"></div>
+    <button type="button" id="rpWaxBtn" class="rp-waxbtn"><i id="rpWaxDot"></i><span id="rpWaxTxt">Wachs: Universal</span><b>ändern</b></button>
+    <div id="rpWax" class="rp-wax" hidden></div>
     <div class="rp-btns"><button type="button" id="rpBack" class="btn btn-secondary">Zurück</button><button type="button" id="rpGo" class="btn btn-primary">Start</button></div>
   </div>
 </section>
@@ -6810,7 +6815,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.21.0";
+  const VERSION = "0.21.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7073,7 +7078,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const wind = wx.sky === "sturm" ? "Sturm, auch auf der Strecke" : wx.sky === "klar" ? "kaum Wind" : wx.sky === "grau" ? "mäßiger Wind am Stand" : "böig am Stand";
     $("rpSub").textContent = nb(`${wx.snow}${wx.sky === "neu" ? " (bremst)" : ""} · ${wind}`);
     $("rpIcon").innerHTML = skyIcon(wx.sky);
-    paintWax(); show("report");
+    $("rpWax").hidden = true; paintWax(); show("report");
   }
   // kleines Wetterbild im Plakatstil (Sonne, Wolke, Flocken, Sturm)
   function skyIcon(sky) {
@@ -7086,9 +7091,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
   function paintWax() {
     const help = S.help === "anf";
+    $("rpWaxDot").style.background = WAX[pre.wax].col; $("rpWaxTxt").textContent = `Wachs: ${WAX[pre.wax].n}`;
     $("rpWax").innerHTML = WAX_KEYS.map((w) => `<button type="button" class="rp-w${pre.wax === w ? " on" : ""}" data-w="${w}"><i style="background:${WAX[w].col}"></i><b>${WAX[w].n}${help && w === pre.wx.band ? ' <em>passt heute</em>' : ""}</b><small>${esc(WAX[w].d)}</small></button>`).join("");
   }
   $("rpWax").addEventListener("click", (e) => { const b = e.target.closest("[data-w]"); if (!b || !pre) return; pre.wax = b.dataset.w; S.wax = pre.wax; save(); paintWax(); Snd.click && Snd.click(); });
+  // Wachs ist eine Möglichkeit, keine Pflicht (Mat): zugeklappt, erst „ändern“ zeigt die Auswahl
+  $("rpWaxBtn").addEventListener("click", () => { $("rpWax").hidden = !$("rpWax").hidden; });
   $("rpGo").addEventListener("click", () => { if (!pre) return; const p = pre; pre = null; startRace(p.kind, Object.assign({}, p.o, { wax: p.wax })); });
   $("rpBack").addEventListener("click", () => { pre = null; show("menu"); });
 
