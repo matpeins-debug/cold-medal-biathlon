@@ -6815,7 +6815,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.21.1";
+  const VERSION = "0.21.2";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7216,14 +7216,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (f.ok === 0) { const g = ski * (1 - timeK(wx.snowK * 0.88) / timeK(wx.snowK)); return nb(`${head}: Mit ${right} wärst du etwa ${dec(g, 1)} s schneller gewesen.`); }
     return nb(`${head}: ${f.txt}, etwa ${dec(eff, 1)} s verloren. Passend wäre ${right} gewesen.`);
   }
-  const PEN_P = 10, HUNT_P = 10, HUNT_K = 2;   // Strafzeit je Fehler; Jagd: Fehler +10 s, Kill-Zone −2 s
+  const PEN_P = 10, HUNT_P = 10, HUNT_K = 2;
+  // Zeit am Stand der KI in Spielzeit: echte Weltcup-Zeiten (22–44 s) sind im Spiel zu lang, Spieler brauchen 10–18 s je Stand.
+  // Ohne diesen Faktor holte man mit schnellem Schießen mehr heraus, als 12 Fehler kosten (Mat, 0.21.2: Platz 8 trotz 5+3+2+2).
+  const RANGE_P = 0.45;   // Strafzeit je Fehler; Jagd: Fehler +10 s, Kill-Zone −2 s
   function playAI(list) {
     const S = T.SCALE;
     for (const a of list) {
       let t = 0;
       for (const g of a.segs) {
         g.ski /= S; t += g.ski; g.at = t;
-        if (g.range != null) { g.pen = (g.pen || 0) / S; g.tpen = g.kill != null ? (g.miss || 0) * HUNT_P - g.kill * HUNT_K : (g.miss || 0) * PEN_P; t += g.range + g.pen + g.tpen; g.after = t; }
+        if (g.range != null) { g.range *= RANGE_P; g.pen = (g.pen || 0) / S; g.tpen = g.kill != null ? (g.miss || 0) * HUNT_P - g.kill * HUNT_K : (g.miss || 0) * PEN_P; t += g.range + g.pen + g.tpen; g.after = t; }
       }
       a.total = t; a.accK = 1 / S;
     }
