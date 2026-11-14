@@ -765,7 +765,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <span class="kicker" id="ifKick">ÜBER DAS SPIEL</span>
     <div class="if-body">
       <h3>Fanspiel</h3><p>Cold Medal · Biathlon ist ein inoffizielles Fanspiel ohne Verbindung zu Verbänden oder Veranstaltern. Alle Athletinnen und Athleten sind erfunden. Strecken sind öffentlichen Daten nachempfunden, nicht vermessen. Grafik und Ton entstehen im Spiel.</p>
-      <h3>Rennen</h3><p>Das Rennen läuft gerafft: Laufen zwölfmal schneller als echt, am Schießstand zählt jede Sekunde. Fehler kosten Strafzeit, so viel wie eine Strafrunde von 150 m. Die Zeiten werden so angezeigt, wie sie im echten Rennen wären.</p>
+      <h3>Rennen</h3><p>Die Strecke ist gerafft (zwölfmal kürzer als echt), die Uhr zeigt deine echte Spielzeit: Laufen, Zeit am Schießstand und Strafzeit. Jeder Fehler kostet 10 s. Alle in der Rangliste werden genauso gerechnet.</p>
       <h3>Datenschutz</h3><p>Kein Konto, keine Werbung, keine Cookies, keine Analyse. Name, Bestzeiten und Einstellungen speichert das Spiel im Browser auf diesem Gerät. Deine Figur (Name, Land, Aussehen) teilt es mit den anderen Spielen von Cold Medal unter derselben Adresse.</p><p id="ifOnline"></p><p id="ifPriv"></p><div id="ifOnBtns" class="if-btns" hidden><button type="button" id="ifOnToggle" class="btn btn-secondary small"></button><button type="button" id="ifForget" class="btn btn-plain small">Meine Online-Daten löschen</button></div>
       <h3>Impressum</h3><p id="ifImp">Privates Spieleprojekt, nicht kommerziell.</p>
     </div>
@@ -1309,7 +1309,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const ACC = 12, ACC_OUT = 120;
   function where(ref, a, e) {
     if (e < 0) return { where: "wait" };
-    if (e < ACC_OUT * 6) e = Math.max(0, e - ACC * (1 - Math.exp(-e / ACC)) * Math.exp(-e / ACC_OUT));
+    const ak = a.accK || 1, A1 = ACC * ak, A2 = ACC_OUT * ak;   // a.accK: Zeiten in Spielsekunden (game.js, seit 0.20)
+    if (e < A2 * 6) e = Math.max(0, e - A1 * (1 - Math.exp(-e / A1)) * Math.exp(-e / A2));
     let t = 0;
     for (let k = 0; k < a.segs.length; k++) {
       const g = a.segs[k];
@@ -6692,7 +6693,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.19.1";
+  const VERSION = "0.20.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6767,7 +6768,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (o.level === "easy" || o.level === "normal" || o.level === "hard") S.level = o.level;
       if (Array.isArray(o.pend)) S.pend = o.pend.filter((x) => x && typeof x === "object" && /^[A-HJ-NP-Z2-9]{7}$/.test(x.c)).slice(-5);
       const ls = o.lastSprint;
-      if (ls && isFinite(ls.seed) && isFinite(ls.t) && (ls.sex === "w" || ls.sex === "m")) S.lastSprint = { seed: ls.seed >>> 0, sex: ls.sex, t: +ls.t, rank: +ls.rank || 0, level: ["easy", "normal", "hard"].includes(ls.level) ? ls.level : "normal" };
+      if (ls && isFinite(ls.seed) && isFinite(ls.t) && (ls.sex === "w" || ls.sex === "m")) S.lastSprint = { seed: ls.seed >>> 0, sex: ls.sex, t: +ls.t, rank: +ls.rank || 0, level: ["easy", "normal", "hard"].includes(ls.level) ? ls.level : "normal", p: ls.p ? 1 : 0 };
     }
     return S;
   }
@@ -6845,7 +6846,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     setText($("athName"), PASS.get().name ? PASS.get().name.toUpperCase() : (S.sex === "m" ? "ATHLET" : "ATHLETIN"));
     const F = T.SPRINT[S.sex];
     $("venueSub").textContent = nb(`Sprint ${dec(F.km, F.km % 1 ? 1 : 0)} km · ${S.sex === "m" ? "Herren" : "Damen"}`);
-    const b = S.best[`sprint-hochfilzen-${S.sex}${S.level === "normal" ? "" : "-" + S.level}`];
+    const b = S.best[bestKey(`sprint-hochfilzen-${S.sex}${S.level === "normal" ? "" : "-" + S.level}`)];
     $("venueBest").textContent = b ? nb(`Bestzeit ${fmtT(b.t)}`) : "";
     $("verLine").textContent = `Version ${VERSION} · Fanspiel`;
     refreshBadge(); loadMyClubs(); flushPending();
@@ -6937,7 +6938,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   function tip(html, dur) { const e = $("tip"); if (!html) { e.hidden = true; return; } e.innerHTML = html; e.hidden = false; tipT = dur || 5; }
 
   // ------------------------------------------------------------------ Rennen
-  // Rc: laufendes Rennen oder Training. Zeiten: ski/pen in Spielsekunden (Anzeige mal SCALE), range 1 : 1.
+  // Rc: laufendes Rennen oder Training. Alle Zeiten in Spielsekunden (seit 0.20 auch die Anzeige).
   let Rc = null, paused = false;
   const VENUE = "hochfilzen";
   // o (Gruppen): { seed, sex, level, club: { c, n }, ghosts: [Geist, …], watch: Geist } – gleiche Bedingungen für alle in der Runde
@@ -6965,13 +6966,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (kind === "pursuit") {
       setupPursuit(seed);
     } else if (race) {
-      Rc.field = C.field(sex, seed, fmt); Rc.ai = C.simulate(Rc.field, VENUE, sex, seed, fmt, level);
+      Rc.field = C.field(sex, seed, fmt); Rc.ai = sim(Rc.field, VENUE, sex, seed, fmt, level);
       // Startnummern zufällig; Sprint: Einzelstart alle 30 s nach Nummer, Massenstart: alle zugleich
       const r = Ph.rng(seed ^ 0xb1b), bibs = [];
       for (let b = 1; b <= FM.field; b++) if (b !== Rc.bib) bibs.push(b);
       for (let i = bibs.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [bibs[i], bibs[j]] = [bibs[j], bibs[i]]; }
-      Rc.ai.forEach((a, i) => { a.bib = bibs[i]; a.off = (a.bib - 1) * FM.start; });
-      Rc.off = (Rc.bib - 1) * FM.start; Rc.ref = C.reference(VENUE, sex, fmt); Rc.seen = new Map();
+      Rc.ai.forEach((a, i) => { a.bib = bibs[i]; a.off = (a.bib - 1) * FM.start / T.SCALE; });
+      Rc.off = (Rc.bib - 1) * FM.start / T.SCALE; Rc.ref = C.reference(VENUE, sex, fmt); Rc.seen = new Map();
     }
     paused = false; inp.down = false; inp.key = false; inp.ptrs.clear(); inp.rangeId = null;
     show(null); $("result").hidden = true; tip(null);
@@ -6996,23 +6997,40 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // am Handy erklären seit 0.18 die Knöpfe und die Hinweiszeile
     if (S.help === "anf" && (S.tips.run2 || 0) < 3 && canHover()) { Rc.pendTip = (Rc.simple ? (canHover() ? "<b>Klicken</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>gedrückt halten</b>" : "<b>Tippen</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>halten</b>") : canHover() ? "<b>Linksklick</b> im Takt (grünes Feld) · flach <b>Rechtsklick</b> · <b>halten</b> = Hocke" : "<b>Links/rechts</b> im Takt (grünes Feld) · flach <b>beide Daumen</b> · <b>halten</b> = Hocke") ; S.tips.run2 = (S.tips.run2 || 0) + 1; save(); }
   }
-  const dispTime = () => (Rc.watch ? Rc.we || 0 : (Rc.ski + Rc.pen) * T.SCALE + Rc.range) + (Rc.tpen || 0);
+  // 0.20 (Mat): Uhr, Rückstände und Ergebnisse in echter Spielzeit (Laufen, Schießstand, Strafzeit), nicht mehr in gestreckter Rennzeit.
+  // Die KI wird nach dem Simulieren auf Spielzeit umgerechnet (Laufen ÷ SCALE, Stand 1 : 1, Strafzeit neu); alles danach rechnet in Spielzeit.
+  const PEN_P = 10, HUNT_P = 10, HUNT_K = 2;   // Strafzeit je Fehler; Jagd: Fehler +10 s, Kill-Zone −2 s
+  function playAI(list) {
+    const S = T.SCALE;
+    for (const a of list) {
+      let t = 0;
+      for (const g of a.segs) {
+        g.ski /= S; t += g.ski; g.at = t;
+        if (g.range != null) { g.pen = (g.pen || 0) / S; g.tpen = g.kill != null ? (g.miss || 0) * HUNT_P - g.kill * HUNT_K : (g.miss || 0) * PEN_P; t += g.range + g.pen + g.tpen; g.after = t; }
+      }
+      a.total = t; a.accK = 1 / S;
+    }
+    return list;
+  }
+  const sim = (...args) => playAI(C.simulate(...args));
+  const bestKey = (k) => k + "~p";   // Bestzeiten in Spielzeit (alte Rennzeiten bleiben liegen, zählen nicht mehr)
+  const dispTime = () => (Rc.watch ? Rc.we || 0 : Rc.ski + Rc.pen + Rc.range) + (Rc.tpen || 0);
   // Verfolgung: gestartet wird mit dem Rückstand aus dem Sprint. Grundlage ist dein letzter Sprint (gleiches Feld, gleiche Namen);
   // ohne Sprint startest du aus der Mitte des Feldes. Die besten 30 starten; wer dahinter lag, startet als 30.
   function setupPursuit(seed) {
     const LS = S.lastSprint && S.lastSprint.sex === S.sex ? S.lastSprint : null;
     const sSeed = LS ? LS.seed : (seed ^ 0x5eed) >>> 0;
-    const sprint = C.simulate(C.field(S.sex, sSeed, "sprint"), VENUE, S.sex, sSeed, "sprint", LS && LS.level || S.level);
-    let myT = LS ? LS.t : null;
+    const sprint = sim(C.field(S.sex, sSeed, "sprint"), VENUE, S.sex, sSeed, "sprint", LS && LS.level || S.level);
+    let myT = LS && LS.p ? LS.t : null;
     if (myT == null) { const ts = sprint.map((x) => x.total).sort((a, b) => a - b); myT = ts[24] + 0.1; }
     const all = sprint.map((x) => ({ name: x.name, nat: x.nat, tier: x.tier, t: x.total })).concat([{ me: true, t: myT }]).sort((a, b) => a.t - b.t);
     let top = all.slice(0, 30); if (!top.some((x) => x.me)) top = all.slice(0, 29).concat(all.filter((x) => x.me));
     const lead = top[0].t;
     const others = top.filter((x) => !x.me), F = C.field(S.sex, sSeed, "sprint").filter((f) => others.some((o) => o.name === f.name));
-    Rc.ai = C.simulate(F, VENUE, S.sex, seed, "pursuit", S.level);
-    for (const a of Rc.ai) { const o = others.find((x) => x.name === a.name); a.off = Math.min(o.t - lead, 180); a.bib = top.indexOf(o) + 1; }
+    Rc.ai = sim(F, VENUE, S.sex, seed, "pursuit", S.level);
+    for (const a of Rc.ai) { const o = others.find((x) => x.name === a.name); a.off = Math.min(o.t - lead, 30); a.bib = top.indexOf(o) + 1; }
     const me = top.find((x) => x.me);
-    Rc.off = Math.min(me.t - lead, 180); Rc.bib = top.indexOf(me) + 1; Rc.fromSprint = !!LS; Rc.sprintRank = all.indexOf(me) + 1;
+    Rc.off = Math.min(me.t - lead, 30); Rc.bib = top.indexOf(me) + 1; Rc.fromSprint = !!LS; Rc.sprintRank = all.indexOf(me) + 1;
     Rc.ref = C.reference(VENUE, S.sex, "pursuit"); Rc.seen = new Map();
   }
 
@@ -7049,15 +7067,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     Rc.R.hr = Rc.G.hr; Rc.R.v = 3; Rc.R.tuck = false; Rc.R.tp = Ph.cycle(Rc.L.slope(0), Rc.R) * 0.8; Rc.tickAt = null; Rc.R.pend = 0;
     if (Rc.hunt) {
       // keine Strafrunde: Strafzeit aufs Papier, Kill-Zone gibt Zeit gut
-      const HU = Rc.FM.hunt, kl = Ph.kills(G), d = miss * HU.penSec - kl * HU.killSec;
+      const HU = Rc.FM.hunt, kl = Ph.kills(G), d = miss * HUNT_P - kl * HUNT_K;
       Rc.tpen += d; Rc.kills += kl;
       if (Rc.ai) Rc.splits.push(C.split(Rc.ai, Rc.rangeT.length - 1, dispTime()));
       Rc.phase = "go"; Rc.lap++; Rc.R.s = 0; Rc.fadeAt = performance.now();
-      banner(miss ? "STRAFZEIT" : "SAUBER", nb(`${G.n - miss}/${G.n}`), nb(`${miss ? miss + (miss > 1 ? " Minuten" : " Minute") + " Strafzeit" : "kein Fehler"}${kl ? ` · ${kl}× Kill-Zone −${kl * HU.killSec} s` : ""}`), 1.6);
+      banner(miss ? "STRAFZEIT" : "SAUBER", nb(`${G.n - miss}/${G.n}`), nb(`${miss ? "+" + miss * HUNT_P + " s Strafzeit" : "kein Fehler"}${kl ? ` · ${kl}× Kill-Zone −${kl * HUNT_K} s` : ""}`), 1.6);
       showSplit(); return;
     }
     // keine Strafrunde mehr (Mat, 12.11.): jeder Fehler kostet die Zeit, die eine Strafrunde gekostet hätte, direkt auf die Uhr
-    const pc = Math.round(Rc.ref.pen * T.SCALE);
+    const pc = PEN_P;
     Rc.tpen += miss * pc;
     if (Rc.ai && Rc.kind === "sprint") Rc.splits.push(C.split(Rc.ai, Rc.rangeT.length - 1, dispTime()));
     Rc.fadeAt = performance.now(); Rc.phase = "go"; Rc.lap++; Rc.R.s = 0;
@@ -7078,7 +7096,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (Rc.watch || Rc.kind === "learn") return finishNow();
     if (Rc.rec) Rc.rec.P.push(Rc.laps * Rc.L.L);   // Geist: Ziel als letzter Punkt
     const t0 = dispTime(), lr = Rc.kind === "lap" ? null : resultList(t0);
-    const key = `${Rc.fmt}-hochfilzen-${Rc.sex}${Rc.level === "normal" ? "" : "-" + Rc.level}`, old = S.best[key];
+    const key = bestKey(`${Rc.fmt}-hochfilzen-${Rc.sex}${Rc.level === "normal" ? "" : "-" + Rc.level}`), old = S.best[key];
     const good = lr && (lr.me.rank <= 3 || !old || lr.me.total < old.t);
     Rc.fin = { t: 0, t0, pose: good ? "jubel" : "tired", rec: true };
     mode = "fin"; Snd.gong(); Hap(40);
@@ -7092,7 +7110,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (F.t >= 2.4) finishNow();
   }
   function resultList(total) {
-    const me = { name: myName(), nat: myNat(), total: total + (Rc.kind === "pursuit" ? Rc.off : 0), me: true, shoot: Rc.shots.map((a) => a.filter((h) => !h).length), ski: Rc.ski * T.SCALE };
+    const me = { name: myName(), nat: myNat(), total: total + (Rc.kind === "pursuit" ? Rc.off : 0), me: true, shoot: Rc.shots.map((a) => a.filter((h) => !h).length), ski: Rc.ski };
     const ai = Rc.kind === "pursuit" ? Rc.ai.map((a) => Object.assign({}, a, { total: a.total + a.off })) : Rc.ai;
     return { list: C.standings(ai.concat([me])), me };
   }
@@ -7104,8 +7122,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     S.races++;
     if (Rc.kind === "lap") return showLapResult();
     const { list, me } = resultList(fin ? fin.t0 : dispTime());
-    if (Rc.kind === "sprint" && !Rc.club) S.lastSprint = { seed: Rc.seed, sex: Rc.sex, t: me.total, rank: me.rank, level: Rc.level };
-    const key = `${Rc.fmt}-hochfilzen-${Rc.sex}${Rc.level === "normal" ? "" : "-" + Rc.level}`, old = S.best[key];
+    if (Rc.kind === "sprint" && !Rc.club) S.lastSprint = { seed: Rc.seed, sex: Rc.sex, t: me.total, rank: me.rank, level: Rc.level, p: 1 };
+    const key = bestKey(`${Rc.fmt}-hochfilzen-${Rc.sex}${Rc.level === "normal" ? "" : "-" + Rc.level}`), old = S.best[key];
     const pb = !old || me.total < old.t;
     if (pb) S.best[key] = { t: me.total, rank: me.rank };
     save();
@@ -7135,7 +7153,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
   // Erklärung wie im Fernsehen: woran es lag, was eine Strafrunde kostet, was ohne Fehler drin gewesen wäre
   function analysis(list, me, pb, old) {
-    const ref = Rc.ref, penCost = Rc.hunt ? Rc.FM.hunt.penSec : Math.round(ref.pen * T.SCALE), nPer = Rc.hunt ? Rc.FM.hunt.shots : 5;
+    const ref = Rc.ref, penCost = Rc.hunt ? HUNT_P : PEN_P, nPer = Rc.hunt ? Rc.FM.hunt.shots : 5;
     const skiRank = 1 + list.filter((x) => !x.me && x.segs.reduce((s, q) => s + q.ski, 0) < me.ski).length;
     const miss = me.shoot.reduce((a, b) => a + b, 0);
     const rangeT = Rc.rangeT.reduce((a, b) => a + b, 0);
@@ -7164,7 +7182,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (miss > 0) {
       const without = me.total - miss * penCost;
       const r2 = 1 + list.filter((x) => !x.me && x.total < without).length;
-      p.push(nb(`${Rc.hunt ? "Jeder Fehler kostet eine Minute Strafzeit" : `Jeder Fehler kostet ${Math.round(penCost)} s Strafzeit`}. Ohne Fehler wärst du ${r2 === me.rank ? "trotzdem" : "auf"} Platz ${r2}${r2 === me.rank ? " geblieben" : " gelandet"}.`));
+      p.push(nb(`${Rc.hunt ? `Jeder Fehler kostet ${HUNT_P} s Strafzeit` : `Jeder Fehler kostet ${Math.round(penCost)} s Strafzeit`}. Ohne Fehler wärst du ${r2 === me.rank ? "trotzdem" : "auf"} Platz ${r2}${r2 === me.rank ? " geblieben" : " gelandet"}.`));
     } else p.push(Rc.hunt ? "Alle Attrappen getroffen, wie ein alter Jäger." : "Fehlerfrei: mehr geht am Schießstand nicht.");
     if (Rc.hunt && miss) { const far = Rc.huntMiss || {}; if (far.long > far.short) p.push("Daneben ging es vor allem auf weite Entfernung: auf 150 bis 200 m fällt das Geschoss, also etwas höher halten."); else if (far.short) p.push("Auf kurze Entfernung trifft das Geschoss leicht hoch: knapp unter die Kill-Zone halten."); }
     if (K.early / n > 0.2) p.push("Viele Abstöße kamen zu früh. Warte, bis der Strich im grünen oder gelben Feld steht: das bringt mehr Tempo und spart Kraft.");
@@ -7177,14 +7195,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return h + p.map((x) => `<p>${esc(x)}</p>`).join("");
   }
   function showLapResult() {
-    const t = Rc.ski * T.SCALE, key = `lap-hochfilzen-${Rc.sex}`, old = S.best[key], pb = !old || t < old.t;
+    const t = Rc.ski, key = bestKey(`lap-hochfilzen-${Rc.sex}`), old = S.best[key], pb = !old || t < old.t;
     if (pb) S.best[key] = { t, rank: 0 };
     save();
     show("result");
     $("resKick").textContent = "TRAINING · EINE RUNDE";
     $("resTitle").textContent = fmtT(t);
     $("resSub").textContent = nb(`${dec(Rc.L.realLap / 1000, 2)} km · ${pb ? "neue Bestzeit" : "Bestzeit " + fmtT(old.t)}`);
-    const ref = C.reference(VENUE, Rc.sex, "sprint").laps[1] * T.SCALE;
+    const ref = C.reference(VENUE, Rc.sex, "sprint").laps[1];
     const K = Rc.R.kinds, n = Math.max(1, Rc.R.pushes);
     const pct = (v) => Math.round(v / n * 100) + " %";
     $("resList").innerHTML = [["im Takt", pct(K.beat)], ["Druck", pct(K.press)], ["zu früh", pct(K.early)], ["spät", pct(K.late)], ["Abstöße", String(Rc.R.pushes)], ["höchster Puls", String(bpm(Rc.maxHr || 0))]]
@@ -7518,7 +7536,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   function rivals() {
     if (!Rc || !Rc.ai) return [];
     // im Countdown laufen die früher Gestarteten schon (die Uhr der anderen läuft 3 s vor deinem Start los)
-    const D = dispTime() - (Rc.phase === "count" ? (3 - Rc.pt) * T.SCALE : 0), pen = Rc.phase === "pen";
+    const D = dispTime() - (Rc.phase === "count" ? 3 - Rc.pt : 0), pen = Rc.phase === "pen";
     if (rivCache.pen === pen && rivCache.D === D) return rivCache.list;
     const out = [];
     // 0.19.1 (Mat): Einzelstart ist ein Rennen gegen die Uhr: keine erfundenen Läuferinnen auf der Strecke, nur Geister aus der Gruppe.
@@ -7526,8 +7544,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (Rc.together) for (const a of Rc.ai) {
       const w = C.where(Rc.ref, a, D + Rc.off - a.off);
       if (pen ? w.where === "pen" : w.where === "ski") {
-        const w2 = C.where(Rc.ref, a, D + 0.6 + Rc.off - a.off);
-        const v = w2.where === w.where && w2.k === w.k ? ((pen ? w2.s * Rc.L.penaltyL : w2.s) - (pen ? w.s * Rc.L.penaltyL : w.s)) / (0.6 / T.SCALE) : 0;
+        const w2 = C.where(Rc.ref, a, D + 0.05 + Rc.off - a.off);
+        const v = w2.where === w.where && w2.k === w.k ? ((pen ? w2.s * Rc.L.penaltyL : w2.s) - (pen ? w.s * Rc.L.penaltyL : w.s)) / 0.05 : 0;
         out.push({ a, s: pen ? w.s * Rc.L.penaltyL : w.s, k: w.k, v: Math.max(0, v) });
       }
     }
@@ -8384,7 +8402,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
   // ------------------------------------------------------------------ Geister: Rennverlauf alle 2 s (Ort im Rennen, Spiel-m), Schießen je Stand
   // Format „B“: Zahl der Schießen, je Schießen Treffer (Bits) und Kill-Zone, dann Zuwächse in 5 cm (Zeichen 0 … 62, 63 = zwei Zeichen mehr)
-  const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", GH_DT = 2;
+  const B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", GH_DT = 0.2;
   function ghostPack(r) {
     if (!r.rec) return null;
     let s = "B" + B64[r.shots.length], prev = 0;
@@ -8416,15 +8434,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return { P: P[i] + (P[i + 1] - P[i]) * (x - i), done: false };
   }
   // Renn-Uhr (Laufen und Schießstand, ohne Strafzeit): danach richten sich die Geister
-  const physT = () => (Rc.watch ? Rc.we || 0 : (Rc.ski + Rc.pen) * T.SCALE + Rc.range);
+  const physT = () => (Rc.watch ? Rc.we || 0 : Rc.ski + Rc.pen + Rc.range);   // Spielzeit ohne Strafzeit
   function ghostRec() {
     const g = Rc.rec, e = physT();
     while (e >= g.next) { g.P.push(Rc.lap * Rc.L.L + clamp(Rc.R.s, 0, Rc.L.L)); g.next += GH_DT; }
   }
   // Strafzeit eines Geistes nach den Ständen 0 … j-1
   function gPen(g, j) {
-    let t = 0; const pc = Rc.hunt ? 0 : Math.round(Rc.ref.pen * T.SCALE), nS = Rc.hunt ? Rc.FM.hunt.shots : 5;
-    for (let k = 0; k < Math.min(j, g.hits.length); k++) { const miss = g.hits[k].slice(0, nS).filter((h) => !h).length; t += Rc.hunt ? miss * Rc.FM.hunt.penSec - (g.kills[k] || 0) * Rc.FM.hunt.killSec : miss * pc; }
+    let t = 0; const pc = Rc.hunt ? 0 : PEN_P, nS = Rc.hunt ? Rc.FM.hunt.shots : 5;
+    for (let k = 0; k < Math.min(j, g.hits.length); k++) { const miss = g.hits[k].slice(0, nS).filter((h) => !h).length; t += Rc.hunt ? miss * HUNT_P - (g.kills[k] || 0) * HUNT_K : miss * pc; }
     return t;
   }
   // Geister auf der Strecke (wie die KI in rivals)
@@ -8432,9 +8450,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const e = physT(), L = Rc.L.L;
     Rc.ghosts.forEach((g, i) => {
       const p = gPos(g, e); if (p.done) return;
-      const p2 = gPos(g, e + 0.6), k = Math.floor(p.P / L + 1e-6), sIn = p.P - k * L;
+      const p2 = gPos(g, e + 0.05), k = Math.floor(p.P / L + 1e-6), sIn = p.P - k * L;
       if (p2.P - p.P < 1e-4 && sIn < 1e-3 && k > 0) return;   // am Schießstand
-      out.push({ a: { name: g.n, nat: g.c, bib: 1000 + i, look: g.look, ghost: true }, s: sIn, k, v: Math.max(0, (p2.P - p.P) / (0.6 / T.SCALE)) });
+      out.push({ a: { name: g.n, nat: g.c, bib: 1000 + i, look: g.look, ghost: true }, s: sIn, k, v: Math.max(0, (p2.P - p.P) / 0.05) });
     });
   }
   // Zeit eines Geistes an deiner Stelle me (Spiel-m im Rennen), mit Strafzeit der Stände davor
@@ -8450,10 +8468,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const SN_ = { prone: "LIEGEND", kneel: "KNIEND", stand: "STEHEND" };
   function tickWatch(dt) {
     const g = Rc.watch, R = Rc.R, L = Rc.L;
-    Rc.we = (Rc.we || 0) + dt * (Rc.wIn ? 1 : T.SCALE) * (Rc.wSpeed || 1);   // Renn-Uhr: Laufen gerafft, am Stand 1 : 1
+    Rc.we = (Rc.we || 0) + dt * (Rc.wSpeed || 1);   // Spielzeit
     const p = gPos(g, Rc.we);
     if (p.done) { finishWatch(); return; }
-    const p2 = gPos(g, Rc.we + 0.5), LL = L.L, nSt = Rc.stages.length;
+    const p2 = gPos(g, Rc.we + 0.05), LL = L.L, nSt = Rc.stages.length;
     const ws = Rc.wStage || 0;
     // Stand: der Verlauf steht am Rundenende still
     if (ws < nSt && p.P >= (ws + 1) * LL - 0.02) {
@@ -8473,10 +8491,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const lap = Math.min(Math.floor((p.P - 1e-6) / LL), Rc.laps - 1);
     Rc.lap = Math.max(0, lap); 
     Ph.step(R, L);
-    R.s = p.P - Rc.lap * LL; R.v = Math.max(0, (p2.P - p.P) / (0.5 / T.SCALE));
+    R.s = p.P - Rc.lap * LL; R.v = Math.max(0, (p2.P - p.P) / 0.05);
     const sl = L.slope(R.s); R.tuck = sl < -0.04 && R.v > 6; R.lean = L.curveAt(R.s);
     if (!R.tuck && R.tp >= Ph.cycle(sl, R) * 0.9) Ph.push(R, sl, Math.abs(sl) < Ph.FLAT ? 0 : -(R.lastSide || -1));
-    R.s = p.P - Rc.lap * LL; R.v = Math.max(0, (p2.P - p.P) / (0.5 / T.SCALE));
+    R.s = p.P - Rc.lap * LL; R.v = Math.max(0, (p2.P - p.P) / 0.05);
   }
   function finishWatch() {
     const c = Rc.club.c; Snd.gong();
