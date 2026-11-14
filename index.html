@@ -6984,7 +6984,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.24.0";
+  const VERSION = "0.24.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8125,32 +8125,43 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         ctx.fillText("STATION", x + 20 * k, y - 51 * k);
         for (let j = 0; j < 4; j++) { const xx = X(sA + 2 + j * 1.6), yy = Y(sA + 2 + j * 1.6); slab(xx - 1.5 * k, yy, xx + 1.5 * k, yy, 9 * k, 3 * k, I.dach); }
       }
-      // Schießstand: Schneewall als Kugelfang, Scheibenwand auf Beinen (Körper), Dach mit Schnee, Bahnnummern, Matten
+      // Schießstand in die Tiefe (0.24.1, Mat): die Bahnen laufen von den Matten hinter der Loipe nach hinten zusammen,
+      // die Scheiben stehen weit hinten klein vor einem Schneewall. Perspektive: hinten zur Mitte hin gestaucht (Faktor PB).
       if (!pen && !hunt && L.format !== "xc") for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
-        const sA = base - 22, sB = base - 9; if (sB < s0 - 2 || sA > s1 + 2) continue;
-        const xa = X(sA), xb = X(sB), gy = Math.min(Y(sA), Y(sB)) - 14 * k, y = gy - 22 * k;
-        // Kugelfang: langer Schneewall hinter den Scheiben
-        ctx.fillStyle = mix(I.papier, I.dunst, 0.3); ctx.beginPath(); ctx.moveTo(xa - 30 * k, gy); ctx.bezierCurveTo(xa - 10 * k, gy - 70 * k, xb + 10 * k, gy - 70 * k, xb + 40 * k, gy); ctx.closePath(); ctx.fill();
-        ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.moveTo(xa - 22 * k, gy - 6 * k); ctx.bezierCurveTo(xa, gy - 64 * k, xb, gy - 66 * k, xb + 30 * k, gy - 8 * k); ctx.lineTo(xb + 14 * k, gy - 30 * k); ctx.bezierCurveTo(xb - 10 * k, gy - 55 * k, xa + 20 * k, gy - 52 * k, xa - 22 * k, gy - 6 * k); ctx.fill();
-        // Beine
-        for (const lx of [xa + 3 * k, xa + (xb - xa) / 2, xb - 6 * k]) slab(lx, gy, lx + 3 * k, gy, 22 * k, 4 * k, I.tinte);
-        // Scheibenwand
-        slab(xa, y, xb, y, 28 * k, 7 * k, I.papier);
-        ctx.strokeStyle = I.tinte; ctx.lineWidth = 1.5 * k; ctx.strokeRect(xa, y - 28 * k, xb - xa, 28 * k);
-        // Dach mit Schnee und Schatten auf der Wand
-        const TR = slab(xa - 6 * k, y - 34 * k, xb + 6 * k, y - 34 * k, 7 * k, 14 * k, I.dach);
-        snowCap(TR[0][0] + 5 * k, TR[0][1] - 5 * k, TR[TR.length - 1][0] + 6 * k, TR[TR.length - 1][1] - 5 * k, 2.6 * k);
-        ctx.fillStyle = "rgba(30,39,52,0.16)"; ctx.fillRect(xa, y - 28 * k, xb - xa, 6 * k);
-        const lw2 = (xb - xa) / 3;
-        ctx.font = `700 ${Math.round(7 * k)}px Futura, 'Avenir Next', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        for (let ln = 0; ln < 3; ln++) {
-          const lx = xa + ln * lw2;
-          if (ln) seg([lx, y - 28 * k], [lx, y], I.tinte, 1 * k);
-          ctx.fillStyle = I.tinte; ctx.fillText(String(28 + ln), lx + lw2 / 2, y - 18 * k);
-          for (let i = 0; i < 5; i++) { const xx = lx + lw2 * (0.16 + i * 0.17), r = Math.min(3.2 * k, lw2 * 0.07); disc(xx, y - 9 * k, r + 1 * k, mix(I.papier, I.schatten, 0.5)); disc(xx, y - 9 * k, r, I.tinte); }
+        const sA = base - 23, sB = base - 8; if (sB < s0 - 2 || sA > s1 + 2) continue;
+        const xa = X(sA), xb = X(sB), yF = Math.min(Y(sA), Y(sB)) - 10 * k, yB = yF - 44 * k, cx = (xa + xb) / 2, PB = 0.58;
+        const back = (x) => cx + (x - cx) * PB, NL = 6, lx = (i) => xa + (xb - xa) * i / NL;
+        // Schneewall (Kugelfang) hinter den Scheiben
+        const wa = back(xa) - 26 * k, wb = back(xb) + 26 * k;
+        ctx.fillStyle = mix(I.papier, I.dunst, 0.35); ctx.beginPath(); ctx.moveTo(wa, yB + 2 * k); ctx.bezierCurveTo(wa + 10 * k, yB - 40 * k, wb - 10 * k, yB - 40 * k, wb, yB + 2 * k); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.moveTo(wa + 8 * k, yB - 4 * k); ctx.bezierCurveTo(wa + 16 * k, yB - 37 * k, wb - 16 * k, yB - 37 * k, wb - 8 * k, yB - 4 * k); ctx.bezierCurveTo(wb - 30 * k, yB - 24 * k, wa + 30 * k, yB - 24 * k, wa + 8 * k, yB - 4 * k); ctx.fill();
+        // Boden der Anlage: gewalzte Fläche von vorn nach hinten, Bahnen mit Trennlinien
+        poly([[xa, yF], [xb, yF], [back(xb), yB], [back(xa), yB]], mix(I.papier, "#FFFFFF", 0.4));
+        ctx.strokeStyle = mix(I.papier, I.schatten, 0.45); ctx.lineWidth = 0.9 * k; ctx.beginPath();
+        for (let i = 0; i <= NL; i++) { ctx.moveTo(lx(i), yF); ctx.lineTo(back(lx(i)), yB); } ctx.stroke();
+        // Scheibenstand hinten: niedrige Wand auf Beinen, Dach mit Schnee, fünf Scheiben je Bahn, Nummern
+        const ta = back(xa), tb = back(xb), th = 12 * k, ty = yB - 5 * k;
+        for (const x of [ta + 2 * k, (ta + tb) / 2, tb - 4 * k]) slab(x, yB, x + 2 * k, yB, 5 * k, 3 * k, I.tinte);
+        slab(ta, ty, tb, ty, th, 4 * k, I.papier);
+        ctx.strokeStyle = I.tinte; ctx.lineWidth = 1 * k; ctx.strokeRect(ta, ty - th, tb - ta, th);
+        const R2 = slab(ta - 3 * k, ty - th - 2 * k, tb + 3 * k, ty - th - 2 * k, 3 * k, 6 * k, I.dach);
+        ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.moveTo(R2[0][0], R2[0][1]); ctx.quadraticCurveTo((R2[0][0] + R2[R2.length - 1][0]) / 2 + 2 * k, R2[0][1] - 4 * k, R2[R2.length - 1][0] + 3 * k, R2[R2.length - 1][1]); ctx.lineTo(R2[R2.length - 1][0] + 3 * k, R2[R2.length - 1][1] + 1 * k); ctx.lineTo(R2[0][0], R2[0][1] + 1 * k); ctx.fill();
+        ctx.font = `700 ${Math.max(5, Math.round(5 * k))}px Futura, 'Avenir Next', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        for (let i = 0; i < NL; i++) {
+          const a = back(lx(i)), b = back(lx(i + 1)), w = b - a;
+          if (i) seg([a, ty - th], [a, ty], I.tinte, 0.8 * k);
+          ctx.fillStyle = I.tinte; ctx.fillText(String(25 + i), a + w / 2, ty - th + 3.2 * k);
+          for (let q = 0; q < 5; q++) disc(a + w * (0.14 + q * 0.18), ty - 4 * k, Math.max(0.9, Math.min(1.6 * k, w * 0.065)), I.tinte);
         }
-        // Matten vor dem Stand (flache Körper)
-        for (let ln = 0; ln < 3; ln++) { const lx = xa + ln * lw2; slab(lx + 4 * k, gy + 10 * k, lx + lw2 - 6 * k, gy + 10 * k, 1.5 * k, 10 * k, ln % 2 ? I.navy : mix(I.navy, I.tinte, 0.3)); }
+        // Matten vorn an jeder Bahn (flach, schräg in die Tiefe), Gewehrständer dahinter
+        for (let i = 0; i < NL; i++) {
+          const f0 = lx(i) + 4 * k, f1 = lx(i + 1) - 4 * k, u = 0.16, y1 = yF + (yB - yF) * u;
+          const b0 = f0 + (back(f0) - f0) * u, b1 = f1 + (back(f1) - f1) * u;
+          poly([[f0, yF - 1 * k], [f1, yF - 1 * k], [b1, y1], [b0, y1]], i % 2 ? I.navy : mix(I.navy, I.tinte, 0.3));
+        }
+        const yr0 = yF + (yB - yF) * 0.3, rk0 = xa + (back(xa) - xa) * 0.3, rk1 = xb + (back(xb) - xb) * 0.3;
+        seg([rk0, yr0], [rk1, yr0], mix(I.dach, I.tinte, 0.3), 1.6 * k);
+        for (let i = 0; i < NL * 2; i++) { const x = rk0 + (rk1 - rk0) * (i + 0.5) / (NL * 2); seg([x, yr0], [x - 1.5 * k, yr0 - 8 * k], I.tinte, 1 * k); }
       }
     };
     return { decor, stadium: (s) => inStadium(s) || crowd.some(([a, b]) => { const q = ((s % L.L) + L.L) % L.L; return q >= a - 2 && q <= b + 2; }) };

@@ -2,4 +2,4 @@
 
 Inoffizielles Fanspiel im Browser: https://matpeins-debug.github.io/cold-medal-biathlon/
 
-Quellcode liegt privat; dieses Repo enthält nur die fertige Seite (Version 0.24.0).
+Quellcode liegt privat; dieses Repo enthält nur die fertige Seite (Version 0.24.1).
