@@ -6319,12 +6319,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
 
     // Kurvenschild: Holztafel in Landschaftsfarben mit hellem Doppelwinkel und Schneehaube (fügt sich ein, schreit nicht)
+    // Kurventafel (0.27.1, Mat: Pfeilrichtung): Du läufst im Bild immer nach rechts. Der Pfeil zeigt in Laufrichtung und biegt in die Kurve:
+    // Linkskurve (dir −1) führt von dir weg, also nach oben in die Tiefe; Rechtskurve (dir +1) zu dir her, nach unten.
     function chevron(x, y, dir, kk) {
-      const w = 22 * kk, h = 13 * kk;
+      const w = 24 * kk, h = 15 * kk;
       ctx.fillStyle = mix(I.dach, I.tinte, 0.15); ctx.fillRect(x - w / 2, y - h / 2, w, h);
       ctx.fillStyle = "#FFFFFF"; ctx.beginPath(); ctx.ellipse(x, y - h / 2, w * 0.56, 2.6 * kk, 0, Math.PI, 0); ctx.fill();
-      ctx.strokeStyle = mix(I.papier, I.ocker, 0.25); ctx.lineWidth = 2 * kk; ctx.lineJoin = "miter";
-      for (const o of [-4, 4]) { const cx = x + o * kk; ctx.beginPath(); ctx.moveTo(cx + dir * 3 * kk, y - 4 * kk); ctx.lineTo(cx - dir * 3 * kk, y); ctx.lineTo(cx + dir * 3 * kk, y + 4 * kk); ctx.stroke(); }
+      const up = dir < 0 ? -1 : 1, x0 = x - 8 * kk, y0 = y - up * 3 * kk, ex = x + 6 * kk, ey = y + up * 4.5 * kk;
+      ctx.strokeStyle = mix(I.papier, I.ocker, 0.25); ctx.lineWidth = 2.2 * kk; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(x + 4 * kk, y0, ex, ey); ctx.stroke();
+      // Spitze in Richtung des Bogenendes
+      const ang = Math.atan2(ey - y0, ex - (x + 4 * kk)), hl = 4 * kk;
+      ctx.beginPath(); ctx.moveTo(ex - Math.cos(ang - 0.6) * hl, ey - Math.sin(ang - 0.6) * hl); ctx.lineTo(ex, ey); ctx.lineTo(ex - Math.cos(ang + 0.6) * hl, ey - Math.sin(ang + 0.6) * hl); ctx.stroke();
+      ctx.lineCap = "butt";
     }
     // Namensschild über einem Gegner
     function tag(x, y, name, kk) {
@@ -7210,7 +7217,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.27.0";
+  const VERSION = "0.27.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
