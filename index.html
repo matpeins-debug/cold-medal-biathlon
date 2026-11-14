@@ -446,6 +446,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   font-size: 13px; color: var(--muted); cursor: pointer; min-height: 32px; }
 .rp-waxbtn i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--ink); }
 .rp-waxbtn b { font-family: var(--font-label); font-size: 12px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+/* 0.27 (Mat): Ring am Abstoß ohne Ampelfarben (nur Fortschritt, neutral); Tempo unter der Läuferin, Farbe = schneller/gleich/langsamer als die Bezugsläuferin */
+#hud .cs-ring-v, #hud .cs-knopf.cs-ok .cs-ring-v { stroke: #2C3A50; }
+#hud .cs-knopf.cs-ok { border-color: var(--ink-deep, #141C28); }
+#hud .cs-zu, #hud .cs-knopf.cs-ok .cs-zu { border-color: #2C3A50; }
+.h-spd { position: absolute; transform: translate(-50%, 0); pointer-events: none; white-space: nowrap; padding: 1px 7px; border-radius: 9px;
+  background: rgba(20, 28, 40, 0.55); font-family: var(--font-display); font-weight: 700; font-size: 13px; letter-spacing: 0.03em; color: #F5EDDA; }
+.h-spd.fast { color: #8FD27F; } .h-spd.mid { color: #F2B45A; } .h-spd.slow { color: #F0846F; }
+#hud.watch .h-spd { display: none; }
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -814,6 +822,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div class="panel h-map"><canvas id="hMap" width="84" height="56" aria-label="Streckenplan"></canvas></div>
   <div class="panel hud-tc"><span id="hTime" class="num h-time">0:00,0</span><span id="hSplit" class="h-split" hidden></span><span id="hRival" class="h-rival"></span><span id="hSub" class="h-sub"></span></div>
   <span id="hFb" class="h-fb" aria-live="polite"></span>
+  <span id="hSpd" class="h-spd" hidden></span>
   <div class="hud-cues"><span id="hCue" class="h-cue" hidden></span><span id="hToast" class="h-toast" hidden></span><span id="hDraft" class="chip draft" hidden>WINDSCHATTEN</span></div>
   <span id="zoneL" class="zone zl" hidden>LINKS</span><span id="zoneM" class="zone zm" hidden>BEIDE</span><span id="zoneR" class="zone zr" hidden>RECHTS</span>
   <div class="hud-tr"><div class="panel h-lap"><span id="hLap" class="num">Runde 1/3</span><span id="hKm" class="sub">0,0 km</span></div><button type="button" id="btnPause" class="icon-btn" aria-label="Pause"><i class="ico" data-i="pause"></i></button></div>
@@ -5917,10 +5926,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // Birke: weißer Stamm mit dunklen Querstrichen, feine hängende Zweige (wiegen im Wind)
     function birch(x, y, h, seed, t) {
       const lean = (hsh(seed) - 0.5) * 0.12, tx = x + Math.sin(lean) * h * 0.9, w = Math.max(1.4, h * 0.035), sw = Math.sin(t * 1.3 + seed) * h * 0.012;
+      seg([x, y], [tx, y - h * 0.9], mix(I.dunst, I.tinte, 0.35), w + 1.6 * k);   // Umriss: der weiße Stamm steht sichtbar vor dem Schnee
       seg([x, y], [tx, y - h * 0.9], "#EFEAE0", w); seg([x + w * 0.3, y], [tx + w * 0.3, y - h * 0.9], mix("#EFEAE0", I.dunst, 0.6), w * 0.35);
       for (let i = 1; i < 7; i++) { const u = i / 8, bx = x + (tx - x) * u, by = y - h * 0.9 * u; seg([bx - w * 0.5, by], [bx + w * 0.3, by - w * 0.4], I.tinte, w * 0.35); }
       ctx.strokeStyle = mix(I.dach, I.tinte, 0.35); ctx.lineWidth = Math.max(0.5, w * 0.25);
-      for (let i = 0; i < 14; i++) { const u = 0.35 + 0.6 * hsh(seed * 7 + i), bx = x + (tx - x) * u, by = y - h * 0.9 * u, d = hsh(seed + i) < 0.5 ? -1 : 1, l = h * (0.12 + 0.12 * hsh(seed * 3 + i));
+      for (let i = 0; i < 14; i++) { const u = 0.45 + 0.5 * hsh(seed * 7 + i), bx = x + (tx - x) * u, by = y - h * 0.9 * u, d = hsh(seed + i) < 0.5 ? -1 : 1, l = h * (0.07 + 0.08 * hsh(seed * 3 + i));
         ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + d * l * 0.7 + sw, by - l * 0.35, bx + d * l + sw * 1.6, by + l * 0.25); ctx.stroke(); }
     }
     // Almhütte als Körper (Vorderseite, Seite, Dach mit dicker Schneedecke), Fenster leuchten warm, Holzstoß, Rauch im Wind
@@ -6041,12 +6051,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // 0.23.1 (Mat: „alles schwebt“): Schneefeld hinter der Loipe. Die Spur liegt in einer Wiese, die nach hinten ansteigt und
       // weich in den Talboden übergeht, statt als dünne Linie vor dem fernen Tal zu hängen. Oben unregelmäßig (Schneewellen).
       if (!V.pen) {
-        const top = (s) => Y(s) - (44 + 10 * Math.sin(s * 0.21) + 6 * Math.sin(s * 0.57 + 1)) * k;
+        const top = (s) => Y(s) - (58 + 7 * Math.sin(s * 0.21) + 4 * Math.sin(s * 0.57 + 1)) * k;   // 0.27: höher, damit alles dahinter auf Schnee steht
         ctx.beginPath(); ctx.moveTo(X(s0), Y(s0) + 4 * k);
         for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), top(s));
         for (let s = s1; s >= s0; s -= step) ctx.lineTo(X(s), Y(s) + 4 * k);
         ctx.closePath();
-        const yt = Y(V.s) - 60 * k, g = ctx.createLinearGradient(0, yt, 0, Y(V.s) + 4 * k);
+        const yt = Y(V.s) - 72 * k, g = ctx.createLinearGradient(0, yt, 0, Y(V.s) + 4 * k);
         g.addColorStop(0, mix(I.papier, I.dunst, 0.45)); g.addColorStop(0.35, mix(I.papier, I.dunst, 0.2)); g.addColorStop(1, I.papier);
         ctx.fillStyle = g; ctx.fill();
         // weiche Kante oben (Schneewelle mit Schatten darunter)
@@ -6071,18 +6081,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         ctx.fillStyle = `rgba(70,96,140,${shadowA})`; ctx.beginPath();
         ctx.moveTo(x - w * 0.5, y); ctx.lineTo(x + w * 0.5, y); ctx.lineTo(x + dx + w * 0.15, y + len * 0.5); ctx.lineTo(x + dx - w * 0.35, y + len * 0.45); ctx.closePath(); ctx.fill();
       };
+      const nearCreek = (s, r) => { if (!LL) return false; const d = (((s - 0.5 * LL) % LL) + LL) % LL; return Math.min(d, LL - d) < r; };
       const trees = [];   // erst Schatten, dann Bäume (Schatten liegen unter allen Bäumen)
       const plant = (kind, x, y, h, a, b) => { trees.push([kind, x, y, h, a, b]); castShadow(x, y, h, h * (kind === "bare" ? 0.12 : 0.32)); };
       // hinterste Waldreihe im Wald (dunkel, eng, etwas kleiner): eine Wand mit Lücken
       for (let s = Math.floor(s0 / 1.3) * 1.3; s < s1 + 2; s += 1.3) {
-        const z = zoneAt(s, true); if (z !== "wald" && z !== "birke") continue;
+        const z = zoneAt(s, true); if ((z !== "wald" && z !== "birke") || nearCreek(s, 6)) continue;
         const r = hsh(Math.round(s * 10) + 313); if (z === "birke" && r < 0.55) continue; if (r < 0.12) continue;
         const x = X(s), y = Y(s) - (36 + 8 * r) * k, hh = (58 + 40 * hsh(Math.round(s * 10) + 7)) * k;
         trees.push(z === "birke" && r < 0.8 ? ["birch", x, y, hh * 0.9, Math.round(s * 10)] : ["spruce", x, y, hh, true, 0.3 + 0.6 * r]);
       }
       const sb = Math.floor(s0 / 1.5) * 1.5;
       for (let s = sb; s < s1 + 3; s += 1.5) {
-        const z = zoneAt(s, true); if (z === "stadion" || z === "bach") continue;
+        const z = zoneAt(s, true); if (z === "stadion" || z === "bach" || nearCreek(s, 8)) continue;
         const q = hsh(Math.round(s * 7) + (V.pen ? 999 : 0));
         const dens = { wiese: 0.86, wald: 0.25, lichtung: 0.82, birke: 0.5 }[z];
         if (q < dens) continue;
@@ -6126,6 +6137,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         const sc = base + 0.5 * LL; if (sc < s0 - 8 || sc > s1 + 8) continue;
         const x = X(sc), y = Y(sc);
         creek(x, y - 62 * k, y - 6 * k, 3, 22, V.t);
+        // der Bach kommt aus dem Wald: Fichtengruppe und Schneewehe am oberen Ende (er endet nicht im Nichts)
+        for (const [dx, dy, hh] of [[-26, -58, 46], [-10, -63, 40], [8, -61, 50], [24, -57, 42], [-38, -55, 36]]) trees.push(["spruce", x + dx * k, y + dy * k, hh * k, true, 0.4 + 0.1 * (dx % 3)]);
         for (const [dx, dy] of [[-24, -10], [-12, -40], [22, -12], [10, -44]]) { disc(x + dx * k, y + dy * k, 3.6 * k, mix(I.tinte, I.dunst, 0.5)); ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x + dx * k, y + (dy - 2.2) * k, 3.8 * k, 1.8 * k, 0, Math.PI, 0); ctx.fill(); }
         // hinteres Brückengeländer (vorderes wird nach der Läuferin gezeichnet)
         bridgeRail(sc, X, Y, -9, 13);
@@ -7197,7 +7210,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.26.0";
+  const VERSION = "0.27.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8302,14 +8315,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         const stad = inStadium(s);
         if (back && !stad) continue;
         if (!stad && hsh(Math.round(s * 7) + 3) < 0.35) continue;
-        if (stad && !pen && !hunt && q > L.L - 25 && q < L.L - 7) continue;   // den Schießstand frei lassen
+        // 0.27 (Mat): nicht alle geballt an der Bande. Vorn lockere Grüppchen, hinten verstreut auf dem Schnee in verschiedener Tiefe,
+        // am Schießstand seitlich und dahinter (nie auf den Bahnen)
+        const gr = hsh(Math.floor(s / 4.4) * 7 + (back ? 3 : 0));
+        if (stad && !back && (gr < 0.45 || hsh(Math.round(s * 5) + 1) < 0.25)) continue;
+        if (stad && back && hsh(Math.round(s * 3) + 17) < 0.45) continue;
+        const inRange = stad && !pen && !hunt && q > L.L - 25 && q < L.L - 7;
+        if (inRange && !back) continue;
+        if (inRange && back && q > L.L - 22 && q < L.L - 9) continue;
         const sd = Math.round(s * 13), near = Math.max(0, 1 - Math.abs(s - sMe) / 8);
         const jump = near * Math.abs(Math.sin(t * 7 + sd)) * 4 * k;
-        const x = X(s), y = Y(s) - (stad ? (back ? 24 : 12) : 4) * k - jump, hh = ((stad ? 30 : 36) * k + 7 * hsh(Math.round(s * 11)) * k) * (back ? 0.86 : 1);
-        if (back && hsh(Math.round(s * 2) + 9) < 0.5) slab(x - 9 * k, y + jump + 1 * k, x + 13 * k, y + jump + 1 * k, 4 * k, 8 * k, mix(I.dach, I.tinte, 0.15));   // Podest
-        if (!back) { ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = I.tief; ctx.beginPath(); ctx.ellipse(x + 4 * k, y + jump + 1 * k, hh * 0.26, 2.4 * k, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        const depth = back ? 0.25 + 0.75 * hsh(Math.round(s * 9) + 5) : 0;   // 0 = an der Bande, 1 = weit hinten
+        const x = X(s), y = Y(s) - (stad ? (back ? 20 + 34 * depth : 12) : 4) * k - jump, hh = ((stad ? 30 : 36) * k + 7 * hsh(Math.round(s * 11)) * k) * (back ? 0.9 - 0.25 * depth : 1);
+        { ctx.save(); ctx.globalAlpha = back ? 0.14 : 0.2; ctx.fillStyle = I.tief; ctx.beginPath(); ctx.ellipse(x + 4 * k, y + jump + 1 * k, hh * 0.26, 2.4 * k, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
         let c1 = PEOPLE[Math.floor(hsh(Math.round(s * 3)) * PEOPLE.length)], c2 = PEOPLE[Math.floor(hsh(Math.round(s * 17)) * PEOPLE.length)];
-        if (back) { c1 = mix(c1, I.dunst, 0.25); c2 = mix(c2, I.dunst, 0.25); }
+        if (back) { c1 = mix(c1, I.dunst, 0.15 + 0.25 * depth); c2 = mix(c2, I.dunst, 0.15 + 0.25 * depth); }
         person(x, y, hh, c1, c2, near > 0.2 || hsh(Math.round(s * 5)) > 0.6, t, sd);
         // Blitz einer Kamera, ab und zu
         if (stad && hsh(Math.floor(t * 3) * 31 + sd) > 0.993) { ctx.fillStyle = "rgba(255,255,255,0.95)"; const fx = x + 4 * k, fy = y - hh * 0.85, r = 5 * k; ctx.beginPath(); ctx.moveTo(fx - r, fy); ctx.lineTo(fx, fy - r * 0.3); ctx.lineTo(fx + r, fy); ctx.lineTo(fx, fy + r * 0.3); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(fx, fy - r); ctx.lineTo(fx + r * 0.3, fy); ctx.lineTo(fx, fy + r); ctx.lineTo(fx - r * 0.3, fy); ctx.closePath(); ctx.fill(); }
@@ -8617,6 +8637,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     onMove: (dx, dy) => { if (mode !== "range" || !Rc || paused || Rc.phase !== "aim") return; aimMove(dx, dy); Rc.csAimed = (Rc.csAimed || 0) + Math.hypot(dx, dy); } });
   const mag = CS.magazin($("rhud"));
   const csRHint = CS.hinweis($("rhud"), { oben: true });
+  // Tempo der Bezugsläuferin an Stelle s (Spur alle 0,1 s), geglättet über ±0,3 s
+  function refSpeed(s) {
+    const ref = Rc && Rc.ref; if (!ref || !ref.traj || Rc.phase === "pen") return 0;
+    const tr = ref.traj[Math.min(ref.traj.length - 1, Rc.lap || 0)]; let lo = 0, hi = tr.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (tr[m] < s) lo = m; else hi = m; }
+    const a = Math.max(0, lo - 3), b = Math.min(tr.length - 1, lo + 3);
+    return b > a ? (tr[b] - tr[a]) / ((b - a) * 0.1) : 0;
+  }
   // je Bild: Ring, Taktleiste über der Figur, Hinweise fürs erste Mal
   function csRunFrame() {
     const R = Rc.R, sl = Rc.phase === "pen" ? 0 : Rc.L.slope(R.s), cyc = Ph.cycle(sl, R), ph = R.tp / cyc;
@@ -8629,12 +8657,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const pp = renderer.player;
     // 0.18.3: eine Taktanzeige, der Ring am Knopf. Unter der Läuferin nur das Rückmeldewort nach jedem Abstoß
     tk.set({ hidden: true });
-    if (pp) { const f = $("hFb"); f.style.left = pp.x / uiS + "px"; f.style.top = (pp.y + pp.h * 0.12) / uiS + "px"; }
-    setText($("hSub"), going ? nb(`${Math.round(R.v * 3.6)} km/h${tuck ? " · Hocke" : R.streak >= 3 ? " · Serie " + R.streak : ""}`) : "");
+    // 0.27 (Mat): Tempo dezent unter der Läuferin, Farbe im Vergleich zur Bezugsläuferin an dieser Stelle (grün schneller, orange etwa gleich, rot langsamer)
+    const sp = $("hSpd");
+    if (pp) { const f = $("hFb"); f.style.left = pp.x / uiS + "px"; f.style.top = (pp.y + pp.h * 0.3) / uiS + "px"; sp.style.left = pp.x / uiS + "px"; sp.style.top = (pp.y + pp.h * 0.1) / uiS + "px"; }
+    sp.hidden = !going || Rc.watch;
+    if (going) { const vr = refSpeed(R.s), q = vr > 0.3 ? R.v / vr : 1; setText(sp, `${Math.round(R.v * 3.6)} km/h`); sp.className = "h-spd " + (q >= 1.0 ? "fast" : q >= 0.9 ? "mid" : "slow"); }
+    setText($("hSub"), going ? nb(tuck ? "Hocke" : R.streak >= 3 ? "Serie " + R.streak : "") : "");
     // Hinweise beim ersten Rennen (nicht in Erste Schritte und beim Ansehen)
     if (Rc.kind === "learn" || Rc.phase === "count") return;
     const T = S.tips;
-    if (!T.csRun) { csHint.say(Rc.simple ? "Tippe auf „Abstoß“, wenn der Ring grün wird: im Takt läufst du schneller und sparst Kraft." : "Links und rechts abwechselnd tippen, wenn der Ring grün wird; beide zugleich = Doppelstock."); if (R.streak >= 4) { T.csRun = 1; save(); csHint.say("Gut so, im Takt!", 1.5); } }
+    if (!T.csRun) { csHint.say(Rc.simple ? "Tippe auf „Abstoß“, wenn der Ring voll ist: im Takt läufst du schneller und sparst Kraft." : "Links und rechts abwechselnd tippen, wenn der Ring voll ist; beide zugleich = Doppelstock."); if (R.streak >= 4) { T.csRun = 1; save(); csHint.say("Gut so, im Takt!", 1.5); } }
     else if (!T.csTuck && sl < -0.04 && going) { csHint.say(Rc.simple ? "Bergab: „Hocke“ gedrückt halten." : "Bergab: einen Finger liegen lassen = Hocke."); if (R.tuck) { T.csTuck = 1; save(); csHint.clear(); } }
     else if (csHint.text && T.csRun && (T.csTuck || sl >= -0.04) && csHint.text.indexOf("Gut so") < 0) csHint.clear();
   }
