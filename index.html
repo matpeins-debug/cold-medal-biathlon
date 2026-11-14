@@ -5951,6 +5951,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const HB = yr + (H - yr) / C + 4 * k;
       ctx.save(); ctx.translate(xr, yr); ctx.scale(C, C); ctx.translate(-xr, -yr);
       const s0 = V.s - xr / C / ppm - 2, s1 = V.s + (W - xr) / C / ppm + 2, step = 1.2 / k;
+      // 0.23.1 (Mat: „alles schwebt“): Schneefeld hinter der Loipe. Die Spur liegt in einer Wiese, die nach hinten ansteigt und
+      // weich in den Talboden übergeht, statt als dünne Linie vor dem fernen Tal zu hängen. Oben unregelmäßig (Schneewellen).
+      if (!V.pen) {
+        const top = (s) => Y(s) - (44 + 10 * Math.sin(s * 0.21) + 6 * Math.sin(s * 0.57 + 1)) * k;
+        ctx.beginPath(); ctx.moveTo(X(s0), Y(s0) + 4 * k);
+        for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), top(s));
+        for (let s = s1; s >= s0; s -= step) ctx.lineTo(X(s), Y(s) + 4 * k);
+        ctx.closePath();
+        const yt = Y(V.s) - 60 * k, g = ctx.createLinearGradient(0, yt, 0, Y(V.s) + 4 * k);
+        g.addColorStop(0, mix(I.papier, I.dunst, 0.45)); g.addColorStop(0.35, mix(I.papier, I.dunst, 0.2)); g.addColorStop(1, I.papier);
+        ctx.fillStyle = g; ctx.fill();
+        // weiche Kante oben (Schneewelle mit Schatten darunter)
+        ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), top(s) + 3 * k);
+        ctx.strokeStyle = mix(I.papier, I.schatten, 0.3); ctx.globalAlpha = 0.55; ctx.lineWidth = 2.2 * k; ctx.stroke(); ctx.globalAlpha = 1;
+      }
       // Bäume hinter der Loipe (fest in der Welt, Abstand je nach Abschnitt)
       const sb = Math.floor(s0 / 3) * 3;
       for (let s = sb; s < s1 + 3; s += 3) {
@@ -5971,7 +5986,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + 9 * k);
       for (let s = s1; s >= s0; s -= step) ctx.lineTo(X(s), Y(s) + 22 * k);
       ctx.closePath(); ctx.fillStyle = mix(I.papier, I.dunst, 0.55); ctx.fill();
-      ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + 1.5 * k);
+      // gewalzte Loipe als Fläche: hintere Kante, Rillen der Pistenmaschine, vordere Kante (die Ski stehen IN der Spur, nicht auf einem Strich)
+      ctx.beginPath();
+      for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) - 7 * k);
+      for (let s = s1; s >= s0; s -= step) ctx.lineTo(X(s), Y(s) + 5 * k);
+      ctx.closePath(); ctx.fillStyle = mix(I.papier, "#FFFFFF", 0.5); ctx.fill();
+      ctx.strokeStyle = mix(I.papier, I.dunst, 0.6); ctx.lineWidth = 0.8 * k;
+      for (const o of [-4.5, -2, 0.5, 3]) { ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + o * k); ctx.stroke(); }
+      ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) - 7 * k);
+      ctx.strokeStyle = mix(I.papier, I.schatten, 0.45); ctx.lineWidth = 1.1 * k; ctx.stroke();
+      ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + 5 * k);
       ctx.strokeStyle = I.schatten; ctx.lineWidth = 1.6 * k; ctx.stroke();
 
       // Klassisch: gespurte Loipe, zwei Rillen
@@ -6036,6 +6060,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         // Geister (Gruppen): im Aussehen aus ihrem Pass, halb durchsichtig
         // Läufer aus einer anderen Runde (überrundet oder vor dir eine Runde weiter): blass, mit „+1“ / „−1“ über dem Kopf
         ctx.globalAlpha = (o.ghost ? 0.55 : 1) * (o.lapD ? 0.38 : 1);
+        ctx.fillStyle = "rgba(30,39,52,0.16)"; ctx.beginPath(); ctx.ellipse(x + 2 * k, y + 2 * k, 27 * k, 2.8 * k, aR, 0, TAU); ctx.fill();
         skier(x, y, rh, aR, P, o.look ? [o.look.suit, o.look.accent] : SUIT[o.nat] || SUIT.AUT, V.retro, o.look || faceFor(o.name));
         if (o.lapD && !lapTags.some((q) => Math.abs(q - x) < 46 * k)) {
           lapTags.push(x); ctx.globalAlpha = 0.6; ctx.font = `700 ${Math.round(12 * k / Math.sqrt(C))}px Futura, 'Avenir Next', 'Segoe UI', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
@@ -6061,6 +6086,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // Läuferin
       const [yP, aP] = skiFit(V.s, 62 * k);
       R.player = { x: xr, y: yr + (yP - yr) * C, h: 62 * k * C };   // für die Taktleiste über der Figur (oberflaeche/steuerung.js)
+      // Schatten im Schnee unter den Ski: verbindet die Läuferin mit dem Boden
+      ctx.fillStyle = "rgba(30,39,52,0.2)"; ctx.beginPath(); ctx.ellipse(xr + 2 * k, yP + 2 * k, 30 * k, 3.2 * k, aP, 0, TAU); ctx.fill();
       const PPp = playerPose(V, dt);
       skier(xr, yP, 62 * k, aP, PPp, V.look ? [V.look.suit, V.look.accent] : V.suit, V.retro, V.look || faceFor(V.name || "Ich"));
       // 0.19: Atemwolken: je höher der Puls, desto öfter; treiben nach hinten weg und lösen sich auf
@@ -6957,7 +6984,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.23.0";
+  const VERSION = "0.23.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
