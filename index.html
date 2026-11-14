@@ -5780,6 +5780,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         for (let i = Math.floor((off - 80 * k) / sp); i * sp - off < W + 80 * k; i++) {
           const q = hsh(i * 31 + row.seed), x = i * sp - off + (hsh(i * 17 + row.seed) - 0.5) * sp * 0.5, y = row.y + (hsh(i * 5 + row.seed) - 0.5) * 8 * k, s = row.s;
           if (q < 0.26) { const n = 2 + Math.floor(hsh(i + row.seed) * 3); for (let j = 0; j < n; j++) bareTree(x + j * 16 * s, y + j * 2 * s, (80 + 50 * hsh(i * 9 + j)) * s, i * 13 + j); }
+          else if (q < 0.46 && hsh(i * 13 + row.seed + (V.lap || 0) * 977) < 0.45) { /* Leben wechselt je Runde: hier diesmal niemand */ }
           else if (q < 0.38) { // Wild: Rehe, Hirsch, Gams grasen
             const kinds = ["hirsch", "gams", "gams", "hirsch"], n = 2 + Math.floor(hsh(i * 3 + row.seed) * 3);
             for (let j = 0; j < n; j++) { const kd = kinds[(((i + j) % 4) + 4) % 4], A = BIPhysAnimals()[kd]; animal(kd, x + j * 15 * s, y + (j % 2) * 2 * s, PM * s, hsh(i * 11 + j) < 0.5 ? -1 : 1, A, 0); }
@@ -5990,6 +5991,56 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       poly([[x - 4 * k, y - 35 * k], [x + 4 * k, y - 35 * k], [x + 3.4 * k, y - 41 * k], [x - 3.4 * k, y - 41 * k]], mix(I.tinte, I.dach, 0.3)); seg([x - 5 * k, y - 35 * k], [x + 5 * k, y - 35 * k], mix(I.tinte, I.dach, 0.3), 1.2 * k);
       for (const dy of [-21, -18]) disc(x, y + dy * k, 0.8 * k, I.tinte);
     }
+    // 3D-Körper an Hilfsfunktion: Quader (Vorderseite, Seite rechts, Deckel), Tiefe schräg nach hinten rechts
+    function box3(x, y, w, h, d, c) {
+      const dx = d * 0.5, dy = -d * 0.42;
+      poly([[x + w, y], [x + w + dx, y + dy], [x + w + dx, y - h + dy], [x + w, y - h]], mix(c, I.tinte, 0.38));
+      poly([[x, y - h], [x + w, y - h], [x + w + dx, y - h + dy], [x + dx, y - h + dy]], mix(c, I.papier, 0.3));
+      poly([[x, y], [x + w, y], [x + w, y - h], [x, y - h]], c);
+    }
+    // Heustadel als Körper: Bretterwand, Seite, Satteldach mit Schnee und Tiefe, Schneewehe am Fuß
+    function stadel3d(x, y, s) {
+      const w = 40 * s, h = 22 * s, d = 18 * s, dx = d * 0.5, dy = -d * 0.42, wood = mix(I.dach, I.tinte, 0.25);
+      box3(x - w / 2, y, w, h, d, wood);
+      for (let i = 1; i < 7; i++) seg([x - w / 2, y - h * i / 7], [x + w / 2, y - h * i / 7], mix(wood, I.tinte, 0.35), 0.6 * s);
+      for (let i = 1; i < 4; i++) seg([x + w / 2 + dx * i / 4, y + dy * i / 4], [x + w / 2 + dx * i / 4, y - h + dy * i / 4], mix(wood, I.tinte, 0.55), 0.6 * s);
+      const ry = y - h, ap = [x, ry - 14 * s];
+      poly([[x - w / 2 - 4 * s, ry + 1], ap, [ap[0] + dx, ap[1] + dy], [x + w / 2 + 4 * s + dx, ry + 1 + dy], [x + w / 2 + 4 * s, ry + 1]], mix(I.papier, I.dunst, 0.3));
+      poly([[x - w / 2 - 5 * s, ry + 2 * s], ap, [x + w / 2 + 5 * s, ry + 2 * s], [x + w / 2 + 5 * s, ry + 4 * s], [x - w / 2 - 5 * s, ry + 4 * s]], "#FBF8F1");
+      poly([[x - w * 0.12, y], [x + w * 0.12, y], [x + w * 0.12, y - h * 0.6], [x - w * 0.12, y - h * 0.6]], mix(wood, I.tinte, 0.5));
+      ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x + dx * 0.3, y + 1 * s, w * 0.62, 3.2 * s, 0, Math.PI, 0); ctx.fill();
+    }
+    // Hochsitz am Waldrand: vier Beine, Leiter, Kanzel mit Dach und Schnee
+    function hochsitz(x, y) {
+      const c = mix(I.dach, I.tinte, 0.3), cd = mix(I.dach, I.tinte, 0.55);
+      seg([x - 8 * k, y], [x - 5 * k, y - 34 * k], cd, 2 * k); seg([x + 8 * k, y], [x + 5 * k, y - 34 * k], c, 2.2 * k);
+      seg([x - 2 * k, y - 6 * k], [x + 1 * k, y - 34 * k], cd, 1.6 * k); seg([x + 12 * k, y - 6 * k], [x + 9 * k, y - 34 * k], cd, 1.6 * k);
+      seg([x - 7 * k, y - 14 * k], [x + 7 * k, y - 24 * k], cd, 1 * k); seg([x + 7 * k, y - 14 * k], [x - 7 * k, y - 24 * k], cd, 1 * k);
+      // Leiter vorn
+      seg([x - 3 * k, y + 2 * k], [x - 2 * k, y - 34 * k], c, 1.2 * k); seg([x + 3 * k, y + 2 * k], [x + 2 * k, y - 34 * k], c, 1.2 * k);
+      for (let i = 1; i < 8; i++) seg([x - 3 * k, y + 2 * k - i * 4.5 * k], [x + 3 * k, y + 2 * k - i * 4.5 * k], c, 0.9 * k);
+      box3(x - 10 * k, y - 34 * k, 20 * k, 12 * k, 10 * k, mix(I.dach, I.tinte, 0.1));
+      poly([[x - 6 * k, y - 41 * k], [x + 6 * k, y - 41 * k], [x + 6 * k, y - 44 * k], [x - 6 * k, y - 44 * k]], I.tinte);   // Sehschlitz
+      box3(x - 13 * k, y - 46 * k, 26 * k, 2.5 * k, 14 * k, mix(I.dach, I.tinte, 0.4));
+      ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.moveTo(x - 14 * k, y - 48 * k); ctx.quadraticCurveTo(x + 2 * k, y - 54 * k, x + 20 * k, y - 54 * k); ctx.lineTo(x + 20 * k, y - 51 * k); ctx.lineTo(x - 13 * k, y - 47 * k); ctx.fill();
+    }
+    // Holzbank mit Schneepolster
+    function bench(x, y) {
+      const c = mix(I.dach, I.tinte, 0.25);
+      seg([x - 8 * k, y], [x - 8 * k, y - 5 * k], c, 1.4 * k); seg([x + 8 * k, y], [x + 8 * k, y - 5 * k], c, 1.4 * k);
+      box3(x - 11 * k, y - 5 * k, 22 * k, 1.8 * k, 6 * k, c); box3(x - 11 * k, y - 10 * k, 22 * k, 1.6 * k, 1.5 * k, c);
+      ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x + 1 * k, y - 7.4 * k, 11 * k, 1.6 * k, 0, Math.PI, 0); ctx.fill();
+    }
+    // Wegweiser mit zwei Brettern (in die Tiefe gedreht) und Schneehaube
+    function signpost(x, y) {
+      const c = mix(I.dach, I.tinte, 0.3);
+      box3(x - 1.2 * k, y, 2.4 * k, 30 * k, 2.4 * k, c);
+      poly([[x, y - 27 * k], [x + 18 * k, y - 29 * k], [x + 21 * k, y - 25.5 * k], [x + 18 * k, y - 22 * k], [x, y - 22.5 * k]], mix(I.ocker, I.dach, 0.25));
+      poly([[x, y - 20 * k], [x - 15 * k, y - 18 * k], [x - 18 * k, y - 15 * k], [x - 15 * k, y - 12 * k], [x, y - 14 * k]], mix(I.ocker, I.dach, 0.4));
+      ctx.fillStyle = I.tinte; ctx.font = `700 ${Math.max(4, 3.6 * k)}px Futura, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("ALM", x + 9 * k, y - 25.5 * k); ctx.fillText("DORF", x - 8 * k, y - 15.5 * k);
+      ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x + 1 * k, y - 30 * k, 3 * k, 1.6 * k, 0, Math.PI, 0); ctx.fill();
+    }
     // Brückengeländer über dem Bach: dy = Abstand zur Spur (− hinten, + vorn)
     function bridgeRail(sc, X, Y, dy, hh) {
       const c = mix(I.dach, I.tinte, 0.3), a = sc - 5, b = sc + 5;
@@ -6112,16 +6163,24 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
           seg([x, y - 5 * k], [x2, y2 - 5 * k], c, 1.1 * k); seg([x, y - 10 * k], [x2, y2 - 10 * k], c, 1.1 * k);
           seg([x, y - 10.8 * k], [x2, y2 - 10.8 * k], "#FFFFFF", 0.9 * k);
         }
+        // Landschaft (jede Runde gleich): Heustadel, Almhütte mit Bank, Hochsitz am Waldrand, Wegweiser, Schneemann
         const sh = at(0.13); if (sh > s0 - 6 && sh < s1 + 6) { const x = X(sh), y = Y(sh) - 30 * k; castShadow(x, y, 50 * k, 40 * k); trees.push(["stadel", x, y]); }
-        const hu = at(0.62); if (hu > s0 - 8 && hu < s1 + 8) { const x = X(hu), y = Y(hu) - 34 * k; castShadow(x, y, 60 * k, 56 * k); trees.push(["huette", x, y]); }
-        // kleine Szenen: Fotograf an der Wiese (blitzt, wenn du vorbeikommst), Kinder rodeln an der Lichtung, Schneemann bei den Birken
-        const fo = at(0.1); if (fo > s0 - 4 && fo < s1 + 4) trees.push(["foto", X(fo), Y(fo) - 14 * k, fo]);
-        const ro = at(0.66); if (ro > s0 - 10 && ro < s1 + 10) trees.push(["rodel", X(ro), Y(ro) - 44 * k]);
+        const hu = at(0.62); if (hu > s0 - 8 && hu < s1 + 8) { const x = X(hu), y = Y(hu) - 34 * k; castShadow(x, y, 60 * k, 56 * k); trees.push(["huette", x, y]); trees.push(["bank", x - 40 * k, y + 12 * k]); }
+        const hs = at(0.235); if (hs > s0 - 6 && hs < s1 + 6) { const x = X(hs), y = Y(hs) - 26 * k; castShadow(x, y, 50 * k, 18 * k); trees.push(["hochsitz", x, y]); }
+        const wg = at(0.545); if (wg > s0 - 4 && wg < s1 + 4) trees.push(["weg", X(wg), Y(wg) - 9 * k]);
         const sm = at(0.8); if (sm > s0 - 4 && sm < s1 + 4) { castShadow(X(sm), Y(sm) - 16 * k, 24 * k, 10 * k); trees.push(["schneemann", X(sm), Y(sm) - 16 * k]); }
-        for (const [f, kd, dir] of [[0.57, "hirsch", 1], [0.585, "gams", -1], [0.68, "gams", 1]]) {
-          const sa = at(f); if (sa < s0 - 3 || sa > s1 + 3) continue;
-          trees.push(["wild", X(sa), Y(sa) - 40 * k, kd, dir]);
+        // Leben (jede Runde anders, 0.28): Wild, Fotograf, Rodelkinder, Spaziergänger mit Hund – ob, wo und welche, entscheidet die Runde
+        const n = (V.lap || 0) + Math.round(base / LL), rr = (i) => hsh(n * 7919 + i * 131 + 17);
+        if (rr(1) < 0.75) { const fo = at(0.06 + 0.12 * rr(2)); if (fo > s0 - 4 && fo < s1 + 4) trees.push(["foto", X(fo), Y(fo) - 14 * k, fo]); }
+        if (rr(3) < 0.65) { const ro = at(0.64 + 0.04 * rr(4)); if (ro > s0 - 10 && ro < s1 + 10) trees.push(["rodel", X(ro), Y(ro) - 44 * k]); }
+        const KINDS = ["hirsch", "gams", "gams", "hirsch", "fuchs", "hase", "keiler"];
+        const herds = Math.floor(rr(5) * 4);
+        for (let h = 0; h < herds; h++) {
+          const f0 = [0.02, 0.24, 0.55, 0.76][Math.floor(rr(10 + h) * 4)] + 0.15 * rr(20 + h), kd = KINDS[Math.floor(rr(30 + h) * KINDS.length)], cnt = kd === "fuchs" || kd === "hase" || kd === "keiler" ? 1 : 1 + Math.floor(rr(40 + h) * 3);
+          for (let j = 0; j < cnt; j++) { const sa = at(f0) + j * 1.4; if (sa < s0 - 3 || sa > s1 + 3 || nearCreek(sa, 6) || (V.stadium && V.stadium(sa))) continue;
+            trees.push(["wild", X(sa), Y(sa) - (30 + 12 * rr(50 + h * 5 + j)) * k, kd, rr(60 + h * 5 + j) < 0.5 ? -1 : 1]); }
         }
+        if (rr(7) < 0.55) { const wa = at(0.1 + 0.6 * rr(8)), dir = rr(9) < 0.5 ? -1 : 1; if (wa > s0 - 8 && wa < s1 + 8 && !nearCreek(wa, 8) && !(V.stadium && V.stadium(wa))) trees.push(["spazier", X(wa), Y(wa) - 40 * k, dir, n]); }
       }
       // Wald: Lichtstrahlen durch die Bäume (nur bei Sonne)
       if (sunny && !R.lite) {
@@ -6155,11 +6214,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         }
         else if (kind === "bare") bareTree(x, y, T[3], T[4]);
         else if (kind === "birch") birch(x, y, T[3], T[4], V.t);
-        else if (kind === "stadel") heustadel(x, y, k * 1.6);
+        else if (kind === "stadel") stadel3d(x, y, k * 1.5);
         else if (kind === "huette") almhut(x, y, k * 1.15, V.t);
         else if (kind === "foto") photographer(x, y, Math.abs(T[3] - V.s) < 5, V.t);
         else if (kind === "rodel") sledHill(x, y, V.t);
         else if (kind === "schneemann") snowman(x, y);
+        else if (kind === "bank") bench(x, y);
+        else if (kind === "hochsitz") hochsitz(x, y);
+        else if (kind === "weg") signpost(x, y);
+        else if (kind === "spazier") { const d = T[3], wx = x + d * ((V.t * 7) % 80 - 40) * k * 0.5; hunter(wx, y, k * 0.95, V.t, d, T[4]); dog(wx + d * 14 * k, y, k * 0.7, V.t, d, T[4] + 3); }
         else if (kind === "wild") { const A = BIPhysAnimals()[T[3]]; animal(T[3], x, y, 15 * k, T[4], A, { t: V.t, ph: x * 0.01 }); }
       }
       // Klang des Ortes (game.js gibt R.amb an audio.js): Wald (Vögel), Bach (Plätschern unter dem Eis), Glocken (Hütte, Stadion), Publikum
@@ -7217,7 +7280,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.27.1";
+  const VERSION = "0.28.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8321,7 +8384,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         if (!cr) continue;
         const stad = inStadium(s);
         if (back && !stad) continue;
-        if (!stad && hsh(Math.round(s * 7) + 3) < 0.35) continue;
+        // an der Strecke wechseln die Grüppchen jede Runde (wer wo steht, ob überhaupt jemand)
+        const lp = (Rc ? Rc.lap : 0) * 977 + (s < 0 ? -977 : 0);
+        if (!stad && (hsh(Math.round(s * 7) + 3 + lp) < 0.35 || hsh(Math.floor(s / 6) * 13 + lp) < 0.3)) continue;
         // 0.27 (Mat): nicht alle geballt an der Bande. Vorn lockere Grüppchen, hinten verstreut auf dem Schnee in verschiedener Tiefe,
         // am Schießstand seitlich und dahinter (nie auf den Bahnen)
         const gr = hsh(Math.floor(s / 4.4) * 7 + (back ? 3 : 0));
@@ -8446,7 +8511,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
       const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost, lapD: (r.k == null ? Rc.lap : r.k) - Rc.lap })) : [];
-      renderer.drawRun({ T: L, s: sNow, pen, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1 });
+      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1 });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
       // Ortswechsel (Schießstand → Strafrunde → Strecke): kurz abblenden, damit der Sprung nicht wie ein Fehler aussieht
