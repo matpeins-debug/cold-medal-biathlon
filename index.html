@@ -892,10 +892,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     sprint: { name: "Sprint", w: SPRINT.w, m: SPRINT.m, stages: ["prone", "stand"], start: 30, field: 50 },
     pursuit: { name: "Verfolgung", w: { km: 10, laps: 5 }, m: { km: 12.5, laps: 5 }, stages: ["prone", "prone", "stand", "stand"], start: "gaps", field: 30 },
     mass: { name: "Massenstart", w: { km: 12.5, laps: 5 }, m: { km: 15, laps: 5 }, stages: ["prone", "prone", "stand", "stand"], start: 0, field: 30 },
-    // Nostalgie: Jagdpatrouille wie um 1960. Vier Schießstationen im Wald mit je drei 3D-Tierattrappen auf unbekannter Entfernung,
+    // Nostalgie: Jagdpatrouille wie um 1960. Vier Schießstationen im Wald mit je fünf 3D-Tierattrappen auf unbekannter Entfernung,
     // offene Visierung (Kimme und Korn), keine Strafrunde: jeder Fehler eine Minute Strafzeit, ein Treffer in die Kill-Zone 10 s gut.
     jagd: { name: "Jagdpatrouille", w: { km: 10, laps: 5 }, m: { km: 15, laps: 5 }, stages: ["prone", "kneel", "stand", "prone"], start: 60, field: 30,
-      hunt: { shots: 3, penSec: 60, killSec: 10 } },
+      hunt: { shots: 5, penSec: 60, killSec: 10 } },   // 0.22: fünf Attrappen (Hase, Fuchs, Keiler, Gams, Hirsch)
     // Langlauf ohne Gewehr (seit 0.16): Einzelstart im klassischen Stil, 10 km Damen, 15 km Herren, Runden wie im Sprint
     xc: { name: "Langlauf", w: { km: 10, laps: 4 }, m: { km: 15, laps: 6 }, stages: [], start: 30, field: 50 },
   };
@@ -1207,14 +1207,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   function newHunt(stance, hr, wind, seed) {
     const G = newRange(stance, hr, wind, seed), r = G.r;
     const kinds = Object.keys(ANIMALS);
-    // drei verschiedene Tiere, nach Entfernung gestaffelt: nah, mittel, weit
-    const pick = [];
-    while (pick.length < 3) { const k = kinds[Math.floor(r() * kinds.length)]; if (pick.indexOf(k) < 0) pick.push(k); }
-    pick.sort((a, b) => ANIMALS[a].d[0] - ANIMALS[b].d[0]);
-    G.hunt = true; G.n = 3;
+    // 0.22 (Mat): alle fünf Tiere, in zufälliger Reihenfolge von links nach rechts, jedes auf seiner Entfernung
+    const pick = kinds.slice();
+    for (let i = pick.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [pick[i], pick[j]] = [pick[j], pick[i]]; }
+    G.hunt = true; G.n = pick.length;
     G.animals = pick.map((kind, i) => {
       const A = ANIMALS[kind], d = Math.round(A.d[0] + (A.d[1] - A.d[0]) * r());
-      return { kind, d, stance, dir: r() < 0.5 ? -1 : 1, x: (i - 1) * 1000 + (r() - 0.5) * 240 };
+      return { kind, d, stance, dir: r() < 0.5 ? -1 : 1, x: (i - 2) * 900 + (r() - 0.5) * 200 };
     });
     // Reihenfolge wie im Parcours: von links nach rechts
     G.animals.sort((a, b) => a.x - b.x);
@@ -1376,7 +1375,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         total += ski;
         const seg = { ski, at: total };
         if (k < stages.length && HU) {
-          // Jagdpatrouille: drei Attrappen auf unbekannter Entfernung, offene Visierung; Fehler = Strafminute, Kill-Zone = 10 s gut
+          // Jagdpatrouille: fünf Attrappen auf unbekannter Entfernung, offene Visierung; Fehler = Strafminute, Kill-Zone = 10 s gut
           const st = stages[k], base = st === "prone" ? a.T.prone + LV.prone : st === "stand" ? a.T.stand + LV.stand : (a.T.prone + a.T.stand) / 2 + LV.stand;
           const p = Math.min(0.97, base - 0.04);
           let miss = 0, kill = 0; for (let i = 0; i < HU.shots; i++) { if (r() > p) miss++; else if (r() < 0.42) kill++; }
@@ -6343,13 +6342,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
     // ---------------------------------------------------------------- Jagdpatrouille: Kimme und Korn, 3D-Attrappen im Wald
     const MMH = 0.26;                            // px je Einheit (mm auf 50 m) bei 390 px Höhe: Spielvergrößerung, alle drei Tiere im Blick
-    const FOAM = { hase: [mix(I.papier, I.dach, 0.5), mix(I.dach, I.tinte, 0.3)], fuchs: [mix(I.rot, I.ocker, 0.45), mix(I.dach, I.tinte, 0.35)],
-      keiler: [mix(I.tinte, I.dach, 0.45), I.tinte], gams: [mix(I.dach, I.tinte, 0.35), I.tinte], hirsch: [mix(I.dach, I.ocker, 0.3), mix(I.dach, I.tinte, 0.4)] };
+    // 0.22 (Mat): fünf Attrappen, farblich deutlich verschieden: Hase grau, Fuchs leuchtend rot, Keiler schwarz, Gams ockergelb, Hirsch rotbraun
+    const FOAM = { hase: ["#A99C88", "#6A5E50"], fuchs: ["#D9652B", "#7B3518"], keiler: ["#3E3532", "#1A1514"], gams: ["#C99A4C", "#4A3622"], hirsch: ["#94512F", "#56301C"] };
     // Attrappe: Fuß bei (fx, fy), pm px je Meter, dir Blickrichtung; Maße aus BIPhys.ANIMALS
-    function animal(kind, fx, fy, pm, dir, A, wob) {
+    // an: { t, ph, wob, fall } — 0.22: die Attrappen leben ein wenig (Kopf nickt, atmen, Schwanz, Ohren), getroffen kippen sie nach hinten
+    function animal(kind, fx, fy, pm, dir, A0, an) {
+      an = an || {}; const t = an.t || 0, ph = an.ph || 0;
       const [c, cd] = FOAM[kind];
+      const A = Object.assign({}, A0, { ry: A0.ry * (1 + 0.035 * Math.sin(t * 2.1 + ph)) });
+      const nod = Math.sin(t * 1.5 + ph) * 0.5 + (kind === "hirsch" || kind === "gams" ? Math.max(0, Math.sin(t * 0.45 + ph * 2)) * 0.9 : 0);
       const by = -(A.leg + A.ry), lw = Math.max(1.2, (kind === "hase" ? 0.04 : kind === "hirsch" ? 0.07 : 0.06) * pm);
-      ctx.save(); ctx.translate(fx, fy); ctx.rotate(wob || 0); ctx.scale(dir, 1);
+      ctx.save(); ctx.translate(fx, fy); ctx.rotate((an.wob || 0) - (an.fall || 0) * dir); ctx.scale(dir, 1);
       ctx.lineCap = "round"; ctx.lineJoin = "round";
       // Schatten im Schnee
       ctx.globalAlpha = 0.18; ctx.fillStyle = I.tief; ctx.beginPath(); ctx.ellipse(0, 0, A.rx * 1.25 * pm, Math.max(1.5, A.rx * 0.12 * pm), 0, 0, TAU); ctx.fill(); ctx.globalAlpha = 1;
@@ -6357,19 +6360,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       // Beine (hintere dunkler)
       for (const [x, d] of [[-A.rx * 0.55, 1], [A.rx * 0.5, 1], [-A.rx * 0.4, 0], [A.rx * 0.62, 0]]) seg(P(x, by + A.ry * 0.5), P(x + (d ? 0.02 : -0.02), 0), d ? cd : c, lw);
       // Schwanz
-      if (kind === "fuchs") { ctx.beginPath(); ctx.ellipse(-A.rx * 1.25 * pm, (by + A.ry * 0.25) * pm, A.rx * 0.5 * pm, A.ry * 0.38 * pm, -0.25, 0, TAU); ctx.fillStyle = c; ctx.fill(); disc(-A.rx * 1.7 * pm, (by + A.ry * 0.4) * pm, A.ry * 0.25 * pm, I.papier); }
+      if (kind === "fuchs") { ctx.beginPath(); ctx.ellipse(-A.rx * 1.25 * pm, (by + A.ry * 0.25) * pm, A.rx * 0.5 * pm, A.ry * 0.38 * pm, -0.25 + 0.3 * Math.sin(t * 3.2 + ph), 0, TAU); ctx.fillStyle = c; ctx.fill(); disc(-A.rx * 1.7 * pm, (by + A.ry * 0.4) * pm, A.ry * 0.25 * pm, I.papier); }
       if (kind === "hase") disc(-A.rx * 0.98 * pm, (by - A.ry * 0.1) * pm, A.ry * 0.35 * pm, I.papier);
       // Körper
       ctx.beginPath(); ctx.ellipse(0, by * pm, A.rx * pm, A.ry * pm, 0, 0, TAU); ctx.fillStyle = c; ctx.fill();
       if (kind === "keiler") poly([P(-A.rx * 0.3, by - A.ry * 0.95), P(A.rx * 0.5, by - A.ry * 1.12), P(A.rx * 0.6, by - A.ry * 0.6), P(-A.rx * 0.2, by - A.ry * 0.7)], cd);
       // Hals und Kopf
-      const hx = A.rx + A.head * 0.9, hy = by - A.ry * 0.9;
+      const hx = A.rx + A.head * 0.9, hy = by - A.ry * 0.9 - nod * A.head * 0.45;
       seg(P(A.rx * 0.7, by - A.ry * 0.2), P(hx, hy), c, A.head * 1.5 * pm);
       disc(hx * pm, hy * pm, A.head * pm, c);
       // Schnauze
       ctx.beginPath(); ctx.ellipse((hx + A.head * 0.85) * pm, (hy + A.head * 0.35) * pm, A.head * 0.75 * pm, A.head * 0.45 * pm, 0.2, 0, TAU); ctx.fillStyle = kind === "keiler" ? mix(c, I.tinte, 0.25) : c; ctx.fill();
       disc((hx + A.head * 0.2) * pm, (hy - A.head * 0.2) * pm, Math.max(0.8, A.head * 0.13 * pm), I.tinte);
-      if (kind === "hase") { for (const o of [0, 0.06]) { ctx.beginPath(); ctx.ellipse((hx - 0.03 - o) * pm, (hy - A.head * 2.2) * pm, A.head * 0.32 * pm, A.head * 1.5 * pm, -0.35, 0, TAU); ctx.fillStyle = o ? cd : c; ctx.fill(); } }
+      if (kind === "hase") { for (const o of [0, 0.06]) { ctx.beginPath(); ctx.ellipse((hx - 0.03 - o) * pm, (hy - A.head * 2.2) * pm, A.head * 0.32 * pm, A.head * 1.5 * pm, -0.35 - (Math.sin(t * 5 + ph + o * 40) > 0.93 ? 0.35 : 0), 0, TAU); ctx.fillStyle = o ? cd : c; ctx.fill(); } }
       if (kind === "fuchs") { poly([P(hx - 0.04, hy - A.head * 0.6), P(hx - 0.01, hy - A.head * 1.9), P(hx + 0.04, hy - A.head * 0.7)], cd); disc((hx + A.head * 1.55) * pm, (hy + A.head * 0.3) * pm, A.head * 0.18 * pm, I.tinte); }
       if (kind === "keiler") { seg(P(hx + A.head * 0.9, hy + A.head * 0.55), P(hx + A.head * 1.1, hy + A.head * 0.2), I.papier, Math.max(1, A.head * 0.1 * pm)); poly([P(hx - 0.02, hy - A.head * 0.7), P(hx - 0.06, hy - A.head * 1.5), P(hx + 0.04, hy - A.head * 0.8)], cd); }
       if (kind === "gams") { for (const o of [0, 0.03]) { ctx.beginPath(); ctx.moveTo((hx - 0.01 - o) * pm, (hy - A.head * 0.8) * pm); ctx.quadraticCurveTo((hx - o) * pm, (hy - A.head * 2.4) * pm, (hx - 0.07 - o) * pm, (hy - A.head * 2.2) * pm); ctx.strokeStyle = I.tinte; ctx.lineWidth = Math.max(1, A.head * 0.18 * pm); ctx.stroke(); }
@@ -6416,8 +6419,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         const a = G.animals[i], g = G.geo[i], A = Ph.ANIMALS[a.kind], pm = Uu(1, a.d) * m;
         const shot = G.shots.find((q) => q.i === i), age = shot ? G.t - shot.t : 9;
         const wob = shot && shot.hit && age < 1.2 ? 0.05 * Math.sin(age * 28) * Math.exp(-age * 4) * a.dir : 0;
+        // getroffen: kippt nach hinten (Kill-Zone: fällt ganz um), federt kurz nach
+        const fall = shot && shot.hit ? (shot.kill ? 1.35 : 0.42) * Math.min(1, age / 0.35) * (1 + 0.12 * Math.sin(Math.min(age, 1) * 14) * Math.exp(-age * 5)) : 0;
         const fx = SX(a.x), fyy = SY(g.foot);
-        animal(a.kind, fx, fyy, pm, a.dir, A, wob);
+        animal(a.kind, fx, fyy, pm, a.dir, A, { t: G.t, ph: i * 1.7, wob, fall });
         // aufgemalte Kill-Zone (wie beim 3D-Parcours): zwei feine Ringe
         const kx = SX(g.kx), ky = SY(g.ky), kr = g.kr * m;
         ctx.strokeStyle = "rgba(30,39,52,0.45)"; ctx.lineWidth = Math.max(0.8, 1 * k);
@@ -6815,7 +6820,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.21.2";
+  const VERSION = "0.22.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7138,7 +7143,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
     paused = false; inp.down = false; inp.key = false; inp.ptrs.clear(); inp.rangeId = null;
     show(null); $("result").hidden = true; tip(null);
-    canvas.style.filter = Rc.hunt ? "sepia(0.42) saturate(0.82) contrast(1.03)" : "";
+    canvas.style.filter = Rc.hunt ? "sepia(0.2) saturate(0.95) contrast(1.03)" : "";   // 0.22: weniger Sepia, damit die Attrappen farbig bleiben
     $("hFlag").innerHTML = flag(Rc.watch ? Rc.watch.c : myNat(), 22, 15); $("hName").textContent = Rc.watch ? Rc.watch.n : myName(); $("hBib").textContent = Rc.bib;
     $("beatLbls").hidden = S.help !== "anf";
     // Taktbalken: einfach = breites grünes Feld (nachsichtig), Profi = enge Felder
