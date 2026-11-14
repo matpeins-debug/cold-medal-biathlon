@@ -424,6 +424,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #figure .ps-codebox .ps-btn { height: 34px; }
 #figure .ps-codebox .ps-sep { margin-top: 2px; }
 #figure .ps-dialog:has(.ps-codebox:not([hidden])) .ps-stage { height: 180px; }
+.banner.top { top: 21%; }   /* 0.19: im Ziel über der Läuferin */
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -5628,7 +5629,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // V: Ansicht { T: lap oder null (flach), s, lapIdx, f, run: Läufer, suit, t, stadium: true/false, pen: Strafrunde }
     let camY = null;
     // Spielgefühl: Schnee spritzt bei jedem Abstoß, die Kamera gibt einen kleinen Ruck, bei Tempo zoomt sie leicht auf
-    let parts = [], kick = 0, kickV = 0, lastT = null, zoom = 1, PP = null, vAvg = null, surge = 0;
+    let parts = [], kick = 0, kickV = 0, lastT = null, zoom = 1, PP = null, vAvg = null, surge = 0, cam = null, marks = [], puffs = [], breathT = 0;
+    const CAM = 1.55;   // 0.19: Kamera näher (Mat): Läuferin rund ein Viertel der Bildhöhe, man sieht die Bewegung
     const rivAnim = new Map(); let tagA = null, tagB = null, dblSide = 1, dblLast = null, clSide = 1, clLast = null, PJ = null, PCd = null, PCt = null;
     function burst(kind, tech, v) {
       const good = kind === "beat" || kind === "press" || kind === "double";
@@ -5656,7 +5658,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const corr = G.err * Math.min(1, dt / Math.max(0.2, G.stepT)) * Math.PI;
       G.err -= corr / Math.PI;
       G.th += dt * Math.PI / G.stepT * (0.35 + 0.65 * G.A) * (1 - G.tuck) + corr;
-      const J = joints({ stride: 1, th: G.th, A: G.A, dbl: G.dbl, tuck: G.tuck }); R.poseJ = J;   // R.poseJ: für Tests
+      let J = joints({ stride: 1, th: G.th, A: G.A, dbl: G.dbl, tuck: G.tuck });
+      // 0.19: im Ziel: Arme hoch (Jubel) oder auf die Stöcke gestützt; weich eingeblendet
+      if (V.pose && V.poseK > 0) {
+        const B = joints({ stride: 1, th: G.th, A: 0, dbl: 0, tuck: V.pose === "tired" ? 0.62 : 0 }), sh = B.sh, w = Math.sin(V.t * 7) * 0.025;
+        if (V.pose === "jubel") {
+          B.hand = [sh[0] + 0.1, sh[1] - 0.33 + w]; B.handB = [sh[0] - 0.03, sh[1] - 0.31 - w];
+          B.pole = [B.hand[0] + 0.24, B.hand[1] - 0.46]; B.poleB = [B.handB[0] + 0.1, B.handB[1] - 0.5];
+        }
+        const u = V.poseK * V.poseK * (3 - 2 * V.poseK);
+        for (const key of ["hip", "sh", "head", "hand", "handB", "pole", "poleB", "kneeF", "footF", "kneeB", "footB"]) if (J[key] && B[key]) J[key] = [J[key][0] + (B[key][0] - J[key][0]) * u, J[key][1] + (B[key][1] - J[key][1]) * u];
+        for (const key of ["lean", "extF", "extB", "liftF", "liftB"]) if (typeof J[key] === "number" && typeof B[key] === "number") J[key] += (B[key] - J[key]) * u;
+      }
+      R.poseJ = J;   // R.poseJ: für Tests
       return { J };
     }
     function drawRun(V) {
@@ -5675,9 +5689,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const h0 = hAt(V.s);
       // Kamera: folgt der Höhe vor der Läuferin, ruhig
       let ahead = 0; for (let d = -4; d <= 14; d += 3) ahead += hAt(V.s + d); ahead /= 7;
-      const want = (ahead - h0) * ppm * EX * 0.6;
+      // 0.19: Kameranähe: bergauf und langsam näher, bergab mit Tempo weiter weg; weich nachgeführt
+      const camT = CAM * zoom * (V.camK || 1);
+      cam = cam == null ? camT : cam + (camT - cam) * (1 - Math.exp(-dt / 0.6));
+      const C = cam;
+      const want = (ahead - h0) * ppm * EX * 0.6 * C;
       camY = camY == null ? want : camY + (want - camY) * (1 - Math.exp(-dt / 0.28));
-      const yr = H * 0.7 + camY;
+      const yr = H * 0.72 + camY;
       const X = (s) => xr + (s - V.s) * ppm, Y = (s) => yr - (hAt(s) - h0) * ppm * EX;
       // Ski liegt als gerades Brett auf dem Schnee: Winkel aus Ende und Spitze (Sehne), in einer Mulde überbrückt er sie,
       // auf einer Kuppe liegt er in der Mitte auf; so taucht er nie in den Schnee ein. Ski: 36 hinter, 44 vor dem Knöchel (Figur-Einheiten).
@@ -5689,7 +5707,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const hor = H * 0.4 + camY * 0.25;
       drawPano(V.f, hor, V.t);
       drawMid(V, hor, ppm, V.t);
-      const s0 = V.s - xr / ppm - 2, s1 = V.s + (W - xr) / ppm + 2, step = 1.2 / k;
+      // ab hier Welt: um die Läuferin (xr, yr) mit C vergrößert; HB = unterer Bildrand in Weltkoordinaten
+      const HB = yr + (H - yr) / C + 4 * k;
+      ctx.save(); ctx.translate(xr, yr); ctx.scale(C, C); ctx.translate(-xr, -yr);
+      const s0 = V.s - xr / C / ppm - 2, s1 = V.s + (W - xr) / C / ppm + 2, step = 1.2 / k;
       // Bäume hinter der Loipe (fest in der Welt, Abstand je nach Abschnitt)
       const sb = Math.floor(s0 / 3) * 3;
       for (let s = sb; s < s1 + 3; s += 3) {
@@ -5702,9 +5723,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         else spruce(x, y, hh, q > 0.85, (v - 0.18) / 0.82);
       }
       // Schneekörper unter der Loipe
-      ctx.beginPath(); ctx.moveTo(X(s0), H + 2);
+      ctx.beginPath(); ctx.moveTo(X(s0), HB);
       for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + 2 * k);
-      ctx.lineTo(X(s1), H + 2); ctx.closePath(); ctx.fillStyle = I.papier; ctx.fill();
+      ctx.lineTo(X(s1), HB); ctx.closePath(); ctx.fillStyle = I.papier; ctx.fill();
       // Schattenband unter der Spur und Spurrillen
       ctx.beginPath();
       for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + 9 * k);
@@ -5721,7 +5742,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       for (let s = Math.floor(s0 * 2) / 2; s < s1; s += 0.5) {
         const q = hsh(Math.round(s * 2) + 77); if (q < 0.45) continue;
         const x = X(s), y = Y(s) + (36 + 70 * hsh(Math.round(s * 2) + 5)) * k;
-        if (y > H) continue;
+        if (y > HB) continue;
         ctx.moveTo(x, y); ctx.lineTo(x + streak, y);
       }
       ctx.stroke();
@@ -5752,11 +5773,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (!oB) for (const o of same) { const d = o.s - V.s; if (d < -0.5 && d > -12 && (!oB || d > oB.s - V.s)) oB = o; }
       tagA = oA ? oA.bib : null; tagB = oB ? oB.bib : null;
       const lapTags = [];   // „+1“ nur einmal je Grüppchen
+      // 0.19: Pulk entzerren: wer nah beieinander läuft, bekommt eine eigene Spur in die Tiefe (weiter hinten = höher und kleiner).
+      // Die Spur bleibt, solange sie frei ist, und wechselt weich; du läufst immer vorn auf Spur 0.
+      for (const o of others) { if (!rivAnim.has(o.bib)) { const gs = V.T && !V.pen ? V.T.slope(o.s) : 0; rivAnim.set(o.bib, { ph: (o.bib * 0.37) % 1, n: o.bib, tuck: gs < -0.04 ? 1 : 0, dbl: Math.abs(gs) < 0.035 ? 1 : 0, lane: 1 + (o.bib % 3), laneT: 1 + (o.bib % 3) }); } }
+      { const used = [{ s: V.s, l: 0 }], byS = others.slice().sort((a, b) => a.s - b.s);
+        for (const o of byS) {
+          const A = rivAnim.get(o.bib), busy = (l) => used.some((u) => u.l === l && Math.abs(u.s - o.s) < 2.4);
+          if (busy(A.laneT)) { let l = 1; while (busy(l) && l < 6) l++; A.laneT = l; }
+          used.push({ s: o.s, l: A.laneT });
+        }
+        for (const o of others) { const A = rivAnim.get(o.bib); A.lane += (A.laneT - A.lane) * (1 - Math.exp(-dt / 0.5)); }
+        others.sort((a, b) => rivAnim.get(b.bib).lane - rivAnim.get(a.bib).lane || Math.abs(b.s - V.s) - Math.abs(a.s - V.s)); }
       for (const o of others) {
-        const [y, aR] = skiFit(o.s, 56 * k), x = X(o.s), gs = V.T && !V.pen ? V.T.slope(o.s) : 0;
+        const A = rivAnim.get(o.bib), ln = Math.max(0, A.lane), dk = 1 - 0.06 * ln, rh = 56 * k * dk;
+        const [y0, aR] = skiFit(o.s, rh), x = X(o.s), gs = V.T && !V.pen ? V.T.slope(o.s) : 0, y = y0 - ln * 6 * k;
         // eigener Schrittzyklus je Gegner, fortlaufend (ein Modulo mit wechselnder Zykluslänge würde springen), Hocke und Technik weich
-        let A = rivAnim.get(o.bib);
-        if (!A) { A = { ph: (o.bib * 0.37) % 1, n: o.bib, tuck: gs < -0.04 ? 1 : 0, dbl: Math.abs(gs) < 0.035 ? 1 : 0 }; rivAnim.set(o.bib, A); }
         const cyc = root.BIPhys.cycle(gs), fa = 1 - Math.exp(-dt / 0.18);
         A.tuck += ((gs < -0.04 ? 1 : 0) - A.tuck) * fa; A.dbl += ((Math.abs(gs) < 0.035 ? 1 : 0) - A.dbl) * fa;
         A.ph += dt / cyc * (1 - A.tuck); if (A.ph >= 1) { A.ph -= 1; A.n++; }
@@ -5764,34 +5795,49 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         // Geister (Gruppen): im Aussehen aus ihrem Pass, halb durchsichtig
         // Läufer aus einer anderen Runde (überrundet oder vor dir eine Runde weiter): blass, mit „+1“ / „−1“ über dem Kopf
         ctx.globalAlpha = (o.ghost ? 0.55 : 1) * (o.lapD ? 0.38 : 1);
-        skier(x, y, 56 * k, aR, P, o.look ? [o.look.suit, o.look.accent] : SUIT[o.nat] || SUIT.AUT, V.retro, o.look || faceFor(o.name));
+        skier(x, y, rh, aR, P, o.look ? [o.look.suit, o.look.accent] : SUIT[o.nat] || SUIT.AUT, V.retro, o.look || faceFor(o.name));
         if (o.lapD && !lapTags.some((q) => Math.abs(q - x) < 46 * k)) {
-          lapTags.push(x); ctx.globalAlpha = 0.6; ctx.font = `700 ${Math.round(12 * k)}px Futura, 'Avenir Next', 'Segoe UI', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-          ctx.fillStyle = "#24324A"; ctx.fillText(`${o.lapD > 0 ? "+" : "−"}${Math.abs(o.lapD)}`, x, y - 62 * k);
+          lapTags.push(x); ctx.globalAlpha = 0.6; ctx.font = `700 ${Math.round(12 * k / Math.sqrt(C))}px Futura, 'Avenir Next', 'Segoe UI', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+          ctx.fillStyle = "#24324A"; ctx.fillText(`${o.lapD > 0 ? "+" : "−"}${Math.abs(o.lapD)}`, x, y - 62 * k * dk);
         }
         ctx.globalAlpha = 1;
-        if (o === oA || o === oB) tag(x, y - 70 * k, o.name, k);
+        if (o === oA || o === oB) tag(x, y - 66 * k * dk, o.name, k / Math.sqrt(C));
       }
       // Stöcke stechen ein (der ideale Moment): ein kleines Schneewölkchen an den Stockspitzen
       const cycP = root.BIPhys.cycle(V.T && !V.pen ? V.T.slope(V.s) : 0, V.run) * 0.85;
-      if (V.run.tp >= cycP && (V.run._planted !== V.run.lastT)) { V.run._planted = V.run.lastT; for (let i = 0; i < 4; i++) parts.push({ s: null, ds: 0.15 + Math.random() * 0.25, vs: -0.4, y: 0, vy: 0.6 + Math.random() * 0.8, life: 0.35, r: 0.8 + Math.random() * 0.5 }); }
+      if (V.run.tp >= cycP && (V.run._planted !== V.run.lastT)) { V.run._planted = V.run.lastT; if (!V.run.tuck) { marks.push(V.s + 0.35, V.s + 0.55); if (marks.length > 60) marks.splice(0, 2); } for (let i = 0; i < 4; i++) parts.push({ s: null, ds: 0.15 + Math.random() * 0.25, vs: -0.4, y: 0, vy: 0.6 + Math.random() * 0.8, life: 0.35, r: 0.8 + Math.random() * 0.5 }); }
       // Schnee vom Abstoß (Weltkoordinaten: bleibt hinter der Läuferin zurück); in der Hocke bei Tempo ein feiner Schleier
       if (V.run.tuck && V.run.v > 8 && Math.random() < 0.6) parts.push({ s: null, ds: -0.7, vs: -0.5, y: 0, vy: 0.8 + Math.random(), life: 0.35, r: 0.8 + Math.random() * 0.6 });
       for (const p of parts) { if (p.s == null) p.s = V.s + p.ds; p.s += p.vs * dt; p.y += p.vy * dt; p.vy -= 9 * dt; p.life -= dt; if (p.y < 0) { p.y = 0; p.vy *= -0.2; } }
       parts = parts.filter((p) => p.life > 0 && p.s > s0 - 2);
       for (const p of parts) { ctx.globalAlpha = Math.min(1, p.life * 3); const px = X(p.s), py = Y(p.s) - p.y * ppm * 0.9 - 2 * k; disc(px, py, p.r * k * 1.9, I.schatten); disc(px - 0.4 * k, py - 0.4 * k, p.r * k * 1.2, "#FFFFFF"); }
       ctx.globalAlpha = 1;
+      // 0.19: Spur hinter dir im Schnee und Stockeinstiche (bleiben in der Welt liegen)
+      if (!V.classic && V.T) { ctx.beginPath(); for (let s = Math.max(s0, V.s - 60); s <= V.s - 0.4; s += step) ctx.lineTo(X(s), Y(s) + 4.5 * k); ctx.strokeStyle = mix(I.papier, I.schatten, 0.55); ctx.lineWidth = 1.3 * k; ctx.stroke(); }
+      marks = marks.filter((m) => m > s0 - 1 && m < V.s + 5);
+      ctx.fillStyle = mix(I.schatten, I.tief, 0.3);
+      for (const m of marks) { ctx.beginPath(); ctx.ellipse(X(m), Y(m) + 6.5 * k, 1.6 * k, 0.8 * k, 0, 0, TAU); ctx.fill(); }
       // Läuferin
       const [yP, aP] = skiFit(V.s, 62 * k);
-      R.player = { x: xr, y: yP, h: 62 * k };   // für die Taktleiste über der Figur (oberflaeche/steuerung.js)
-      skier(xr, yP, 62 * k, aP, playerPose(V, dt), V.look ? [V.look.suit, V.look.accent] : V.suit, V.retro, V.look || faceFor(V.name || "Ich"));
+      R.player = { x: xr, y: yr + (yP - yr) * C, h: 62 * k * C };   // für die Taktleiste über der Figur (oberflaeche/steuerung.js)
+      const PPp = playerPose(V, dt);
+      skier(xr, yP, 62 * k, aP, PPp, V.look ? [V.look.suit, V.look.accent] : V.suit, V.retro, V.look || faceFor(V.name || "Ich"));
+      // 0.19: Atemwolken: je höher der Puls, desto öfter; treiben nach hinten weg und lösen sich auf
+      const hr = Math.max(0.3, Math.min(1.1, V.run.hr || 0.5));
+      breathT += dt; if (!R.lite && V.run.v > 0.3 && breathT > 2.6 - 1.7 * hr) { breathT = 0; const hd = PPp.J.head; puffs.push({ s: V.s + (hd[0] * 62 * k + 7 * k) / ppm, up: -hd[1] * 62 * k - 1 * k, r: 2.2 * k, life: 1 }); }
+      puffs = puffs.filter((p) => (p.life -= dt * 0.9) > 0);
+      for (const p of puffs) { p.r += dt * 9 * k; p.up += dt * 4 * k; p.s -= dt * 0.25; ctx.globalAlpha = 0.5 * p.life * p.life; disc(X(p.s), Y(p.s) - p.up, p.r, "#FFFFFF"); }
+      ctx.globalAlpha = 1;
       // Markierung über dir, sobald andere auf der Strecke sind
-      if (others.length) { const yy = yr - (V.run.tuck ? 52 : 82) * k; poly([[xr - 7 * k, yy - 9 * k], [xr + 7 * k, yy - 9 * k], [xr, yy]], I.ocker); }
+      if (others.length) { const yy = yr - (V.run.tuck ? 52 : 80) * k, mk = k / Math.sqrt(C); poly([[xr - 6 * mk, yy - 8 * mk], [xr + 6 * mk, yy - 8 * mk], [xr, yy]], I.ocker); }
+      ctx.restore();
       // vorn: vereinzelte verschneite Fichten am unteren Rand (ziehen schneller vorbei, geben Tiefe)
       for (let s = Math.floor((s0 - 20) / 9) * 9; s < s1 + 20; s += 9) {
         const q = hsh(Math.round(s) + 9091); if (q < 0.72) continue;
-        const x = xr + (s - V.s) * ppm * 1.35; if (x < -60 * k || x > W + 60 * k) continue;
-        spruce(x, H + 14 * k, (70 + 50 * q) * k, true, hsh(Math.round(s) + 4));
+        const x = xr + (s - V.s) * ppm * 1.35 * C; if (x < -80 * k || x > W + 80 * k ) continue;
+        // nie höher als bis knapp unter die Ski der Läuferin (sonst verdecken sie sie)
+        const fh = Math.min((70 + 50 * q) * k * (0.5 + 0.5 * C), H + 18 * k - (yr + (yP - yr) * C) - 14 * k);
+        if (fh > 30 * k) spruce(x, H + 18 * k, fh, true, hsh(Math.round(s) + 4));
       }
       // leiser Schneefall (Bildschirm, mit dem Tempo leicht schräg)
       if (!R.lite) {
@@ -5804,7 +5850,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
           ctx.beginPath(); ctx.arc(f.x, f.y, f.r * k, 0, TAU); ctx.fill();
         }
       }
-      return { X, Y, xr, yr };
+      return { X: (s) => xr + (X(s) - xr) * C, Y: (s) => yr + (Y(s) - yr) * C, xr, yr, C };
     }
 
     // Kurvenschild: Holztafel in Landschaftsfarben mit hellem Doppelwinkel und Schneehaube (fügt sich ein, schreit nicht)
@@ -6065,7 +6111,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     function drawRange(G, opt) {
       const Ph = root.BIPhys;
       const m = MM * k;                          // px je mm
-      const cx = W / 2, cy = H * 0.54;
+      // 0.19: Rückstoß: das Bild springt beim Schuss kurz nach oben und federt zurück
+      const lastS = G.shots[G.shots.length - 1], rt = lastS ? G.t - lastS.t : 9, rec = rt < 0.5 ? Math.exp(-rt / 0.07) * Math.cos(rt * 22) : 0;
+      const cx = W / 2, cy = H * 0.54 - rec * 16 * k;
       const s = Ph.sway(G);
       const ax = G.aim.x + s.x, ay = G.aim.y + s.y;
       const ti = Math.min(G.target, 4);
@@ -6172,6 +6220,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       g.addColorStop(0, "rgba(14,20,30,0)"); g.addColorStop(0.75, "rgba(14,20,30,0.55)"); g.addColorStop(1, "rgba(14,20,30,0.97)");
       ctx.beginPath(); ctx.arc(cx, cy, ap, 0, TAU); ctx.fillStyle = g; ctx.fill();
       ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.arc(cx, cy, ap - 0.5, 0, TAU, true); ctx.fillStyle = "rgba(14,20,30,0.97)"; ctx.fill();
+      // Mündungsblitz: ganz kurz warmes Licht am Rand der Blende
+      if (rt < 0.07) { ctx.globalAlpha = 0.35 * (1 - rt / 0.07); ctx.fillStyle = "#FFD58A"; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+      // 0.19: Blende öffnet sich beim Ankommen (Kreis wächst aus der Mitte) und schließt sich vor dem Weiterlaufen
+      const op = opt.open == null ? 1 : opt.open, cl = opt.close || 0;
+      if (op < 1 || cl > 0) {
+        const e1 = 1 - Math.pow(1 - op, 3), e2 = cl * cl, rr = Math.max(0, (ap + 6 * k) * e1 * (1 - e2));
+        ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.arc(cx, cy, rr, 0, TAU, true); ctx.fillStyle = "#0E141E"; ctx.fill();
+      }
       // beim Hinlegen/Aufstehen: von außen einblenden
       if (opt.ready < 1) { ctx.fillStyle = `rgba(14,20,30,${(1 - opt.ready).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     }
@@ -6635,7 +6691,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.18.4";
+  const VERSION = "0.19.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7015,15 +7071,38 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     $("hSplit").textContent = nb(`Platz ${sp.rank} · ${sp.rank === 1 ? "Bestzeit" : fmtB(sp.behind)}`);
   }
 
+  // 0.19: Zieleinlauf: gut zwei Sekunden ausgleiten durchs Ziel, Platz und Zeit im Banner; Jubel bei Podest oder Bestzeit,
+  // sonst auf die Stöcke gestützt. Antippen überspringt. Die Zeit steht schon fest (dispTime beim Überqueren).
   function finish() {
+    if (Rc.watch || Rc.kind === "learn") return finishNow();
     if (Rc.rec) Rc.rec.P.push(Rc.laps * Rc.L.L);   // Geist: Ziel als letzter Punkt
-    mode = "result"; Snd.gong(); Hap(40);
+    const t0 = dispTime(), lr = Rc.kind === "lap" ? null : resultList(t0);
+    const key = `${Rc.fmt}-hochfilzen-${Rc.sex}${Rc.level === "normal" ? "" : "-" + Rc.level}`, old = S.best[key];
+    const good = lr && (lr.me.rank <= 3 || !old || lr.me.total < old.t);
+    Rc.fin = { t: 0, t0, pose: good ? "jubel" : "tired", rec: true };
+    mode = "fin"; Snd.gong(); Hap(40);
+    $("hud").hidden = true; $("rhud").hidden = true; tip(null);
+    $("banner").classList.add("top");
+    banner("ZIEL", fmtT(lr ? lr.me.total : t0), lr ? nb(`Platz ${lr.me.rank} von ${lr.list.length}`) : "", 2.4);
+  }
+  function tickFin(dt) {
+    const F = Rc.fin, R = Rc.R; F.t += dt;
+    R.v *= Math.exp(-dt / (F.pose === "jubel" ? 1.1 : 0.7)); R.s += R.v * dt; R.tuck = false; R.lastT = R.lastT || 0;
+    if (F.t >= 2.4) finishNow();
+  }
+  function resultList(total) {
+    const me = { name: myName(), nat: myNat(), total: total + (Rc.kind === "pursuit" ? Rc.off : 0), me: true, shoot: Rc.shots.map((a) => a.filter((h) => !h).length), ski: Rc.ski * T.SCALE };
+    const ai = Rc.kind === "pursuit" ? Rc.ai.map((a) => Object.assign({}, a, { total: a.total + a.off })) : Rc.ai;
+    return { list: C.standings(ai.concat([me])), me };
+  }
+  function finishNow() {
+    const fin = Rc.fin; Rc.fin = null; $("banner").classList.remove("top");
+    if (!fin && Rc.rec) Rc.rec.P.push(Rc.laps * Rc.L.L);   // Geist: Ziel als letzter Punkt
+    mode = "result"; if (!fin) { Snd.gong(); Hap(40); }
     $("hud").hidden = true; $("rhud").hidden = true; banner(null); tip(null);
     S.races++;
     if (Rc.kind === "lap") return showLapResult();
-    const me = { name: myName(), nat: myNat(), total: dispTime() + (Rc.kind === "pursuit" ? Rc.off : 0), me: true, shoot: Rc.shots.map((a) => a.filter((h) => !h).length), ski: Rc.ski * T.SCALE };
-    const ai = Rc.kind === "pursuit" ? Rc.ai.map((a) => Object.assign({}, a, { total: a.total + a.off })) : Rc.ai;
-    const list = C.standings(ai.concat([me]));
+    const { list, me } = resultList(fin ? fin.t0 : dispTime());
     if (Rc.kind === "sprint" && !Rc.club) S.lastSprint = { seed: Rc.seed, sex: Rc.sex, t: me.total, rank: me.rank, level: Rc.level };
     const key = `${Rc.fmt}-hochfilzen-${Rc.sex}${Rc.level === "normal" ? "" : "-" + Rc.level}`, old = S.best[key];
     const pb = !old || me.total < old.t;
@@ -7128,6 +7207,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   stage.addEventListener("pointerdown", (e) => {
     if (onUi(e) || paused) return;
     if (turnEl || (Rc && Rc.watch)) return;
+    if (mode === "fin") { if (Rc.fin && Rc.fin.t > 0.5) finishNow(); return; }   // Zieleinlauf überspringen
     advanceTo(performance.now());
     Snd.unlock();
     const p = stagePoint(e);
@@ -7264,6 +7344,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (Rc.rec && Rc.phase !== "count" && (mode === "run" || mode === "range")) ghostRec();
     if (mode === "run") return tickRun(dt, auto);
     if (mode === "range") return tickRange(dt);
+    if (mode === "fin") return tickFin(dt);
   }
   function tickRun(dt, auto) {
     const R = Rc.R, L = Rc.L;
@@ -7562,10 +7643,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (!pen) for (const [fs, col, col2] of [[-6, I.rot, I.papier], [L.L - 14, I.navy, I.ocker]]) {
         for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
           const s = base + fs; if (s < s0 - 4 || s > s1 + 4) continue;
-          const x = X(s), y = Y(s) - 30 * k, fl = Math.sin(t * 3 + s) * 3 * k;
+          const x = X(s), y = Y(s) - 30 * k;
           seg([x, y], [x, y - 60 * k], I.tinte, 2 * k);
-          poly([[x, y - 60 * k], [x + 30 * k, y - 58 * k + fl], [x + 30 * k, y - 48 * k + fl], [x, y - 50 * k]], col);
-          poly([[x, y - 57 * k], [x + 30 * k, y - 55 * k + fl], [x + 30 * k, y - 52 * k + fl], [x, y - 54 * k]], col2);
+          // 0.19: Tuch weht als Welle (Stoff hängt am Mast, das freie Ende schlägt mehr)
+          const band = (a0, a1, c) => { const P = []; for (let i = 0; i <= 6; i++) { const u = i / 6, w = Math.sin(t * 4.2 + s - u * 3.2) * 3.4 * k * u; P.push([x + 30 * k * u, y - 60 * k + a0 * k + 2 * k * u + w]); }
+            for (let i = 6; i >= 0; i--) { const u = i / 6, w = Math.sin(t * 4.2 + s - u * 3.2) * 3.4 * k * u; P.push([x + 30 * k * u, y - 60 * k + a1 * k + 2 * k * u + w]); } poly(P, c); };
+          band(0, 10, col); band(3, 6, col2);
         }
       }
       // Start/Ziel-Bogen bei s = 0 (jede Runde)
@@ -7638,12 +7721,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     if (mode === "menu" || (!Rc && mode !== "result")) { renderer.drawMenu(t); return; }
     if (!Rc) return;
     if (mode === "range") {
-      const ro = { lane: Rc.bib && Rc.bib <= 30 ? Rc.bib : 7, help: S.help === "anf", ready: Rc.phase === "in" ? clamp(Rc.pt / 0.25, 0, 1) : 1, t, shift: Rc.shift, shiftY: Rc.shiftY, sight: S.sight };
+      const ro = { open: clamp((Rc.range - Rc.rangeStart) / 0.45, 0, 1), close: Rc.phase === "out" ? clamp((Rc.pt - 1.5) / 0.4, 0, 1) : 0, lane: Rc.bib && Rc.bib <= 30 ? Rc.bib : 7, help: S.help === "anf", ready: Rc.phase === "in" ? clamp(Rc.pt / 0.25, 0, 1) : 1, t, shift: Rc.shift, shiftY: Rc.shiftY, sight: S.sight };
       if (Rc.G.hunt) renderer.drawHunt(Rc.G, ro); else renderer.drawRange(Rc.G, ro);
       hudRange(t);
       return;
     }
-    if (mode === "run" || mode === "result") {
+    if (mode === "run" || mode === "result" || mode === "fin") {
       const L = Rc.L, pen = Rc.phase === "pen";
       if (!Rc.dec || Rc.dec.pen !== pen) { Rc.dec = makeDecor(L, pen); Rc.dec.pen = pen; }
       const s = pen ? Rc.penS : Rc.R.s + Rc.lap * L.L;
@@ -7651,7 +7734,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
       const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost, lapD: (r.k == null ? Rc.lap : r.k) - Rc.lap })) : [];
-      renderer.drawRun({ T: L, s: sNow, pen, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name });
+      renderer.drawRun({ T: L, s: sNow, pen, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1 });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
       // Ortswechsel (Schießstand → Strafrunde → Strecke): kurz abblenden, damit der Sprung nicht wie ein Fehler aussieht
@@ -8432,10 +8515,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   // Zugriff für Tests
   window.__bi = {
     get S() { return S; }, get Rc() { return Rc; }, get mode() { return mode; }, VERSION, T, Ph, C,
-    startRace, toMenu, press, release, aimMove, finish, advanceTo,
+    startRace, toMenu, press, release, aimMove, finish: () => (mode === "fin" ? finishNow() : (finish(), mode === "fin" && finishNow())), advanceTo,
     renderer, ghostPack, ghostUnpack, ghostFrom, gPos, clubFrom, showClub, openFigure, liveBoard, get club() { return club; }, set club(k) { club = k; }, PASS,
     // Rennen im Zeitraffer laufen lassen (Test): Takt-Abstöße, Hocke in steilen Abfahrten
     autoRun(seconds, phase) {
+      if (mode === "fin") { finishNow(); return; }
       const end = simT + seconds;
       while (simT < end && Rc && mode === "run") {
         if (Rc.phase === "go" || Rc.phase === "pen") {
