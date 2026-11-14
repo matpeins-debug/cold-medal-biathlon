@@ -1115,8 +1115,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
   // ------------------------------------------------------------------ Schießen
   const STANCE = {
-    prone: { hit: 22.5, sway: 30, breath: 32, settle: 6 },     // liegend: Trefferfläche 45 mm
-    stand: { hit: 57.5, sway: 78, breath: 70, settle: 6 },    // stehend: 115 mm
+    prone: { hit: 22.5, sway: 20, breath: 22, settle: 6 },     // liegend: Trefferfläche 45 mm (0.29: Schwanken/Atmen ein Drittel kleiner, Mat)
+    stand: { hit: 57.5, sway: 52, breath: 48, settle: 6 },    // stehend: 115 mm
     kneel: { hit: 40, sway: 50, breath: 48, settle: 6 },      // kniend (nur Jagdpatrouille)
   };
   const GAP = 135;          // Abstand der fünf Scheiben (mm)
@@ -1137,7 +1137,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const t = G.t, A = G.st.hit * TREM * (G.stance === "stand" ? 1.12 : 1) * (0.45 + 0.9 * clamp(G.hr, 0, 1.1)) * (G.ease || 1) * (G.hold && G.holdT > 0.45 && G.holdT < 2.2 ? 0.8 : 1) * (1 + (G.after || 0));
     return { x: A * (0.6 * Math.sin(8.1 * t + G.ph[0] * 2) + 0.4 * Math.sin(13.7 * t + G.ph[1] * 3)), y: A * (0.6 * Math.sin(9.3 * t + G.ph[2] * 2) + 0.4 * Math.sin(12.1 * t + G.ph[3] * 3)) };
   }
-  const TREM = 0.68, FLINCH = 0.58;   // 0.18.4: etwas leichter (Mat), vorher 0.8 / 0.7
+  const TREM = 0.55, FLINCH = 0.48;   // 0.29: leichter (Mat: normales Schießen viel schwerer als Jagd), vorher 0.68 / 0.58
   function swaySlow(G) {
     const st = G.st, t = G.t;
     const k = 0.35 + 1.15 * clamp(G.hr, 0, 1.1);
@@ -7290,7 +7290,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.28.1";
+  const VERSION = "0.29.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
