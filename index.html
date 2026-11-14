@@ -5661,6 +5661,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       ctx.fillStyle = S.top; ctx.fillRect(0, 0, W, Math.max(0, y0 + 1));
       ctx.drawImage(S.cv, 0, y0, S.cv.width / S.res, sh);
       ctx.fillStyle = S.bot; ctx.fillRect(0, y0 + sh - 1, W, H);
+      sunDisc(hor);
       const pos = [];
       for (let i = 0; i < pano.layers.length; i++) {
         const L = pano.layers[i], wpx = L.w * k, span = Math.max(0, wpx - W);
@@ -5924,6 +5925,119 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       WXM.ueber(ctx, { lage: wxSky(), W, H, t, cx, boden: R.lite ? null : boden, flocken: !R.lite, x: WX.x || 0, k, dicht: 0.7, nacht: false });
     }
 
+
+    // ---------------------------------------------------------------- 0.30 Licht und Atmosphäre (Mat: „Grafik, bei der man wow sagt“)
+    // Die Sonne steht hinten rechts (passt zu den Baumschatten nach vorn links). Morgen: tief, warm; Nachmittag: hoch, weiß;
+    // Abend: knapp über den Bergen, orange. Bewölkt: kaum Licht, dafür Dunst. Alles nur Verläufe und additive Flächen (schnell).
+    const SUNL = { klar: 1, neu: 0.5, grau: 0.1, sturm: 0 };
+    function sunAt(hor) {
+      const tod = (WX && WX.tod) || "afternoon", L = SUNL[wxSky()] != null ? SUNL[wxSky()] : 1;
+      const x = W * (tod === "morning" ? 0.8 : tod === "evening" ? 0.84 : 0.66);
+      const y = tod === "morning" ? hor - 52 * k : tod === "evening" ? hor - 22 * k : hor - 95 * k;
+      const c = tod === "morning" ? [255, 208, 150] : tod === "evening" ? [255, 138, 76] : [255, 247, 226];
+      return { x, y, L, c, tod, rgb: (a) => `rgba(${c[0]},${c[1]},${c[2]},${a})` };
+    }
+    // Sonnenscheibe hinter den Bergen (nach dem Himmel, vor den Bergschichten)
+    function sunDisc(hor) {
+      const S = sunAt(hor); if (S.L < 0.05) return;
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      let g = ctx.createRadialGradient(S.x, S.y, 0, S.x, S.y, 120 * k);
+      g.addColorStop(0, S.rgb(0.55 * S.L)); g.addColorStop(0.25, S.rgb(0.22 * S.L)); g.addColorStop(1, S.rgb(0));
+      ctx.fillStyle = g; ctx.fillRect(S.x - 120 * k, S.y - 120 * k, 240 * k, 240 * k);
+      ctx.restore();
+      ctx.globalAlpha = Math.min(1, S.L * 1.2); disc(S.x, S.y, 11 * k, S.tod === "evening" ? "#FFD2A0" : "#FFFDF4"); ctx.globalAlpha = 1;
+    }
+    // Himmelslicht über den Bergen: Lichthof, Sonnenstrahlen (wandern langsam), Talnebel in zwei Lagen
+    const mists = [];
+    function skyLight(V, hor, t) {
+      const S = sunAt(hor), lite = R.lite;
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      if (S.L > 0.05) {
+        const gk = S.tod === "afternoon" ? 0.6 : 1;
+        let g = ctx.createRadialGradient(S.x, S.y, 0, S.x, S.y, 300 * k);
+        g.addColorStop(0, S.rgb(0.3 * S.L * gk)); g.addColorStop(0.3, S.rgb(0.08 * S.L * gk)); g.addColorStop(1, S.rgb(0));
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        if (!lite) for (let i = 0; i < 9; i++) {   // Strahlen fächern nach unten links auf
+          const a = 2.05 + i * 0.13 + 0.05 * Math.sin(t * 0.13 + i * 1.7), w = 0.025 + 0.02 * hsh(i + 71), len = 900 * k;
+          const al = S.L * (0.05 + 0.04 * Math.sin(t * 0.21 + i * 2.3));
+          if (al <= 0.004) continue;
+          const gr = ctx.createLinearGradient(S.x, S.y, S.x + Math.cos(a) * len, S.y + Math.sin(a) * len);
+          gr.addColorStop(0, S.rgb(al)); gr.addColorStop(1, S.rgb(0));
+          ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(S.x, S.y);
+          ctx.lineTo(S.x + Math.cos(a - w) * len, S.y + Math.sin(a - w) * len); ctx.lineTo(S.x + Math.cos(a + w) * len, S.y + Math.sin(a + w) * len); ctx.closePath(); ctx.fill();
+        }
+      }
+      ctx.restore();
+      if (V.pen) return;
+      // Talnebel: weiche Bänke, ziehen langsam (Parallaxe zwischen Bergen und Mittelgrund); bewölkt dichter, abends rosa
+      const dense = { klar: 0.5, neu: 0.8, grau: 1, sturm: 1.1 }[wxSky()] || 0.6;
+      const tint = S.tod === "evening" ? "255,214,206" : S.tod === "morning" ? "255,240,228" : "246,250,255";
+      const n = lite ? 3 : 7;
+      for (let i = 0; i < n; i++) {
+        const par = 0.08 + 0.05 * (i % 3), span = W + 500 * k, wdt = (220 + 160 * hsh(i + 5)) * k;
+        const x = ((((hsh(i + 9) * span - V.s * 15 * k * par + t * (3 + 3 * hsh(i)) * k) % span) + span) % span) - 250 * k;
+        const y = hor + (8 + 26 * hsh(i + 13)) * k, hh = (16 + 14 * hsh(i + 17)) * k;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, wdt);
+        g.addColorStop(0, `rgba(${tint},${0.42 * dense})`); g.addColorStop(1, `rgba(${tint},0)`);
+        ctx.save(); ctx.translate(x, y); ctx.scale(1, hh / wdt); ctx.translate(-x, -y);
+        ctx.fillStyle = g; ctx.fillRect(x - wdt, y - wdt, 2 * wdt, 2 * wdt); ctx.restore();
+      }
+    }
+    // Lichtschächte im Wald: schräge Bahnen zwischen den Stämmen, darin schwebender Staub/Schneestaub
+    function forestShafts(X, Y, s0, s1, zoneAt, t, hor) {
+      const S = sunAt(hor); if (S.L < 0.4 || R.lite) return;
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      for (let s = Math.floor(s0 / 4) * 4; s < s1 + 8; s += 4) {
+        const z = zoneAt(s); if (z !== "wald" && z !== "birke") continue;
+        const q = hsh(Math.round(s) * 3 + 5150); if (q < 0.55) continue;
+        const x = X(s), y = Y(s) - 6 * k, top = y - 170 * k, w = (10 + 22 * hsh(Math.round(s) + 11)) * k, dx = 95 * k;   // oben rechts → unten links
+        const pul = 0.75 + 0.25 * Math.sin(t * 0.4 + s);
+        const g = ctx.createLinearGradient(x + dx, top, x, y);
+        g.addColorStop(0, S.rgb(0)); g.addColorStop(0.4, S.rgb(0.3 * S.L * pul)); g.addColorStop(1, S.rgb(0.06 * S.L));
+        ctx.fillStyle = g;   // drei ineinander liegende Bahnen: weicher Rand, hellerer Kern
+        for (const f of [1, 0.62, 0.3]) { const m = w * (1 - f) * 0.5; ctx.globalAlpha = 0.4; ctx.beginPath(); ctx.moveTo(x + dx + m, top); ctx.lineTo(x + dx + w - m, top); ctx.lineTo(x + w * 1.6 - m * 1.9, y); ctx.lineTo(x - w * 0.3 + m * 1.9, y); ctx.closePath(); ctx.fill(); }
+        ctx.globalAlpha = 1;
+        // Staubkörner im Licht
+        for (let j = 0; j < 6; j++) {
+          const u = (hsh(Math.round(s) * 7 + j) + t * 0.03 * (1 + j % 3)) % 1, px = x + dx * (1 - u) + w * hsh(j + Math.round(s)), py = top + (y - top) * u;
+          ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 3 + j * 2 + s); disc(px, py + Math.sin(t + j) * 3 * k, 0.9 * k, S.rgb(0.9));
+        }
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+    }
+    // Farbe und Linse über allem: Farbstimmung je Tageszeit (soft-light), Vignette, Blendenflecke bei klarer Sonne
+    function grade(hor, t, v) {
+      const S = sunAt(hor), tod = S.tod;
+      ctx.save();
+      ctx.globalCompositeOperation = "soft-light";
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      if (tod === "evening") { g.addColorStop(0, "rgba(255,120,90,0.55)"); g.addColorStop(0.5, "rgba(255,170,120,0.3)"); g.addColorStop(1, "rgba(70,60,150,0.45)"); }
+      else if (tod === "morning") { g.addColorStop(0, "rgba(255,170,120,0.5)"); g.addColorStop(0.55, "rgba(255,220,190,0.15)"); g.addColorStop(1, "rgba(50,80,170,0.55)"); }
+      else { g.addColorStop(0, "rgba(70,130,255,0.5)"); g.addColorStop(0.55, "rgba(200,215,240,0.12)"); g.addColorStop(1, "rgba(40,70,160,0.55)"); }
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+      // warmes Licht von der Sonnenseite her
+      if (S.L > 0.05) { const gs = ctx.createRadialGradient(S.x, S.y, 0, S.x, S.y, W * 0.8); gs.addColorStop(0, S.rgb(0.45 * S.L)); gs.addColorStop(1, S.rgb(0)); ctx.fillStyle = gs; ctx.fillRect(0, 0, W, H); }
+      ctx.globalCompositeOperation = "source-over";
+      // Vignette (bei Tempo etwas stärker: Tunnelblick)
+      const sp = Math.max(0, Math.min(1, ((v || 0) - 8) / 6));
+      const vg = ctx.createRadialGradient(W * 0.45, H * 0.55, Math.min(W, H) * 0.35, W * 0.45, H * 0.55, Math.max(W, H) * 0.75);
+      vg.addColorStop(0, "rgba(16,24,44,0)"); vg.addColorStop(1, `rgba(16,24,44,${0.32 + 0.14 * sp})`);
+      ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+      // Blendenflecke: Geister auf der Linie Sonne → Bildmitte
+      if (S.L > 0.6 && !R.lite) {
+        ctx.globalCompositeOperation = "lighter";
+        const cx = W * 0.5, cy = H * 0.5, fl = [[0.3, 12, 0.05], [0.55, 5, 0.07], [0.8, 22, 0.03]];
+        for (const [f, r, a] of fl) {
+          const x = S.x + (cx - S.x) * f, y = S.y + (cy - S.y) * f, rr = r * k;
+          const gf = ctx.createRadialGradient(x, y, 0, x, y, rr);
+          gf.addColorStop(0, S.rgb(0)); gf.addColorStop(0.7, S.rgb(a * S.L)); gf.addColorStop(1, S.rgb(0));
+          ctx.fillStyle = gf; ctx.fillRect(x - rr, y - rr, 2 * rr, 2 * rr);
+        }
+      }
+      ctx.restore();
+    }
+
     // Birke: weißer Stamm mit dunklen Querstrichen, feine hängende Zweige (wiegen im Wind)
     function birch(x, y, h, seed, t) {
       const lean = (hsh(seed) - 0.5) * 0.12, tx = x + Math.sin(lean) * h * 0.9, w = Math.max(1.4, h * 0.035), sw = Math.sin(t * 1.3 + seed) * h * 0.012;
@@ -6094,6 +6208,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const hor = H * 0.4 + camY * 0.25;
       drawPano(V.f, hor, V.t);
       wxFog(hor, V.t);
+      skyLight(V, hor, V.t);
       drawMid(V, hor, ppm, V.t);
       // ab hier Welt: um die Läuferin (xr, yr) mit C vergrößert; HB = unterer Bildrand in Weltkoordinaten
       const HB = yr + (H - yr) / C + 4 * k;
@@ -6225,6 +6340,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         else if (kind === "spazier") { const d = T[3], wx = x + d * ((V.t * 7) % 80 - 40) * k * 0.5; hunter(wx, y, k * 0.95, V.t, d, T[4]); dog(wx + d * 14 * k, y, k * 0.7, V.t, d, T[4] + 3); }
         else if (kind === "wild") { const A = BIPhysAnimals()[T[3]]; animal(T[3], x, y, 15 * k, T[4], A, { t: V.t, ph: x * 0.01 }); }
       }
+      forestShafts(X, Y, s0, s1, zoneAt, V.t, hor);
       // Klang des Ortes (game.js gibt R.amb an audio.js): Wald (Vögel), Bach (Plätschern unter dem Eis), Glocken (Hütte, Stadion), Publikum
       if (LL) {
         const near = (f, r) => { let d = 1e9; for (const b of [Math.floor(V.s / LL) * LL, Math.ceil(V.s / LL) * LL]) d = Math.min(d, Math.abs(b + f * LL - V.s)); return Math.max(0, 1 - d / r); };
@@ -6343,7 +6459,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (V.run.tuck && V.run.v > 8 && Math.random() < 0.6) parts.push({ s: null, ds: -0.7, vs: -0.5, y: 0, vy: 0.8 + Math.random(), life: 0.35, r: 0.8 + Math.random() * 0.6 });
       for (const p of parts) { if (p.s == null) p.s = V.s + p.ds; p.s += p.vs * dt; p.y += p.vy * dt; p.vy -= 9 * dt; p.life -= dt; if (p.y < 0) { p.y = 0; p.vy *= -0.2; } }
       parts = parts.filter((p) => p.life > 0 && p.s > s0 - 2);
-      for (const p of parts) { ctx.globalAlpha = Math.min(1, p.life * 3); const px = X(p.s), py = Y(p.s) - p.y * ppm * 0.9 - 2 * k; disc(px, py, p.r * k * 1.9, I.schatten); disc(px - 0.4 * k, py - 0.4 * k, p.r * k * 1.2, "#FFFFFF"); }
+      for (const p of parts) { ctx.globalAlpha = Math.min(1, p.life * 3); const px = X(p.s), py = Y(p.s) - p.y * ppm * 0.9 - 2 * k;
+        if (p.sp) { ctx.globalAlpha *= 0.75; disc(px, py, p.r * k * (1.4 + (0.8 - p.life) * 3), "#FFFFFF"); } else { disc(px, py, p.r * k * 1.9, I.schatten); disc(px - 0.4 * k, py - 0.4 * k, p.r * k * 1.2, "#FFFFFF"); }
+        if (p.gl) { const tw = Math.max(0, Math.sin(p.life * 40)); ctx.globalAlpha = Math.min(1, p.life * 2) * tw; seg([px - 2.5 * k, py], [px + 2.5 * k, py], "#FFFFFF", 0.7 * k); seg([px, py - 2.5 * k], [px, py + 2.5 * k], "#FFFFFF", 0.7 * k); } }
       ctx.globalAlpha = 1;
       // 0.19: Spur hinter dir im Schnee und Stockeinstiche (bleiben in der Welt liegen)
       if (!V.classic && V.T) { ctx.beginPath(); for (let s = Math.max(s0, V.s - 60); s <= V.s - 0.4; s += step) ctx.lineTo(X(s), Y(s) + 4.5 * k); ctx.strokeStyle = mix(I.papier, I.schatten, 0.55); ctx.lineWidth = 1.3 * k; ctx.stroke(); }
@@ -6355,8 +6473,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       R.player = { x: xr, y: yr + (yP - yr) * C, h: 62 * k * C };   // für die Taktleiste über der Figur (oberflaeche/steuerung.js)
       // Schatten im Schnee unter den Ski: verbindet die Läuferin mit dem Boden
       ctx.fillStyle = "rgba(30,39,52,0.2)"; ctx.beginPath(); ctx.ellipse(xr + 2 * k, yP + 2 * k, 30 * k, 3.2 * k, aP, 0, TAU); ctx.fill();
-      const PPp = playerPose(V, dt);
-      skier(xr, yP, 62 * k, aP, PPp, V.look ? [V.look.suit, V.look.accent] : V.suit, V.retro, V.look || faceFor(V.name || "Ich"));
+      // 0.30: langer Sonnenschatten nach vorn links (wie bei den Bäumen) und Gegenlicht hinter der Läuferin
+      const SL = sunAt(hor), PPp = playerPose(V, dt), lookP = V.look ? [V.look.suit, V.look.accent] : V.suit, faceP = V.look || faceFor(V.name || "Ich");
+      if (shadowA && !V.pen) { ctx.save(); ctx.translate(xr, yP + 1.5 * k); ctx.transform(1, 0, -1.1, 0.5, 0, 0); ctx.fillStyle = `rgba(70,96,140,${shadowA * 1.15})`;
+        ctx.beginPath(); ctx.ellipse(0, 28 * k, 8 * k, 28 * k, 0, 0, TAU); ctx.fill(); ctx.restore(); }
+      if (SL.L > 0.3 && !R.lite) { ctx.save(); ctx.globalCompositeOperation = "lighter"; const cy = yP - 36 * k, gh = ctx.createRadialGradient(xr + 6 * k, cy, 4 * k, xr + 6 * k, cy, 46 * k);
+        gh.addColorStop(0, SL.rgb(0.2 * SL.L * (SL.tod === "afternoon" ? 0.6 : 1))); gh.addColorStop(1, SL.rgb(0)); ctx.fillStyle = gh; ctx.fillRect(xr - 50 * k, cy - 50 * k, 112 * k, 100 * k); ctx.restore(); }
+      // Bewegungsunschärfe bei Tempo: zwei blasse Nachbilder nach hinten
+      const vb = Math.max(0, Math.min(1, ((V.run.v || 0) - 9) / 5));
+      if (vb > 0 && !R.lite) for (let i = 2; i >= 1; i--) { ctx.globalAlpha = 0.12 * vb / i; skier(xr - i * (4 + 5 * vb) * k, yP, 62 * k, aP, PPp, lookP, V.retro, faceP); }
+      ctx.globalAlpha = 1;
+      skier(xr, yP, 62 * k, aP, PPp, lookP, V.retro, faceP);
+      // Pulverschnee hinter den Ski: je schneller, desto mehr; in der Sonne funkeln einzelne Körner
+      if (!R.lite && V.run.v > 4 && Math.random() < Math.min(0.9, (V.run.v - 4) / 8)) for (let i = 0; i < 2; i++) parts.push({ s: null, ds: -0.5 - Math.random() * 0.4, vs: -0.6 - Math.random() * 0.6, y: 0.05, vy: 0.5 + Math.random() * (0.4 + V.run.v * 0.08), life: 0.5 + Math.random() * 0.3, r: 0.6 + Math.random() * 0.9, sp: 1, gl: SL.L > 0.4 && Math.random() < 0.35 });
       // 0.19: Atemwolken: je höher der Puls, desto öfter; treiben nach hinten weg und lösen sich auf
       const hr = Math.max(0.3, Math.min(1.1, V.run.hr || 0.5));
       breathT += dt; if (!R.lite && V.run.v > 0.3 && breathT > 2.6 - 1.7 * hr) { breathT = 0; const hd = PPp.J.head; puffs.push({ s: V.s + (hd[0] * 62 * k + 7 * k) / ppm, up: -hd[1] * 62 * k - 1 * k, r: 2.2 * k, life: 1 }); }
@@ -6378,6 +6507,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       }
       // Wetter über der Szene (kulisse/wetter.js): Glitzern, Flocken, Sturmnebel, Schneefahnen ab der Loipe
       wxOver(V.t, V.s * ppm * C, yr + 6 * k);
+      grade(hor, V.t, V.run.v);
       return { X: (s) => xr + (X(s) - xr) * C, Y: (s) => yr + (Y(s) - yr) * C, xr, yr, C };
     }
 
@@ -7290,7 +7420,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.29.0";
+  const VERSION = "0.30.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
