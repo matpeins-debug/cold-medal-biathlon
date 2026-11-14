@@ -6948,10 +6948,20 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 (function (root) {
   "use strict";
   function make(on) {
-    let ac = null, master = null, noiseBuf = null;
+    let ac = null, master = null, noiseBuf = null, silentEl = null;
     function unlock() {
       if (!on()) return;
       try {
+        // 0.28.1: iPhone im Lautlos-Modus schaltet Web-Audio stumm (Safari, also GitHub Pages). Als „Wiedergabe“ anmelden wie ein Video:
+        // neues Safari über navigator.audioSession, älteres über ein stilles <audio>, das einmal abgespielt wird.
+        try { if (navigator.audioSession && navigator.audioSession.type !== "playback") navigator.audioSession.type = "playback"; } catch (e) { /* älteres Safari */ }
+        if (!silentEl) {
+          try {
+            silentEl = document.createElement("audio"); silentEl.setAttribute("playsinline", ""); silentEl.setAttribute("x-webkit-airplay", "deny"); silentEl.preload = "auto"; silentEl.loop = false;
+            silentEl.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+            const pr = silentEl.play(); if (pr && pr.catch) pr.catch(() => {});
+          } catch (e) { silentEl = null; }
+        }
         if (!ac) {
           const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
           ac = new AC(); master = ac.createGain(); master.gain.value = 0.7; master.connect(ac.destination);
@@ -7280,7 +7290,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.28.0";
+  const VERSION = "0.28.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7368,6 +7378,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const stage = $("stage"), ui = $("ui"), canvas = $("scene");
   const renderer = RM.make(canvas, $("grain"));
   const AU = window.BIAudio.make(() => !!S.sound), Snd = AU.Snd, Hap = AU.Hap;
+  // iPhone gibt den Ton erst nach einer echten Berührung frei (touchend/click, nicht pointerdown): bei jeder freischalten
+  for (const ev of ["touchend", "click", "keydown"]) document.addEventListener(ev, () => Snd.unlock(), { passive: true, capture: true });
 
   // ------------------------------------------------------------------ Pass der Reihe (../pass/): Name, Land, Aussehen, Code für alle Spiele
   // Beim ersten Start entsteht er aus den bisherigen Angaben des Biathlons; hat jemand schon in einem anderen Spiel gestaltet
