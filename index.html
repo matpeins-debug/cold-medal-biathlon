@@ -5785,8 +5785,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         for (const o of others) { const A = rivAnim.get(o.bib); A.lane += (A.laneT - A.lane) * (1 - Math.exp(-dt / 0.5)); }
         others.sort((a, b) => rivAnim.get(b.bib).lane - rivAnim.get(a.bib).lane || Math.abs(b.s - V.s) - Math.abs(a.s - V.s)); }
       for (const o of others) {
-        const A = rivAnim.get(o.bib), ln = Math.max(0, A.lane), dk = 1 - 0.06 * ln, rh = 56 * k * dk;
-        const [y0, aR] = skiFit(o.s, rh), x = X(o.s), gs = V.T && !V.pen ? V.T.slope(o.s) : 0, y = y0 - ln * 6 * k;
+        // 0.19.1: alle wieder auf der Loipe (Mat: die Tiefenspuren schweben neben der Strecke); Spur nur noch für die Zeichenreihenfolge
+        const A = rivAnim.get(o.bib), ln = 0, dk = 1, rh = 56 * k;
+        const [y0, aR] = skiFit(o.s, rh), x = X(o.s), gs = V.T && !V.pen ? V.T.slope(o.s) : 0, y = y0;
         // eigener Schrittzyklus je Gegner, fortlaufend (ein Modulo mit wechselnder Zykluslänge würde springen), Hocke und Technik weich
         const cyc = root.BIPhys.cycle(gs), fa = 1 - Math.exp(-dt / 0.18);
         A.tuck += ((gs < -0.04 ? 1 : 0) - A.tuck) * fa; A.dbl += ((Math.abs(gs) < 0.035 ? 1 : 0) - A.dbl) * fa;
@@ -6691,7 +6692,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.19.0";
+  const VERSION = "0.19.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7520,7 +7521,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const D = dispTime() - (Rc.phase === "count" ? (3 - Rc.pt) * T.SCALE : 0), pen = Rc.phase === "pen";
     if (rivCache.pen === pen && rivCache.D === D) return rivCache.list;
     const out = [];
-    for (const a of Rc.ai) {
+    // 0.19.1 (Mat): Einzelstart ist ein Rennen gegen die Uhr: keine erfundenen Läuferinnen auf der Strecke, nur Geister aus der Gruppe.
+    // Wo du zeitlich liegst, zeigen die Live-Rangliste und die Zeile unter der Uhr.
+    if (Rc.together) for (const a of Rc.ai) {
       const w = C.where(Rc.ref, a, D + Rc.off - a.off);
       if (pen ? w.where === "pen" : w.where === "ski") {
         const w2 = C.where(Rc.ref, a, D + 0.6 + Rc.off - a.off);
@@ -7866,8 +7869,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (i === 3 && R.tuck) zm.hidden = true;
     }
     $("hDraft").hidden = !(R.draft > 0.2);
-    // nächste Gegner
-    if (Rc.ai) {
+    // Einzelstart: Platz und Rückstand an genau dieser Stelle der Strecke (wie die Zwischenzeit im Fernsehen)
+    if (Rc.ai && !Rc.together && Rc.phase !== "count" && Rc.kind !== "learn") {
+      const lb = liveBoard(), i = lb.findIndex((x) => x.me), me = lb[i];
+            setText($("hRival"), nb(i === 0 ? `Platz 1 · Bestzeit${lb[1] ? " · " + fmtB(lb[1].t - me.t).replace("+", "−") : ""}` : `Platz ${i + 1} · ${fmtB(me.t - lb[0].t)}`));
+    }
+    // nächste Gegner (Massenstart, Verfolgung)
+    else if (Rc.ai) {
       let ah = null, bh = null;
       for (const r of rivals()) { const d = gap(r); if (d > 0 && (!ah || d < ah.d)) ah = { r, d }; if (d < 0 && (!bh || d > bh.d)) bh = { r, d }; }
       const m = (d) => Math.round(Math.abs(d) * T.SCALE);
