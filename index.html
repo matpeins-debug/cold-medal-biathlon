@@ -621,6 +621,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     <span class="kicker">EINSTELLUNGEN</span>
     <div class="set-grid">
       <div class="set-row"><span>Steuerung</span><div class="seg" id="setCtrl"><button type="button" data-v="easy">Einfach</button><button type="button" data-v="pro">Profi</button></div></div>
+      <div class="set-row"><span>Starke Hand</span><div class="seg" id="setHand"><button type="button" data-v="r">Rechts</button><button type="button" data-v="l">Links</button></div></div>
       <div class="set-row"><span>Rangliste</span><div class="seg" id="setBoard"><button type="button" data-v="on">Live</button><button type="button" data-v="off">Aus</button></div></div>
       <div class="set-row"><span>Gegner</span><div class="seg" id="setLevel"><button type="button" data-v="easy">Leicht</button><button type="button" data-v="normal">Normal</button><button type="button" data-v="hard">Stark</button></div></div>
       <div class="set-row"><span>Hilfen</span><div class="seg" id="setHelp"><button type="button" data-v="anf">Anfänger</button><button type="button" data-v="pro">Profi</button></div></div>
@@ -6471,7 +6472,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
 
   // Runder Knopf unten links oder rechts. Ring: Takt (fill 0 … 1, ok = im grünen Bereich). o: { seite, text, symbol, klein,
-  // onDown(id, e), onUp(id, e, abgebrochen) }. Rückgabe { el, set({ fill, ok, text, symbol, hidden, aktiv }), release() }
+  // onDown(id, e), onUp(id, e, abgebrochen) }. Rückgabe { el, set({ fill, ok, text, symbol, hidden, aktiv, seite }), release() }
   function knopf(host, o) {
     const b = el("button", `cs-knopf cs-${o.seite === "rechts" ? "rechts" : "links"}${o.klein ? " cs-klein" : ""}`);
     b.type = "button";
@@ -6483,6 +6484,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     let last = {};
     return { el: b, release: g.release, set(s) {
       if ("hidden" in s && s.hidden !== last.hidden) b.hidden = !!s.hidden;
+      if (s.seite && s.seite !== last.seite) { b.classList.toggle("cs-links", s.seite !== "rechts"); b.classList.toggle("cs-rechts", s.seite === "rechts"); }   // z. B. Links- oder Rechtshänder
       if ("fill" in s) { const f = s.fill == null ? 0 : clamp(s.fill, 0, 1); const v = Math.round(f * 100); if (v !== last.v) { ringV.setAttribute("stroke-dasharray", `${v} ${100 - v}`); ringV.style.opacity = v ? "" : "0"; last.v = v; } }
       if ("ok" in s && s.ok !== last.ok) b.classList.toggle("cs-ok", !!s.ok);
       if ("aktiv" in s && s.aktiv !== last.aktiv) b.classList.toggle("cs-aktiv", !!s.aktiv);
@@ -6563,7 +6565,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.18.0";
+  const VERSION = "0.18.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6612,7 +6614,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
   // ------------------------------------------------------------------ Spielstand (nur auf diesem Gerät)
   const KEY = "coldmedal-biathlon";
-  const DEF = { name: "", sex: "w", nat: "AUT", help: "anf", ctrl: "easy", style: "auto", sight: "kreuz", board: "on", level: "normal", sound: 1, best: {}, tips: {}, races: 0 };
+  const DEF = { name: "", sex: "w", nat: "AUT", help: "anf", ctrl: "easy", hand: "r", style: "auto", sight: "kreuz", board: "on", level: "normal", sound: 1, best: {}, tips: {}, races: 0 };
   function sanitize(o) {
     const S = Object.assign({}, DEF, { cseen: {}, clubs: [], best: {}, tips: {} });
     if (o && typeof o === "object") {
@@ -6621,6 +6623,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (NAT[o.nat]) S.nat = o.nat;
       if (o.help === "pro" || o.help === "anf") S.help = o.help;
       if (o.ctrl === "pro" || o.ctrl === "easy") S.ctrl = o.ctrl;
+      if (o.hand === "l" || o.hand === "r") S.hand = o.hand;
       // Technik: „auto“ = wie im Rennen (Weltcup Skating, Langlauf und Jagd 1960 klassisch); bis 0.15 hieß der Standard „classic“
       if (o.style === "skate" || (o.style === "classic" && o.v16)) S.style = o.style;
       S.v16 = 1; S.passIn = o.passIn ? 1 : 0;
@@ -6739,10 +6742,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   // Einstellungen
   function segSet(id, v) { for (const b of $(id).querySelectorAll("button")) b.classList.toggle("on", b.dataset.v === String(v)); }
   function openSettings() {
-    segSet("setHelp", S.help); segSet("setCtrl", S.ctrl); segSet("setLevel", S.level); segSet("setSound", S.sound); segSet("setBoard", S.board);
+    segSet("setHelp", S.help); segSet("setCtrl", S.ctrl); segSet("setHand", S.hand); segSet("setLevel", S.level); segSet("setSound", S.sound); segSet("setBoard", S.board);
     show("settings");
   }
-  for (const [id, key, num] of [["setHelp", "help"], ["setCtrl", "ctrl"], ["setLevel", "level"], ["setSound", "sound", true], ["setBoard", "board"]]) {
+  for (const [id, key, num] of [["setHelp", "help"], ["setCtrl", "ctrl"], ["setHand", "hand"], ["setLevel", "level"], ["setSound", "sound", true], ["setBoard", "board"]]) {
     $(id).addEventListener("click", (e) => {
       const b = e.target.closest("button"); if (!b) return;
       S[key] = num ? +b.dataset.v : b.dataset.v; save(); segSet(id, S[key]);
@@ -7744,7 +7747,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
 
   // ================================================================== Steuerung zum Sehen (oberflaeche/steuerung.js, seit 0.18)
-  // Mat nach Biathlon Mania: man soll sehen, was man tun muss. Laufen: links „Abstoß“ (Ring füllt sich bis zum Takt, grün = jetzt),
+  // Mat nach Biathlon Mania: man soll sehen, was man tun muss. Laufen (Rechtshänder, umstellbar in Einstellungen › Starke Hand): rechts „Abstoß“,
+  // links „Hocke“; vorher: links „Abstoß“ (Ring füllt sich bis zum Takt, grün = jetzt),
   // rechts „Hocke“ halten; Profi: links und rechts je ein Bein, beide zugleich = Doppelstock. Über der Figur die Taktleiste.
   // Schießstand: rechts der Stick zum Zielen, links „Feuer“ halten (Luft anhalten) und loslassen = Schuss, unten das Magazin.
   // Tippen und Ziehen irgendwo auf dem Bild geht weiter wie bisher. Beim ersten Rennen erklärt die Hinweiszeile jeden Schritt.
@@ -7771,8 +7775,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const R = Rc.R, sl = Rc.phase === "pen" ? 0 : Rc.L.slope(R.s), cyc = Ph.cycle(sl, R), ph = R.tp / cyc;
     const P = Ph.P, a = Rc.simple ? 0.42 : P.press, z = Rc.simple ? 1.08 : P.late, top = z * 1.12;
     const going = Rc.phase === "go" || Rc.phase === "pen", ok = going && !R.tuck && ph >= a && ph <= z, tuck = R.tuck;
-    kL.set({ fill: going && !tuck ? ph / z : 0, ok, text: Rc.simple ? "Abstoß" : "Links", symbol: Rc.simple ? "lauf" : "links" });
-    kR.set({ fill: Rc.simple ? 0 : going && !tuck ? ph / z : 0, ok: Rc.simple ? false : ok, aktiv: Rc.simple && tuck, text: Rc.simple ? "Hocke" : "Rechts", symbol: Rc.simple ? "hocke" : "rechts" });
+    // einfach: Abstoß auf der Seite der starken Hand (Rechtshänder rechts), Hocke auf der anderen; Profi: linkes Bein links
+    const sw = Rc.simple && S.hand !== "l";
+    kL.set({ seite: sw ? "rechts" : "links", fill: going && !tuck ? ph / z : 0, ok, text: Rc.simple ? "Abstoß" : "Links", symbol: Rc.simple ? "lauf" : "links" });
+    kR.set({ seite: sw ? "links" : "rechts", fill: Rc.simple ? 0 : going && !tuck ? ph / z : 0, ok: Rc.simple ? false : ok, aktiv: Rc.simple && tuck, text: Rc.simple ? "Hocke" : "Rechts", symbol: Rc.simple ? "hocke" : "rechts" });
     const pp = renderer.player;
     if (pp) tk.set({ hidden: !going || Rc.kind === "learn", x: pp.x / uiS, y: (pp.y - pp.h * 1.18) / uiS, fill: tuck ? 0 : ph / top, win: [a / top, z / top], ok, text: nb(`${Math.round(R.v * 3.6)} km/h${tuck ? " · Hocke" : R.streak >= 3 ? " · Serie " + R.streak : ""}`) });
     // Hinweise beim ersten Rennen (nicht in Erste Schritte und beim Ansehen)
