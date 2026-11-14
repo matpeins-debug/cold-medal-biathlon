@@ -425,6 +425,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #figure .ps-codebox .ps-sep { margin-top: 2px; }
 #figure .ps-dialog:has(.ps-codebox:not([hidden])) .ps-stage { height: 180px; }
 .banner.top { top: 21%; }   /* 0.19: im Ziel über der Läuferin */
+/* 0.21: Schneebericht und Wachs vor dem Rennen */
+.rp-card { width: min(520px, 92vw); display: grid; gap: 8px; }
+.rp-head { display: flex; gap: 12px; align-items: center; }
+.rp-head h2 { font-family: var(--font-display); font-size: 30px; line-height: 1; margin: 0; letter-spacing: 0.02em; }
+.rp-sub { margin: 2px 0 0; font-size: 15px; color: var(--muted); }
+.rp-k2 { margin-top: 4px; }
+.rp-wax { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.rp-w { display: grid; grid-template-columns: 16px 1fr; column-gap: 8px; align-items: center; text-align: left; padding: 7px 9px; border-radius: 6px;
+  border: 2px solid rgba(30, 39, 52, 0.25); background: rgba(255, 255, 255, 0.35); color: var(--ink); font: inherit; cursor: pointer; min-height: 44px; }
+.rp-w i { width: 14px; height: 14px; border-radius: 50%; grid-row: span 2; border: 1.5px solid var(--ink); }
+.rp-w b { font-family: var(--font-label); font-size: 14px; letter-spacing: 0.02em; }
+.rp-w b em { font-style: normal; font-size: 11px; color: var(--green); margin-left: 4px; }
+.rp-w small { font-size: 12px; color: var(--muted); }
+.rp-w.on { border-color: var(--ink); background: #fff; box-shadow: inset 0 0 0 1px var(--ink); }
+.rp-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.rp-btns .btn { min-width: 120px; }
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -760,12 +776,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   </div>
 </section>
 
+<section id="report" class="screen dlg" hidden>
+  <div class="card panel-strong rp-card">
+    <span class="kicker" id="rpKick">SCHNEEBERICHT</span>
+    <div class="rp-head"><i id="rpIcon" class="rp-ico"></i><div><h2 id="rpTitle">Sonnig · −5 °C</h2><p id="rpSub" class="rp-sub"></p></div></div>
+    <span class="kicker rp-k2">WACHS</span>
+    <div id="rpWax" class="rp-wax"></div>
+    <div class="rp-btns"><button type="button" id="rpBack" class="btn btn-secondary">Zurück</button><button type="button" id="rpGo" class="btn btn-primary">Start</button></div>
+  </div>
+</section>
+
 <section id="info" class="screen dlg" hidden>
   <div class="card panel-strong wide">
     <span class="kicker" id="ifKick">ÜBER DAS SPIEL</span>
     <div class="if-body">
       <h3>Fanspiel</h3><p>Cold Medal · Biathlon ist ein inoffizielles Fanspiel ohne Verbindung zu Verbänden oder Veranstaltern. Alle Athletinnen und Athleten sind erfunden. Strecken sind öffentlichen Daten nachempfunden, nicht vermessen. Grafik und Ton entstehen im Spiel.</p>
       <h3>Rennen</h3><p>Die Strecke ist gerafft (zwölfmal kürzer als echt), die Uhr zeigt deine echte Spielzeit: Laufen, Zeit am Schießstand und Strafzeit. Jeder Fehler kostet 10 s. Alle in der Rangliste werden genauso gerechnet.</p>
+      <h3>Wetter und Wachs</h3><p>Jedes Rennen hat sein Wetter: sonnig, bedeckt, Schneefall oder Schneesturm, morgens, nachmittags oder abends. Neuschnee bremst, im Sturm bläst der Wind auch auf der Strecke, am Schießstand sind die Böen stärker. Vor dem Start sagt der Schneebericht Temperatur und Schnee; du wählst das Wachs: Grün unter −8 °C, Violett von −8 bis −2 °C, Rot ab −2 °C, Universal geht immer, ist aber nie optimal. Passendes Wachs spart ein paar Sekunden, falsches kostet welche. In einer Gruppe haben alle dasselbe Wetter.</p>
       <h3>Datenschutz</h3><p>Kein Konto, keine Werbung, keine Cookies, keine Analyse. Name, Bestzeiten und Einstellungen speichert das Spiel im Browser auf diesem Gerät. Deine Figur (Name, Land, Aussehen) teilt es mit den anderen Spielen von Cold Medal unter derselben Adresse.</p><p id="ifOnline"></p><p id="ifPriv"></p><div id="ifOnBtns" class="if-btns" hidden><button type="button" id="ifOnToggle" class="btn btn-secondary small"></button><button type="button" id="ifForget" class="btn btn-plain small">Meine Online-Daten löschen</button></div>
       <h3>Impressum</h3><p id="ifImp">Privates Spieleprojekt, nicht kommerziell.</p>
     </div>
@@ -1044,7 +1071,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const tuck = R.tuck && R.tp > 0.45;
     R.tuckOn = tuck;
     const cd = (tuck ? P.cdTuck : P.cdA) * (1 - 0.3 * (R.draft || 0));
-    let a = -P.g * sl - P.mu * P.g - P.rho * cd * R.v * R.v / (2 * P.m);
+    // 0.21: R.muK = Wachs und Schnee (1 = Universal auf normalem Schnee), R.wAlong = Wind längs der Strecke (+ = Rückenwind, m/s)
+    const vr = R.v - (R.wAlong || 0);
+    let a = -P.g * sl - P.mu * (R.muK || 1) * P.g - P.rho * cd * vr * Math.abs(vr) / (2 * P.m);
     // Kurve: wer nicht zur Kurve hin lehnt (Finger auf der Seite der Kurve halten), bremst
     const cv = flat || !T.curveAt ? 0 : T.curveAt(R.s);
     R.curve = cv; R.offLine = cv !== 0 && R.lean !== cv;
@@ -5395,7 +5424,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 
   function make(canvas, grainEl) {
     const ctx = canvas.getContext("2d");
-    let W = 844, H = 390, dpr = 1, k = 1, pano = null, venue = "hochfilzen";
+    let W = 844, H = 390, dpr = 1, k = 1, pano = null, venue = "hochfilzen", WX = null;   // WX: Wetter des Rennens (0.21)
     const R = { lite: false };
 
     function resize(w, h, d) {
@@ -5414,21 +5443,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     function buildPano() {
       const O = PLAKAT[venue];
       const res = Math.min(2, dpr) * k, live = {};
-      const sky = PK.buildSky(W + 4, H, dpr, "day", null);
+      const tod = WX && WX.tod === "evening" ? "evening" : "day";
+      const sky = PK.buildSky(W + 4, H, dpr, tod, null);
       const c0 = -665, c1 = 665, layers = [];
       for (const L of [{ id: "far", top: 205, bot: 34 }, { id: "mid", top: 125, bot: 150 }]) {
         const cv = document.createElement("canvas");
         cv.width = Math.ceil((c1 - c0) * res); cv.height = Math.ceil((L.top + L.bot) * res);
         const c = cv.getContext("2d");
         c.setTransform(res, 0, 0, res, -c0 * res, L.top * res);
-        PK.paintLayer(L.id, c, O, { c0: c0 - 4, c1: c1 + 4, top: L.top, bot: L.bot }, "day", live);
-        layers.push({ cv, top: L.top, bot: L.bot, w: c1 - c0, c0, ground: PK.layerGround(L.id, "day") });
+        PK.paintLayer(L.id, c, O, { c0: c0 - 4, c1: c1 + 4, top: L.top, bot: L.bot }, tod, live);
+        layers.push({ cv, top: L.top, bot: L.bot, w: c1 - c0, c0, ground: PK.layerGround(L.id, tod) });
       }
-      pano = { sky, layers, live, key: W + "x" + H };
+      pano = { sky, layers, live, key: W + "x" + H, tod };
     }
     // f: Fortschritt 0 … 1 (Kulisse wandert von links nach rechts), hor: Horizont in px
     function drawPano(f, hor, t) {
-      if (!pano) buildPano();
+      if (!pano || pano.tod !== (WX && WX.tod === "evening" ? "evening" : "day")) buildPano();
       const S = pano.sky, sh = S.cv.height / S.res;
       const y0 = hor + (S.ya - PK.HOR) * S.s;
       ctx.fillStyle = S.top; ctx.fillRect(0, 0, W, Math.max(0, y0 + 1));
@@ -5674,6 +5704,72 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       R.poseJ = J;   // R.poseJ: für Tests
       return { J };
     }
+    // ---------------------------------------------------------------- Wetter (0.21)
+    const wxSky = () => (WX && WX.sky) || "klar";
+    function setWx(w) { WX = w || null; }
+    function windNow(t) { const s = wxSky(), b = { klar: 0.1, grau: 0.35, neu: 0.45, sturm: 0.85 }[s]; return Math.min(1, b + (s === "sturm" ? 0.25 : 0.1) * Math.sin(t * 0.7) * Math.sin(t * 0.23 + 1)); }
+    // Nebelbänke über den Bergflanken (bedeckt, Schneefall), im Sturm fast weiß
+    function wxFog(hor, t) {
+      const s = wxSky(); if (s === "klar") return;
+      const a = s === "grau" ? 0.32 : s === "neu" ? 0.36 : 0.55;
+      // grauer Himmel: Wolkendecke über dem blauen Plakathimmel, zum Horizont hin dunstig
+      const ga = { grau: 0.62, neu: 0.7, sturm: 0.85 }[s], sg = ctx.createLinearGradient(0, 0, 0, hor + 10 * k);
+      sg.addColorStop(0, s === "sturm" ? `rgba(196,204,214,${ga})` : `rgba(150,160,174,${ga})`); sg.addColorStop(1, `rgba(214,220,228,${ga * 0.75})`);
+      ctx.fillStyle = sg; ctx.fillRect(0, 0, W, hor + 10 * k);
+      for (let i = 0; i < 3; i++) {
+        const y = hor - (70 - i * 28) * k, hh = (26 + i * 8) * k, x = ((t * (4 + i * 3) * k * (s === "sturm" ? 6 : 1)) % (W * 1.5)) - W * 0.25;
+        const g = ctx.createLinearGradient(0, y - hh, 0, y + hh);
+        g.addColorStop(0, "rgba(232,236,242,0)"); g.addColorStop(0.5, `rgba(232,236,242,${a})`); g.addColorStop(1, "rgba(232,236,242,0)");
+        ctx.fillStyle = g; ctx.fillRect(-10, y - hh, W + 20, hh * 2);
+        ctx.globalAlpha = a * 0.8; ctx.fillStyle = "rgba(240,243,247,1)";
+        for (let j = 0; j < 3; j++) { ctx.beginPath(); ctx.ellipse((x + j * W * 0.55) % (W * 1.4), y, (90 + 30 * j) * k, 9 * k, 0, 0, TAU); ctx.fill(); }
+        ctx.globalAlpha = 1;
+      }
+    }
+    // Glitzern im Schnee bei Sonne, Schneefahnen über die Loipe im Sturm (Weltkoordinaten unter der Kamera)
+    function wxGround(V, X, Y, s0, s1, C, xr, yr) {
+      const s = wxSky(); if (R.lite) return;
+      const tx = (x, y) => [xr + (x - xr) * C, yr + (y - yr) * C];
+      if (s === "klar") {
+        for (let i = Math.floor(s0 / 0.7); i < s1 / 0.7; i++) {
+          const h = hsh(i * 31 + 7), tw = Math.sin(V.t * (3 + Math.floor(h * 5)) + i), w = i * 0.7;
+          if (tw < 0.86) continue;
+          const [x, y] = tx(X(w), Y(w) + (4 + h * 24) * k);
+          ctx.globalAlpha = (tw - 0.86) * 7; ctx.fillStyle = "#FFFFFF";
+          const r = 2.4 * k; ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x, y - r * 0.25); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r * 0.25); ctx.closePath(); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.25, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.25, y); ctx.closePath(); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+      if (s === "sturm" || s === "neu") {
+        const n = s === "sturm" ? 7 : 3, sp = s === "sturm" ? 260 : 60;
+        for (let i = 0; i < n; i++) {
+          const ph = ((V.t * sp * k + i * W / n * 1.7) % (W * 1.6)) - W * 0.3, y = H * (0.66 + 0.05 * (i % 4)) + Math.sin(V.t + i) * 4 * k;
+          const g = ctx.createLinearGradient(ph - 160 * k, 0, ph + 40 * k, 0);
+          g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.75, `rgba(255,255,255,${s === "sturm" ? 0.45 : 0.18})`); g.addColorStop(1, "rgba(255,255,255,0)");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(ph - 60 * k, y, 110 * k, (5 + (i % 3) * 3) * k, -0.04, 0, TAU); ctx.fill();
+        }
+      }
+    }
+    // Tönung je Tageszeit und Wetter, dann der Schneefall (Bildschirm); vx: Mitbewegung mit dem Tempo
+    function wxSnow(dt, vx, t) {
+      const s = wxSky(), tod = WX && WX.tod;
+      const tint = s === "sturm" ? "rgba(226,231,238,0.34)" : s === "neu" ? "rgba(200,208,220,0.16)" : s === "grau" ? "rgba(160,170,184,0.16)" : null;
+      if (tint) { ctx.fillStyle = tint; ctx.fillRect(0, 0, W, H); }
+      if (tod === "evening") { ctx.fillStyle = "rgba(110,60,120,0.10)"; ctx.fillRect(0, 0, W, H); }
+      else if (tod === "morning" && s === "klar") { ctx.fillStyle = "rgba(255,226,170,0.07)"; ctx.fillRect(0, 0, W, H); }
+      if (R.lite) return;
+      const n = { klar: 0, grau: 14, neu: 130, sturm: 230 }[s], wind = s === "sturm" ? -260 * k : s === "neu" ? -30 * k : -8 * k;
+      while (flakes.length < n) flakes.push({ x: Math.random() * W, y: Math.random() * H, r: 0.8 + Math.random() * (s === "neu" ? 2.6 : 1.7), v: 14 + Math.random() * 22, ph: Math.random() * 6 });
+      if (flakes.length > n) flakes.length = n;
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      for (const f of flakes) {
+        f.y += f.v * k * dt * (s === "sturm" ? 2.2 : 1); f.x += ((vx + wind) * (0.6 + f.r * 0.3) + Math.sin(t * 1.3 + f.ph) * 6 * k) * dt;
+        if (f.y > H + 4) { f.y = -4; f.x = Math.random() * W; } if (f.x < -6) f.x += W + 12; if (f.x > W + 6) f.x -= W + 12;
+        if (s === "sturm") { ctx.fillRect(f.x, f.y, f.r * k * 4, f.r * k * 0.9); } else { ctx.beginPath(); ctx.arc(f.x, f.y, f.r * k, 0, TAU); ctx.fill(); }
+      }
+    }
+
     function drawRun(V) {
       const dt = lastT == null ? 0 : Math.min(0.05, Math.max(0, V.t - lastT)); lastT = V.t;
       // Ruck weich: steigt in ~60 ms an, klingt in ~200 ms ab
@@ -5707,6 +5803,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       };
       const hor = H * 0.4 + camY * 0.25;
       drawPano(V.f, hor, V.t);
+      wxFog(hor, V.t);
       drawMid(V, hor, ppm, V.t);
       // ab hier Welt: um die Läuferin (xr, yr) mit C vergrößert; HB = unterer Bildrand in Weltkoordinaten
       const HB = yr + (H - yr) / C + 4 * k;
@@ -5841,17 +5938,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         const fh = Math.min((70 + 50 * q) * k * (0.5 + 0.5 * C), H + 18 * k - (yr + (yP - yr) * C) - 14 * k);
         if (fh > 30 * k) spruce(x, H + 18 * k, fh, true, hsh(Math.round(s) + 4));
       }
-      // leiser Schneefall (Bildschirm, mit dem Tempo leicht schräg)
-      if (!R.lite) {
-        const vx = -((V.run && V.run.v) || 0) * ppm * 0.08 - 8 * k;
-        while (flakes.length < 46) flakes.push({ x: Math.random() * W, y: Math.random() * H, r: 0.8 + Math.random() * 1.7, v: 14 + Math.random() * 22, ph: Math.random() * 6 });
-        ctx.fillStyle = "rgba(255,255,255,0.85)";
-        for (const f of flakes) {
-          f.y += f.v * k * dt; f.x += (vx * (0.6 + f.r * 0.3) + Math.sin(V.t * 1.3 + f.ph) * 6 * k) * dt;
-          if (f.y > H + 4) { f.y = -4; f.x = Math.random() * W; } if (f.x < -6) f.x += W + 12; if (f.x > W + 6) f.x -= W + 12;
-          ctx.beginPath(); ctx.arc(f.x, f.y, f.r * k, 0, TAU); ctx.fill();
-        }
-      }
+      // 0.21: Wetter im Bild: Glitzern (sonnig), Tönung, Schneefall je Wetterlage, Schneefahnen im Sturm
+      wxGround(V, X, Y, s0, s1, C, xr, yr);
+      wxSnow(dt, -((V.run && V.run.v) || 0) * ppm * 0.08, V.t);
       return { X: (s) => xr + (X(s) - xr) * C, Y: (s) => yr + (Y(s) - yr) * C, xr, yr, C };
     }
 
@@ -6218,6 +6307,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       ctx.beginPath(); ctx.arc(cx, cy, ring - 3.6 * k, 0, TAU); ctx.strokeStyle = "rgba(251,244,228,0.85)"; ctx.lineWidth = 1.3 * k; ctx.stroke();
       }
       // Diopter (Lochblende nah am Auge): runder Ausschnitt mit weichem, dunklem Rand – keine Vergrößerung, kein Fadenkreuz
+      // 0.21: Wetter im Visier: Flocken treiben durchs Bild (Schneefall, Sturm), bei Sonne ein Glanz am Rand
+      { const sk = wxSky(), tt = G.t;
+        if (sk === "neu" || sk === "sturm") {
+          const n = sk === "sturm" ? 60 : 26; ctx.fillStyle = "rgba(255,255,255,0.75)";
+          for (let i = 0; i < n; i++) { const h = hsh(i * 13 + 5), sp = sk === "sturm" ? 1.6 : 0.35;
+            const x = cx - ap + ((h * 997 + tt * (sk === "sturm" ? -420 : -40) * k * (0.6 + h)) % (2 * ap) + 2 * ap) % (2 * ap);
+            const y = cy - ap + ((hsh(i * 7 + 1) * 2 * ap + tt * 60 * k * sp * (0.5 + h)) % (2 * ap));
+            const r = (1.5 + h * 3) * k; if (sk === "sturm") ctx.fillRect(x, y, r * 3, r * 0.8); else { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); } }
+        } else if (sk === "klar") {
+          const gl = ctx.createRadialGradient(cx - ap * 0.55, cy - ap * 0.6, 0, cx - ap * 0.55, cy - ap * 0.6, ap * 0.9);
+          gl.addColorStop(0, `rgba(255,248,225,${0.32 + 0.06 * Math.sin(tt * 0.8)})`); gl.addColorStop(1, "rgba(255,248,225,0)");
+          ctx.fillStyle = gl; ctx.fillRect(cx - ap, cy - ap, ap * 2, ap * 2);
+        } }
       const g = ctx.createRadialGradient(cx, cy, ap * 0.72, cx, cy, ap);
       g.addColorStop(0, "rgba(14,20,30,0)"); g.addColorStop(0.75, "rgba(14,20,30,0.55)"); g.addColorStop(1, "rgba(14,20,30,0.97)");
       ctx.beginPath(); ctx.arc(cx, cy, ap, 0, TAU); ctx.fillStyle = g; ctx.fill();
@@ -6384,7 +6486,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
 
     function clear() { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
-    return Object.assign(R, { MM, MMH, drawHunt, poseAt, burst, resize, clear, drawRun, drawRange, drawMenu, windFlag, skier, faceFor, strideJ, get W() { return W; }, get H() { return H; }, SUIT, PLAKAT });
+    return Object.assign(R, { setWx, windNow, MM, MMH, drawHunt, poseAt, burst, resize, clear, drawRun, drawRange, drawMenu, windFlag, skier, faceFor, strideJ, get W() { return W; }, get H() { return H; }, SUIT, PLAKAT });
   }
 
   root.BIRender = { make, SUIT, PLAKAT };
@@ -6450,8 +6552,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       gl.g2.gain.setTargetAtTime(run ? fl * Math.min(0.09, 0.015 + v / 14 * 0.07) : 0, ac.currentTime, 0.15);
       gl.f2.frequency.setTargetAtTime(600 + v * 60, ac.currentTime, 0.2);
     }
+    // 0.21: Wind (Wetter): tiefes Rauschen, im Sturm mit heulenden Böen; w 0 … 1
+    let wd = null;
+    function windSnd(w) {
+      if (!ok()) return;
+      if (!wd) {
+        const s = ac.createBufferSource(); s.buffer = noiseBuf; s.loop = true; s.playbackRate.value = 0.5;
+        const f = ac.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 420; f.Q.value = 2.2;
+        const g = ac.createGain(); g.gain.value = 0;
+        s.connect(f); f.connect(g); g.connect(master); s.start(); wd = { g, f };
+      }
+      const t = ac.currentTime, x = Math.max(0, Math.min(1, w || 0));
+      wd.g.gain.setTargetAtTime(x * x * 0.11, t, 0.4);
+      wd.f.frequency.setTargetAtTime(300 + x * 520, t, 0.5);
+    }
     const MEL = [0, 4, 7, 9, 7, 4, 2, 4, 0, 4, 7, 12, 9, 7, 4, 7, 9, 12, 14, 12, 9, 7, 4, 2, 4, 7, 4, 2, 0, 2, 4, 0];
     const Snd = {
+      wind: windSnd,
       unlock, glide,
       push(kind) { if (!ok()) return; const t = ac.currentTime; noise(t, 0.16, kind === "press" ? 1500 : kind === "double" ? 800 : 1100, 0.9, kind === "early" || kind === "wrong" ? 0.1 : 0.18); },
       // Takt als Musik: jeder gute Abstoß spielt den nächsten Ton einer Ländler-Melodie (D-Dur, pentatonisch);
@@ -6693,7 +6810,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.20.0";
+  const VERSION = "0.21.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -6760,6 +6877,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (Array.isArray(o.clubs)) S.clubs = o.clubs.filter((x) => x && typeof x === "object" && /^[A-HJ-NP-Z2-9]{7}$/.test(x.c)).slice(0, 16);
       if (o.sight === "kreuz" || o.sight === "ring") S.sight = o.sight;
       if (o.board === "on" || o.board === "off") S.board = o.board;
+      if (["u", "k", "m", "w"].includes(o.wax)) S.wax = o.wax;
       S.boardSmall = !!o.boardSmall;
       S.sound = o.sound === 0 ? 0 : 1;
       if (o.best && typeof o.best === "object") for (const k of Object.keys(o.best)) { const b = o.best[k]; if (b && isFinite(b.t)) S.best[k] = { t: +b.t, rank: +b.rank || 0 }; }
@@ -6835,7 +6953,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const easy = () => S.ctrl !== "pro";
   const canHover = () => !!(window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches);
   // ------------------------------------------------------------------ Bildschirme
-  const SCREENS = ["menu", "training", "settings", "info", "pause", "result", "askLearn", "figure", "askOnline", "groups", "newClub", "club"];
+  const SCREENS = ["menu", "training", "settings", "info", "pause", "result", "askLearn", "figure", "askOnline", "groups", "newClub", "club", "report"];
   let mode = "menu";
   function show(id) { for (const s of SCREENS) $(s).hidden = s !== id; }
   function setText(el, v) { if (el._v !== v) { el._v = v; el.textContent = v; } }
@@ -6897,11 +7015,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   // eigenes Hosting: offline spielbar
   if (SITE.web && "serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
   $("btnTraining").addEventListener("click", () => { $("trLearnSub").textContent = easy() ? "die Steuerung in vier kurzen Schritten, etwa eine Minute" : "die Steuerung in sechs kurzen Schritten, etwa zwei Minuten"; show("training"); });
-  $("btnSprint").addEventListener("click", () => { if (!S.tips.learned) show("askLearn"); else startRace("sprint"); });
-  $("btnMass").addEventListener("click", () => startRace("mass"));
-  $("btnHunt").addEventListener("click", () => startRace("jagd"));
+  $("btnSprint").addEventListener("click", () => { if (!S.tips.learned) show("askLearn"); else prerace("sprint"); });
+  $("btnMass").addEventListener("click", () => prerace("mass"));
+  $("btnHunt").addEventListener("click", () => prerace("jagd"));
   $("alYes").addEventListener("click", () => startRace("learn"));
-  $("alNo").addEventListener("click", () => { S.tips.learned = 1; save(); startRace("sprint"); });
+  $("alNo").addEventListener("click", () => { S.tips.learned = 1; save(); prerace("sprint"); });
   $("trLearn").addEventListener("click", () => startRace("learn"));
   $("trShoot").addEventListener("click", () => startRace("shoot"));
   $("trRun").addEventListener("click", () => startRace("lap"));
@@ -6912,16 +7030,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   $("pResume").addEventListener("click", resume);
   // Gruppe: nochmal dieselbe Runde (Geister neu), zurück in die Gruppe statt ins Menü
   const clubAgain = () => runClub(Rc.club.c, { n: Rc.club.n, race: Rc.kind, s: Rc.seed, sex: Rc.sex, lv: Rc.level });
-  $("pRestart").addEventListener("click", () => { if (Rc.club && !Rc.watch) clubAgain(); else startRace(Rc.kind, Rc.opts); });
+  $("pRestart").addEventListener("click", () => { if (Rc.club && !Rc.watch) clubAgain(); else startRace(Rc.kind, Object.assign({}, Rc.opts, { seed: Rc.seed, wax: Rc.wax })); });
   $("pQuit").addEventListener("click", () => { if (Rc && Rc.club) openClub(Rc.club.c); else toMenu(); });
-  $("resAgain").addEventListener("click", () => { if (Rc.club) clubAgain(); else startRace(Rc.kind === "learn" ? "sprint" : Rc.kind); });
-  $("resNext").addEventListener("click", () => startRace("pursuit"));
-  $("btnPursuit").addEventListener("click", () => startRace("pursuit"));
+  $("resAgain").addEventListener("click", () => { if (Rc.club) clubAgain(); else prerace(Rc.kind === "learn" ? "sprint" : Rc.kind); });
+  $("resNext").addEventListener("click", () => prerace("pursuit"));
+  $("btnPursuit").addEventListener("click", () => prerace("pursuit"));
   $("resMenu").addEventListener("click", () => { if (Rc && Rc.club) openClub(Rc.club.c); else toMenu(); });
 
   function toMenu() {
     clearTimeout(clubT);
-    mode = "menu"; Rc = null; paused = false; canvas.style.filter = "";
+    mode = "menu"; Rc = null; paused = false; canvas.style.filter = ""; renderer.setWx(null);
     $("hud").hidden = true; $("rhud").hidden = true; $("learnCard").hidden = true; banner(null); tip(null);
     show("menu"); refreshMenu();
   }
@@ -6942,6 +7060,38 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   let Rc = null, paused = false;
   const VENUE = "hochfilzen";
   // o (Gruppen): { seed, sex, level, club: { c, n }, ghosts: [Geist, …], watch: Geist } – gleiche Bedingungen für alle in der Runde
+  // Schneebericht vor dem Rennen: Wetter, Temperatur, Schnee, Wind; Wachs wählen (Wissen statt Kauf). Training startet sofort.
+  const RACE_KINDS = ["sprint", "mass", "pursuit", "jagd", "xc"];
+  let pre = null;
+  function prerace(kind, o) {
+    o = o || {};
+    if (!RACE_KINDS.includes(kind) || o.watch) return startRace(kind, o);
+    const seed = o.seed != null ? o.seed >>> 0 : (Date.now() ^ (Math.random() * 1e9)) >>> 0, wx = wxFor(seed);
+    pre = { kind, o: Object.assign({}, o, { seed }), wx, wax: WAX_KEYS.includes(S.wax) ? S.wax : "u" };
+    $("rpKick").textContent = nb(`SCHNEEBERICHT · HOCHFILZEN · ${TOD_N[wx.tod].toUpperCase()}`);
+    $("rpTitle").textContent = nb(`${SKY_N[wx.sky]} · ${tempTxt(wx.t)}`);
+    const wind = wx.sky === "sturm" ? "Sturm, auch auf der Strecke" : wx.sky === "klar" ? "kaum Wind" : wx.sky === "grau" ? "mäßiger Wind am Stand" : "böig am Stand";
+    $("rpSub").textContent = nb(`${wx.snow}${wx.sky === "neu" ? " (bremst)" : ""} · ${wind}`);
+    $("rpIcon").innerHTML = skyIcon(wx.sky);
+    paintWax(); show("report");
+  }
+  // kleines Wetterbild im Plakatstil (Sonne, Wolke, Flocken, Sturm)
+  function skyIcon(sky) {
+    const sun = '<circle cx="24" cy="22" r="9" fill="#DDA43B"/>' + [0, 1, 2, 3, 4, 5, 6, 7].map((i) => { const a = i * Math.PI / 4; return `<line x1="${24 + Math.cos(a) * 13}" y1="${22 + Math.sin(a) * 13}" x2="${24 + Math.cos(a) * 17}" y2="${22 + Math.sin(a) * 17}" stroke="#DDA43B" stroke-width="2.6" stroke-linecap="round"/>`; }).join("");
+    const cloud = (c) => `<path d="M12 36a8 8 0 0 1 2-15.6A11 11 0 0 1 35 18a8.5 8.5 0 0 1 3 18z" fill="${c}" stroke="#1E2734" stroke-width="2"/>`;
+    const flakes = (n) => Array.from({ length: n }, (_, i) => `<circle cx="${12 + (i * 7.3) % 26}" cy="${41 + (i % 3) * 3}" r="1.7" fill="#23466B"/>`).join("");
+    const body = sky === "klar" ? sun : sky === "grau" ? cloud("#B9C3CF") : sky === "neu" ? cloud("#DCE3EA") + flakes(5)
+      : cloud("#8E9BAA") + '<path d="M6 41h18M14 46h22M4 36h8" stroke="#23466B" stroke-width="2.4" stroke-linecap="round"/>' + flakes(3);
+    return `<svg viewBox="0 0 48 50" width="52" height="54" aria-hidden="true">${body}</svg>`;
+  }
+  function paintWax() {
+    const help = S.help === "anf";
+    $("rpWax").innerHTML = WAX_KEYS.map((w) => `<button type="button" class="rp-w${pre.wax === w ? " on" : ""}" data-w="${w}"><i style="background:${WAX[w].col}"></i><b>${WAX[w].n}${help && w === pre.wx.band ? ' <em>passt heute</em>' : ""}</b><small>${esc(WAX[w].d)}</small></button>`).join("");
+  }
+  $("rpWax").addEventListener("click", (e) => { const b = e.target.closest("[data-w]"); if (!b || !pre) return; pre.wax = b.dataset.w; S.wax = pre.wax; save(); paintWax(); Snd.click && Snd.click(); });
+  $("rpGo").addEventListener("click", () => { if (!pre) return; const p = pre; pre = null; startRace(p.kind, Object.assign({}, p.o, { wax: p.wax })); });
+  $("rpBack").addEventListener("click", () => { pre = null; show("menu"); });
+
   function startRace(kind, o) {
     o = o || {};
     Snd.unlock();
@@ -6960,13 +7110,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // gespurte Loipe im Bild (Langlauf, Jagd 1960)
     Rc.classic = (Rc.hunt || fmt === "xc") && race;
     Rc.R.cycK = 1;
+    Rc.wx = race ? wxFor(seed) : WX_CALM; Rc.wax = race ? (o.wax || S.wax || "u") : "u"; Rc.fit = race ? waxFit(Rc.wax, Rc.wx.band) : waxFit("u");
+    Rc.R.muK = Rc.wx.snowK * Rc.fit.k;
+    renderer.setWx(Rc.wx);
+    Rc.wind.base *= Rc.wx.windMul; Rc.wind.gust *= Rc.wx.windMul * (Rc.wx.sky === "sturm" ? 1.3 : 1);
     Rc.FM = FM; Rc.R.footQ = S.help === "anf" ? 0.85 : 0.6; Rc.R.simple = easy(); Rc.simple = easy(); Rc.R.acidMul = level === "easy" ? 0.5 : 1;
     Rc.rec = race && kind !== "pursuit" && !Rc.watch ? { P: [], next: 0, hits: [], kills: [] } : null;   // Rennverlauf (Geist für die Gruppe)
     Rc.together = kind === "mass" || kind === "pursuit";   // Platz nach Fortschritt: wer zuerst ins Ziel kommt
     if (kind === "pursuit") {
       setupPursuit(seed);
     } else if (race) {
-      Rc.field = C.field(sex, seed, fmt); Rc.ai = sim(Rc.field, VENUE, sex, seed, fmt, level);
+      Rc.field = C.field(sex, seed, fmt); Rc.ai = wxAI(sim(Rc.field, VENUE, sex, seed, fmt, level), Rc.wx, seed);
       // Startnummern zufällig; Sprint: Einzelstart alle 30 s nach Nummer, Massenstart: alle zugleich
       const r = Ph.rng(seed ^ 0xb1b), bibs = [];
       for (let b = 1; b <= FM.field; b++) if (b !== Rc.bib) bibs.push(b);
@@ -6992,13 +7146,68 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     mode = "run"; $("hud").hidden = false; $("rhud").hidden = true;
     if (kind === "learn") { Rc.R.footQ = 0.6; Rc.phase = "go"; Rc.R.v = 2; Rc.dec = { decor: null, stadium: () => false, pen: false }; learnStep(0); return; }
     Rc.phase = "count"; Rc.pt = 0;
-    banner(race ? `${Rc.watch ? "ANSEHEN · " : Rc.club ? "GRUPPE · " : ""}${FM.name.toUpperCase()} · ${sex === "m" ? "HERREN" : "DAMEN"}` : "TRAINING", "3", kind === "pursuit" ? `Start als ${Rc.bib}. · ${Rc.off ? fmtB(Rc.off) + " hinter der Ersten" : "du führst"}` : Rc.watch ? `${Rc.watch.n} · antippen: schneller` : Rc.ghosts.length ? `${Rc.ghosts.length} ${Rc.ghosts.length === 1 ? "Geist läuft" : "Geister laufen"} mit` : kind === "jagd" ? `Wie 1960 · vier Stationen · Kimme und Korn` : kind === "xc" ? `Langlauf klassisch · Startnummer ${Rc.bib}` : race ? `Hochfilzen · Startnummer ${Rc.bib}${kind === "mass" ? " · alle zugleich" : ""}` : "Eine Runde");
+    banner(race ? `${Rc.watch ? "ANSEHEN · " : Rc.club ? "GRUPPE · " : ""}${FM.name.toUpperCase()} · ${sex === "m" ? "HERREN" : "DAMEN"}` : "TRAINING", "3", kind === "pursuit" ? `Start als ${Rc.bib}. · ${Rc.off ? fmtB(Rc.off) + " hinter der Ersten" : "du führst"}` : Rc.watch ? `${Rc.watch.n} · antippen: schneller` : Rc.ghosts.length ? `${Rc.ghosts.length} ${Rc.ghosts.length === 1 ? "Geist läuft" : "Geister laufen"} mit` : kind === "jagd" ? `Wie 1960 · vier Stationen · Kimme und Korn` : kind === "xc" ? `${wxLine()} · Startnummer ${Rc.bib}` : race ? `${wxLine()} · Startnummer ${Rc.bib}${kind === "mass" ? " · alle zugleich" : ""}` : "Eine Runde");
     Snd.beep(false);
     // am Handy erklären seit 0.18 die Knöpfe und die Hinweiszeile
     if (S.help === "anf" && (S.tips.run2 || 0) < 3 && canHover()) { Rc.pendTip = (Rc.simple ? (canHover() ? "<b>Klicken</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>gedrückt halten</b>" : "<b>Tippen</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>halten</b>") : canHover() ? "<b>Linksklick</b> im Takt (grünes Feld) · flach <b>Rechtsklick</b> · <b>halten</b> = Hocke" : "<b>Links/rechts</b> im Takt (grünes Feld) · flach <b>beide Daumen</b> · <b>halten</b> = Hocke") ; S.tips.run2 = (S.tips.run2 || 0) + 1; save(); }
   }
   // 0.20 (Mat): Uhr, Rückstände und Ergebnisse in echter Spielzeit (Laufen, Schießstand, Strafzeit), nicht mehr in gestreckter Rennzeit.
   // Die KI wird nach dem Simulieren auf Spielzeit umgerechnet (Laufen ÷ SCALE, Stand 1 : 1, Strafzeit neu); alles danach rechnet in Spielzeit.
+  // ------------------------------------------------------------------ Wetter, Schnee und Wachs (0.21, Gesamtkonzept „Wetter, Schnee und Material“)
+  // Aus dem Seed: in einer Gruppe haben alle dasselbe Wetter. Wachs ist frei wählbar (Wissen, kein Kauf); passend gleitet besser.
+  const SKY_N = { klar: "Sonnig", grau: "Bedeckt", neu: "Schneefall", sturm: "Schneesturm" };
+  const TOD_N = { morning: "morgens", afternoon: "nachmittags", evening: "abends" };
+  const WAX = {
+    u: { n: "Universal", d: "für jeden Schnee, nie ganz optimal", col: "#B9B2A3" },
+    k: { n: "Grün", d: "kalt, unter −8 °C", col: "#3F8F55" },
+    m: { n: "Violett", d: "−8 bis −2 °C", col: "#7656A8" },
+    w: { n: "Rot", d: "nass, ab −2 °C", col: "#C23B2B" },
+  };
+  const WAX_KEYS = ["u", "k", "m", "w"], BAND_I = { k: 0, m: 1, w: 2 };
+  function waxFit(w, band) {
+    if (w === "u" || !(w in BAND_I)) return { k: 1, ok: 0, txt: "Universal" };
+    const d = BAND_I[w] - BAND_I[band], far = Math.abs(d) > 1;
+    if (!d) return { k: 0.88, ok: 1, txt: "passt" };
+    return { k: far ? 1.2 : 1.12, ok: -1, txt: d < 0 ? (far ? "viel zu kalt" : "zu kalt") : (far ? "viel zu warm" : "zu warm") };
+  }
+  // Reibung (muK) → Laufzeit, gemessen mit der Bezugsläuferin (tools: 0,88 → −3,3 %, 1,12 → +2,4 %, 1,2 → +5,2 %)
+  const timeK = (m) => (m < 1 ? 1 + 0.27 * (m - 1) : 1 + (m - 1) * (0.13 + 0.62 * (m - 1)));
+  const tempTxt = (t) => `${t < 0 ? "−" : t > 0 ? "+" : "±"}${Math.abs(t)} °C`;
+  // Seed gut mischen: ähnliche Seeds (1, 2, 3 …) sollen ganz verschiedenes Wetter geben
+  const mix32 = (n) => { n = Math.imul((n ^ 0x9e3779b9) >>> 0, 0x85ebca6b) >>> 0; n ^= n >>> 13; n = Math.imul(n, 0xc2b2ae35) >>> 0; return (n ^ (n >>> 16)) >>> 0; };
+  function wxFor(seed) {
+    const r = Ph.rng(mix32(seed ^ 0x3e7a1));
+    const sky = ["klar", "klar", "grau", "neu", "sturm"][Math.floor(r() * 5)];
+    const tod = ["morning", "afternoon", "evening"][Math.floor(r() * 3)];
+    const t = Math.round(-5 + { morning: -3, afternoon: 2, evening: -2 }[tod] + { klar: 1, grau: 0, neu: -1, sturm: -4 }[sky] + r() * 6 - 3);
+    const band = t < -8 ? "k" : t < -2 ? "m" : "w";
+    const snow = sky === "neu" ? "Neuschnee" : band === "k" ? "Pulverschnee" : band === "m" ? "trockener Schnee" : "nasser Schnee";
+    return { sky, tod, t, band, snow, snowK: sky === "neu" ? 1.12 : sky === "sturm" ? 1.08 : 1, windMul: { klar: 0.45, grau: 1, neu: 1.2, sturm: 2.1 }[sky],
+      course: sky === "sturm" ? 2.2 + r() * 0.6 : 0, cph: r() * 6.28 };
+  }
+  const WX_CALM = { sky: "klar", tod: "afternoon", t: -4, band: "m", snow: "trockener Schnee", snowK: 1, windMul: 1, course: 0, cph: 0 };
+  // KI wachst: meist passend, die starken öfter; Zeit je nach Wachs, Schnee und Sturm
+  function wxAI(list, wx, seed) {
+    const r = Ph.rng(mix32(seed ^ 0x7a11)), keys = ["k", "m", "w"];
+    for (const a of list) {
+      const x = r(), good = 0.68 + 0.2 * (a.tier === "top" ? 1 : a.tier === "mid" ? 0.5 : 0);
+      const i = BAND_I[wx.band], w = x < good ? wx.band : x < good + 0.12 ? "u" : keys[Math.max(0, Math.min(2, i + (r() < 0.5 ? -1 : 1)))];
+      a.wax = w; const f = timeK(wx.snowK * waxFit(w, wx.band).k) * (wx.course ? 1.008 : 1);
+      let t = 0;
+      for (const g of a.segs) { g.ski *= f; t += g.ski; g.at = t; if (g.range != null) { t += g.range + (g.pen || 0) + (g.tpen || 0); g.after = t; } }
+      a.total = t;
+    }
+    return list;
+  }
+  const wxLine = () => nb(`${SKY_N[Rc.wx.sky]} ${tempTxt(Rc.wx.t)} · Wachs ${WAX[Rc.wax].n}`);
+  // Was das Wachs gebracht hat (Sekunden gegenüber Universal; + = verloren) und ein Satz fürs Ergebnis
+  function waxNote(ski) {
+    const wx = Rc.wx, f = Rc.fit, eff = ski * (1 - timeK(wx.snowK) / timeK(wx.snowK * f.k)), right = WAX[wx.band].n;
+    const head = `Wachs ${WAX[Rc.wax].n} bei ${tempTxt(wx.t)} (${wx.snow})`;
+    if (f.ok === 1) return nb(`${head}: passt, etwa ${dec(Math.abs(eff), 1)} s schneller als mit Universal.`);
+    if (f.ok === 0) { const g = ski * (1 - timeK(wx.snowK * 0.88) / timeK(wx.snowK)); return nb(`${head}: Mit ${right} wärst du etwa ${dec(g, 1)} s schneller gewesen.`); }
+    return nb(`${head}: ${f.txt}, etwa ${dec(eff, 1)} s verloren. Passend wäre ${right} gewesen.`);
+  }
   const PEN_P = 10, HUNT_P = 10, HUNT_K = 2;   // Strafzeit je Fehler; Jagd: Fehler +10 s, Kill-Zone −2 s
   function playAI(list) {
     const S = T.SCALE;
@@ -7020,14 +7229,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   function setupPursuit(seed) {
     const LS = S.lastSprint && S.lastSprint.sex === S.sex ? S.lastSprint : null;
     const sSeed = LS ? LS.seed : (seed ^ 0x5eed) >>> 0;
-    const sprint = sim(C.field(S.sex, sSeed, "sprint"), VENUE, S.sex, sSeed, "sprint", LS && LS.level || S.level);
+    const sprint = wxAI(sim(C.field(S.sex, sSeed, "sprint"), VENUE, S.sex, sSeed, "sprint", LS && LS.level || S.level), wxFor(sSeed), sSeed);
     let myT = LS && LS.p ? LS.t : null;
     if (myT == null) { const ts = sprint.map((x) => x.total).sort((a, b) => a - b); myT = ts[24] + 0.1; }
     const all = sprint.map((x) => ({ name: x.name, nat: x.nat, tier: x.tier, t: x.total })).concat([{ me: true, t: myT }]).sort((a, b) => a.t - b.t);
     let top = all.slice(0, 30); if (!top.some((x) => x.me)) top = all.slice(0, 29).concat(all.filter((x) => x.me));
     const lead = top[0].t;
     const others = top.filter((x) => !x.me), F = C.field(S.sex, sSeed, "sprint").filter((f) => others.some((o) => o.name === f.name));
-    Rc.ai = sim(F, VENUE, S.sex, seed, "pursuit", S.level);
+    Rc.ai = wxAI(sim(F, VENUE, S.sex, seed, "pursuit", S.level), Rc.wx, seed);
     for (const a of Rc.ai) { const o = others.find((x) => x.name === a.name); a.off = Math.min(o.t - lead, 30); a.bib = top.indexOf(o) + 1; }
     const me = top.find((x) => x.me);
     Rc.off = Math.min(me.t - lead, 30); Rc.bib = top.indexOf(me) + 1; Rc.fromSprint = !!LS; Rc.sprintRank = all.indexOf(me) + 1;
@@ -7163,7 +7372,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const stat = (a, b) => `<div class="stat"><span>${a}</span><b>${nb(b)}</b></div>`;
     const noGun = !Rc.stages.length;
     if (noGun) {
-      const p0 = [`${dec(Rc.L.km, 0)} km ohne Gewehr: hier zählt nur der Takt.`];
+      const p0 = [`${dec(Rc.L.km, 0)} km ohne Gewehr: hier zählt nur der Takt.`, waxNote(me.ski)];
       if (K.early / n > 0.2) p0.push("Viele Abstöße kamen zu früh. Warte aufs Klack: das bringt mehr Tempo und spart Kraft.");
       if (pb && old) p0.push(nb(`Neue Bestzeit: ${fmtB(old.t - me.total).replace("+", "")} schneller als bisher.`));
       return stat("Laufzeit", fmtT(me.ski)) + stat("Abstöße im Takt", `${Math.round((K.beat + K.press) / n * 100)} %`) + stat("höchster Puls", String(bpm(Rc.maxHr || 0))) + p0.map((x) => `<p>${esc(x)}</p>`).join("");
@@ -7174,7 +7383,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       + stat(Rc.hunt ? "An den Stationen" : "Am Stand", `${dec(rangeT, 1)} s (Feld ${dec(medRange, 1)} s)`)
       + stat("Puls am Stand", Rc.arriveHr.map(bpm).join(" · "))
       + stat("Abstöße im Takt", `${Math.round((K.beat + K.press) / n * 100)} %`);
-    const p = [];
+    const p = [waxNote(me.ski)];
     if (Rc.kind === "pursuit") {
       const d = Rc.bib - me.rank;
       p.push(nb(`Gestartet als ${Rc.bib}. ${Rc.off ? "mit " + fmtB(Rc.off) : "in Führung"}${Rc.fromSprint ? " (aus deinem Sprint)" : ""}, im Ziel ${me.rank}.${d > 0 ? ": " + d + (d === 1 ? " Platz" : " Plätze") + " gutgemacht" : d < 0 ? ": " + -d + (d === -1 ? " Platz" : " Plätze") + " verloren" : ""}.`));
@@ -7392,6 +7601,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       return;
     }
     if (Rc.phase === "mat") return tickMat(dt);
+    R.wAlong = Rc.wx.course ? Rc.wx.course * Math.cos(2 * Math.PI * R.s / L.L + Rc.wx.cph) * (0.85 + 0.3 * Math.sin(Rc.ski * 0.9)) : 0;
     Ph.step(R, L); Rc.ski += dt;
     // am Rundenende direkt durchs Visier (0.16.5, Mat: keine Pause vor dem Schießstand)
     if (Rc.kind === "learn") learnTick(dt);
@@ -7667,8 +7877,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
           const x = X(s), y = Y(s) - 30 * k;
           seg([x, y], [x, y - 60 * k], I.tinte, 2 * k);
           // 0.19: Tuch weht als Welle (Stoff hängt am Mast, das freie Ende schlägt mehr)
-          const band = (a0, a1, c) => { const P = []; for (let i = 0; i <= 6; i++) { const u = i / 6, w = Math.sin(t * 4.2 + s - u * 3.2) * 3.4 * k * u; P.push([x + 30 * k * u, y - 60 * k + a0 * k + 2 * k * u + w]); }
-            for (let i = 6; i >= 0; i--) { const u = i / 6, w = Math.sin(t * 4.2 + s - u * 3.2) * 3.4 * k * u; P.push([x + 30 * k * u, y - 60 * k + a1 * k + 2 * k * u + w]); } poly(P, c); };
+          const wn = renderer.windNow(t), fw = 4.2 * (0.6 + 1.4 * wn), fa = 3.4 * (0.45 + wn);   // Fahne nach Wind
+          const band = (a0, a1, c) => { const P = []; for (let i = 0; i <= 6; i++) { const u = i / 6, w = Math.sin(t * fw + s - u * 3.2) * fa * k * u; P.push([x + 30 * k * u, y - 60 * k + a0 * k + 2 * k * u + w]); }
+            for (let i = 6; i >= 0; i--) { const u = i / 6, w = Math.sin(t * fw + s - u * 3.2) * fa * k * u; P.push([x + 30 * k * u, y - 60 * k + a1 * k + 2 * k * u + w]); } poly(P, c); };
           band(0, 10, col); band(3, 6, col2);
         }
       }
@@ -7736,6 +7947,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     watchFrames(now);
     advanceTo(now);
     // Gleitgeräusch nur beim Laufen (Menü, Schießstand, Pause, Ziel: still)
+    Snd.wind(Rc && Rc.wx && !paused && (mode === "run" || mode === "range" || mode === "fin") ? (Rc.wx.sky === "klar" ? 0 : renderer.windNow(performance.now() / 1000)) : 0);
     Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen" || Rc.phase === "mat"), Rc ? (Rc.watch ? 0.8 : Rc.flow || 0) : 0);
     renderer.clear();
     const t = now / 1000;
@@ -8059,7 +8271,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   PASS.on(() => { if (mode === "menu") refreshMenu(); });
   $("btnCode").addEventListener("click", () => openFigure({ tab: "code" }));
   $("btnGroups").addEventListener("click", openGroups);
-  $("btnXc").addEventListener("click", () => startRace("xc"));
+  $("btnXc").addEventListener("click", () => prerace("xc"));
 
   // ------------------------------------------------------------------ Gruppen: Liste
   const okGrp = (c) => OL && OL.groupOk(c);
@@ -8365,7 +8577,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     ensureName(async () => {
       const gh = await loadGhosts(c, d.n);
       clearTimeout(clubT);
-      startRace(d.race, { seed: d.s, sex: d.sex, level: d.lv, club: { c, n: d.n }, ghosts: gh.slice(0, 12) });
+      prerace(d.race, { seed: d.s, sex: d.sex, level: d.lv, club: { c, n: d.n }, ghosts: gh.slice(0, 12) });
     });
   }
   async function watchRace(d, id) {
