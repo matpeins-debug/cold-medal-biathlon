@@ -6011,7 +6011,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       }
       ctx.stroke();
       // Stadion: Zuschauer hinter der Bande, Fahnen, Torbogen und Schießstand
-      if (V.decor) V.decor({ X, Y, ppm, s0, s1, k, ctx, person, poly, seg, disc, spruce, I, mix, hsh });
+      if (V.decor) V.decor({ X, Y, ppm, s0, s1, k, ctx, person, poly, seg, disc, spruce, I, mix, hsh, sMe: V.s, wind: windNow(V.t) });
       // Kurven: Pfeiltafeln hinter der Loipe, ein Schild davor
       if (V.T && !V.pen) for (const base of [Math.floor(s0 / V.T.L) * V.T.L, Math.ceil(s0 / V.T.L) * V.T.L]) for (const c of V.T.curves) {
         const a = base + c.a, b = base + c.b;
@@ -6984,7 +6984,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.23.1";
+  const VERSION = "0.24.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8023,92 +8023,134 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const hunt = L.format === "jagd";
     const inStadium = (s) => { const q = ((s % L.L) + L.L) % L.L; return pen || (hunt ? q > L.L - 6 || q < 8 : q > L.L - 28 || q < 12); };
     const decor = (D) => {
-      const { X, Y, k, s0, s1, ctx, person, poly, seg, I, hsh, mix } = D;
+      const { X, Y, k, s0, s1, ctx, person, poly, seg, disc, I, hsh, mix } = D, sMe = D.sMe != null ? D.sMe : -1e9, wind = D.wind || 0;
       const t = performance.now() / 1000;
-      // Zuschauer: Abschnitte im Stadion und an der Strecke
-      for (let s = Math.floor(s0 / 1.1) * 1.1; s < s1; s += 1.1) {   // Raster fest in der Welt (sonst springen Zuschauer an/aus)
+      // 0.24 (Mat: „zu clean, schönere Elemente, 3D“): Bauten als Körper mit Vorderseite, Deckel und Seite (Licht von links oben),
+      // Schnee auf Dächern und am Fuß, Zuschauer in zwei Reihen, die jubeln, wenn du vorbeikommst.
+      const DX = 0.5, DY = -0.42;   // Tiefe schräg nach hinten rechts
+      const lit = (c) => mix(c, I.papier, 0.35), dim = (c) => mix(c, I.tinte, 0.38);
+      // Körper zwischen zwei Fußpunkten (auch schräg am Hang), Höhe h, Tiefe d; top(u) hebt die Oberkante (Wind in der Plane)
+      function slab(x1, y1, x2, y2, h, d, cf, top) {
+        const n = top ? 6 : 1, T = [];
+        for (let i = 0; i <= n; i++) { const u = i / n; T.push([x1 + (x2 - x1) * u, y1 + (y2 - y1) * u - h + (top ? top(u) : 0)]); }
+        const dx = d * DX, dy = d * DY, e = T[n];
+        poly([[x2, y2], [x2 + dx, y2 + dy], [e[0] + dx, e[1] + dy], e], dim(cf));                      // Seite
+        poly(T.concat(T.slice().reverse().map(([x, y]) => [x + dx, y + dy])), lit(cf));                 // Deckel
+        poly([[x1, y1], [x2, y2]].concat(T.slice().reverse()), cf);                                    // Vorderseite
+        return T;
+      }
+      const snowCap = (x1, y1, x2, y2, th) => { ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.moveTo(x1 - 2 * k, y1); ctx.quadraticCurveTo((x1 + x2) / 2, Math.min(y1, y2) - th * 2.2, x2 + 2 * k, y2); ctx.closePath(); ctx.fill(); };
+      const mound = (x, y, w, h) => { ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x, y, w, h, 0, Math.PI, 0); ctx.fill(); ctx.strokeStyle = mix(I.papier, I.schatten, 0.35); ctx.lineWidth = 1 * k; ctx.beginPath(); ctx.ellipse(x, y, w, h, 0, Math.PI * 1.05, Math.PI * 1.6); ctx.stroke(); };
+      // Zuschauer: hintere Reihe (Stadion, auf einem Holzpodest, etwas blasser) und vordere Reihe; nahe bei dir jubeln sie und hüpfen
+      for (const back of [true, false]) for (let s = Math.floor(s0 / 1.1) * 1.1 + (back ? 0.55 : 0); s < s1; s += 1.1) {
         const q = ((s % L.L) + L.L) % L.L;
         const cr = pen || inStadium(s) || (!hunt && crowd.some(([a, b]) => q >= a && q <= b));
         if (!cr) continue;
-        // Zuschauer stehen auf dem Schnee direkt hinter der Spur (im Stadion hinter der Bande) und sind fast so groß wie die Läufer
         const stad = inStadium(s);
-        if (!stad && hsh(Math.round(s * 7) + 3) < 0.35) continue;   // an der Strecke in Grüppchen, nicht als Mauer
+        if (back && !stad) continue;
+        if (!stad && hsh(Math.round(s * 7) + 3) < 0.35) continue;
         if (stad && !pen && !hunt && q > L.L - 25 && q < L.L - 7) continue;   // den Schießstand frei lassen
-        const x = X(s), y = Y(s) - (stad ? 12 : 4) * k, hh = (stad ? 30 : 36) * k + 7 * hsh(Math.round(s * 11)) * k;
-        if (!stad) { ctx.save(); ctx.globalAlpha = 0.18; ctx.fillStyle = I.tief; ctx.beginPath(); ctx.ellipse(x + 2 * k, y + 1 * k, hh * 0.22, 2.2 * k, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
-        person(x, y, hh, PEOPLE[Math.floor(hsh(Math.round(s * 3)) * PEOPLE.length)], PEOPLE[Math.floor(hsh(Math.round(s * 17)) * PEOPLE.length)], hsh(Math.round(s * 5)) > 0.6, t, Math.round(s * 13));
+        const sd = Math.round(s * 13), near = Math.max(0, 1 - Math.abs(s - sMe) / 8);
+        const jump = near * Math.abs(Math.sin(t * 7 + sd)) * 4 * k;
+        const x = X(s), y = Y(s) - (stad ? (back ? 24 : 12) : 4) * k - jump, hh = ((stad ? 30 : 36) * k + 7 * hsh(Math.round(s * 11)) * k) * (back ? 0.86 : 1);
+        if (back && hsh(Math.round(s * 2) + 9) < 0.5) slab(x - 9 * k, y + jump + 1 * k, x + 13 * k, y + jump + 1 * k, 4 * k, 8 * k, mix(I.dach, I.tinte, 0.15));   // Podest
+        if (!back) { ctx.save(); ctx.globalAlpha = 0.2; ctx.fillStyle = I.tief; ctx.beginPath(); ctx.ellipse(x + 4 * k, y + jump + 1 * k, hh * 0.26, 2.4 * k, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        let c1 = PEOPLE[Math.floor(hsh(Math.round(s * 3)) * PEOPLE.length)], c2 = PEOPLE[Math.floor(hsh(Math.round(s * 17)) * PEOPLE.length)];
+        if (back) { c1 = mix(c1, I.dunst, 0.25); c2 = mix(c2, I.dunst, 0.25); }
+        person(x, y, hh, c1, c2, near > 0.2 || hsh(Math.round(s * 5)) > 0.6, t, sd);
+        // Blitz einer Kamera, ab und zu
+        if (stad && hsh(Math.floor(t * 3) * 31 + sd) > 0.993) { ctx.fillStyle = "rgba(255,255,255,0.95)"; const fx = x + 4 * k, fy = y - hh * 0.85, r = 5 * k; ctx.beginPath(); ctx.moveTo(fx - r, fy); ctx.lineTo(fx, fy - r * 0.3); ctx.lineTo(fx + r, fy); ctx.lineTo(fx, fy + r * 0.3); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(fx, fy - r); ctx.lineTo(fx + r * 0.3, fy); ctx.lineTo(fx, fy + r); ctx.lineTo(fx - r * 0.3, fy); ctx.closePath(); ctx.fill(); }
       }
-      // Bande im Stadion
+      // Bande im Stadion: Planen auf Rahmen (Körper mit Deckel und Seite), Oberkante bewegt sich im Wind, Schnee am Fuß
       for (let s = Math.floor(s0 / 4) * 4; s < s1; s += 4) {
         if (!inStadium(s)) continue;
-        const x = X(s), y = Y(s) - 6 * k, x2 = X(s + 4), y2 = Y(s + 4) - 6 * k;
-        const bn = ((Math.round(s / 4) % 3) + 3) % 3, bi = bn, bc = bi === 0 ? I.navy : bi === 1 ? I.ocker : I.rot;
-        poly([[x, y], [x2, y2], [x2, y2 - 14 * k], [x, y - 14 * k]], bc);
-        // Schriftzug auf jeder zweiten Tafel (erfunden, kein Logo)
+        const x = X(s), y = Y(s) - 6 * k, x2 = X(s + 4) - 1 * k, y2 = Y(s + 4) - 6 * k;
+        const bn = ((Math.round(s / 4) % 3) + 3) % 3, bc = bn === 0 ? I.navy : bn === 1 ? I.ocker : I.rot, ph = s * 0.7;
+        slab(x, y, x2, y2, 14 * k, 5 * k, bc, (u) => Math.sin(t * (2 + 3 * wind) + ph + u * 5) * (0.5 + 1.6 * wind) * k * Math.sin(u * Math.PI));
+        // Falten der Plane: zwei weiche Schatten
+        ctx.globalAlpha = 0.12; seg([x + (x2 - x) * 0.33, y - 13 * k], [x + (x2 - x) * 0.36, y - 1 * k], I.tinte, 2 * k); seg([x + (x2 - x) * 0.7, y - 13 * k], [x + (x2 - x) * 0.67, y - 1 * k], I.tinte, 2 * k); ctx.globalAlpha = 1;
         if (x2 - x > 40 * k) {
           ctx.save(); ctx.translate((x + x2) / 2, (y + y2) / 2 - 7 * k); ctx.rotate(Math.atan2(y2 - y, x2 - x));
           const word = (hunt ? ["JAGDPATROUILLE", "ANNO 1960", "COLD MEDAL"] : ["HOCHFILZEN", "COLD MEDAL", "BIATHLON"])[bn], bw = Math.hypot(x2 - x, y2 - y);
-          ctx.fillStyle = bi === 1 ? I.tinte : I.papier; ctx.font = `800 ${Math.max(5, Math.min(8 * k, bw * 1.25 / word.length))}px Futura, 'Avenir Next Condensed', 'Arial Narrow', sans-serif`;
+          ctx.fillStyle = bn === 1 ? I.tinte : I.papier; ctx.font = `800 ${Math.max(5, Math.min(8 * k, bw * 1.25 / word.length))}px Futura, 'Avenir Next Condensed', 'Arial Narrow', sans-serif`;
           ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(word, 0, 0.5); ctx.restore();
         }
+        mound((x + x2) / 2, (y + y2) / 2 + 1 * k, (x2 - x) * 0.55, 3.5 * k);
       }
-      // je Land eine Flagge im Stadion
+      // je Land eine Flagge im Stadion (Mast mit Kugel und Schatten)
       if (!pen) for (const [fs, col, col2] of [[-6, I.rot, I.papier], [L.L - 14, I.navy, I.ocker]]) {
         for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
           const s = base + fs; if (s < s0 - 4 || s > s1 + 4) continue;
           const x = X(s), y = Y(s) - 30 * k;
-          seg([x, y], [x, y - 60 * k], I.tinte, 2 * k);
-          // 0.19: Tuch weht als Welle (Stoff hängt am Mast, das freie Ende schlägt mehr)
-          const wn = renderer.windNow(t), fw = 4.2 * (0.6 + 1.4 * wn), fa = 3.4 * (0.45 + wn);   // Fahne nach Wind
+          seg([x + 1.5 * k, y], [x + 1.5 * k, y - 60 * k], dim(I.tinte), 2 * k); seg([x, y], [x, y - 60 * k], mix(I.tinte, I.papier, 0.25), 1.6 * k); disc(x, y - 62 * k, 2.2 * k, I.ocker);
+          const wn = wind, fw = 4.2 * (0.6 + 1.4 * wn), fa = 3.4 * (0.45 + wn);
           const band = (a0, a1, c) => { const P = []; for (let i = 0; i <= 6; i++) { const u = i / 6, w = Math.sin(t * fw + s - u * 3.2) * fa * k * u; P.push([x + 30 * k * u, y - 60 * k + a0 * k + 2 * k * u + w]); }
             for (let i = 6; i >= 0; i--) { const u = i / 6, w = Math.sin(t * fw + s - u * 3.2) * fa * k * u; P.push([x + 30 * k * u, y - 60 * k + a1 * k + 2 * k * u + w]); } poly(P, c); };
           band(0, 10, col); band(3, 6, col2);
+          // Licht und Schatten im Tuch
+          ctx.globalAlpha = 0.18; band(5.5, 10, I.tinte); ctx.globalAlpha = 1;
         }
       }
-      // Start/Ziel-Bogen bei s = 0 (jede Runde)
+      // Start/Ziel: Portal aus zwei Pfosten und Querbalken (Körper), darauf eine Zeitanzeige mit der laufenden Zeit
       if (!pen) for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
         const s = base; if (s < s0 - 6 || s > s1 + 6) continue;
         const x = X(s), y = Y(s);
-        // Aufschrift je Rundenende: Start, Schießen (Station), Ziel oder Runde
         const j = (Rc ? Rc.lap : 0) + Math.round(base / L.L), nSt = (T.FORMATS[L.format] || T.FORMATS.sprint).stages.length;
         const word = Rc && Rc.kind === "lap" ? (j >= 1 ? "ZIEL" : "START") : j <= 0 ? "START" : j <= nSt ? (hunt ? "STATION ›" : "SCHIESSEN ›") : j >= L.laps ? "ZIEL" : "RUNDE " + (j + 1);
         ctx.font = `800 ${Math.round(13 * k)}px Futura, 'Avenir Next Condensed', 'Arial Narrow', sans-serif`;
-        const tw = Math.max(50 * k, ctx.measureText(word).width + 16 * k), xl = x + 13 * k - tw / 2, xr2 = x + 13 * k + tw / 2;
-        seg([x - 4 * k, y], [x - 4 * k, y - 92 * k], I.tinte, 4 * k); seg([x + 30 * k, y + 6 * k], [x + 30 * k, y - 86 * k], I.tinte, 4 * k);
-        poly([[xl, y - 104 * k], [xr2, y - 98 * k], [xr2, y - 80 * k], [xl, y - 86 * k]], word === "ZIEL" ? I.rot : word === "START" ? I.navy : mix(I.dach, I.tinte, 0.2));
-        ctx.save(); ctx.translate(x + 13 * k, y - 92 * k); ctx.rotate(0.12);
-        ctx.fillStyle = I.papier; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText(word, 0, 0); ctx.restore();
+        const tw = Math.max(64 * k, ctx.measureText(word).width + 20 * k), xl = x + 13 * k - tw / 2, xr2 = x + 13 * k + tw / 2;
+        const pc = mix(I.tinte, I.navy, 0.3), bc = word === "ZIEL" ? I.rot : word === "START" ? I.navy : mix(I.dach, I.tinte, 0.2);
+        slab(x - 7 * k, y - 4 * k, x - 1 * k, y - 4 * k, 86 * k, 6 * k, pc);          // hinterer Pfosten (steht hinter der Spur)
+        const T2 = slab(xl, y - 82 * k, xr2, y - 82 * k, 20 * k, 9 * k, bc);           // Querbalken
+        snowCap(T2[0][0] + 3 * k, T2[0][1] + 9 * DY * k, T2[1][0] + 3 * k, T2[1][1] + 9 * DY * k, 2 * k);
+        ctx.save(); ctx.fillStyle = I.papier; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(word, (xl + xr2) / 2, y - 92 * k); ctx.restore();
+        // Zeitanzeige über dem Balken
+        if (Rc && Rc.race && word !== "START" || (Rc && Rc.race && Rc.phase !== "count")) {
+          const cw = 46 * k, cx0 = (xl + xr2) / 2 - cw / 2;
+          slab(cx0, y - 104 * k, cx0 + cw, y - 104 * k, 14 * k, 5 * k, I.tinte);
+          ctx.fillStyle = "#F7C94A"; ctx.font = `700 ${Math.round(9 * k)}px 'SF Mono', Menlo, Consolas, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText(fmtT(dispTime()), cx0 + cw / 2, y - 111 * k);
+        }
+        slab(x + 27 * k, y + 6 * k, x + 33 * k, y + 6 * k, 88 * k, 6 * k, pc);       // vorderer Pfosten (vor der Spur)
+        mound(x + 30 * k, y + 6 * k, 8 * k, 3 * k); mound(x - 4 * k, y - 4 * k, 7 * k, 2.5 * k);
       }
-      // Jagd: Schießstation im Wald (Hochstand-Tafel, Holzpflock) statt Schießstand
+      // Jagd: Schießstation im Wald (Hochstand-Tafel auf Pfosten, mit Schnee)
       if (hunt && !pen) for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
         const sA = base - 14; if (sA < s0 - 4 || sA > s1 + 4) continue;
-        const x = X(sA), y = Y(sA);
-        seg([x, y], [x, y - 64 * k], mix(I.dach, I.tinte, 0.3), 3 * k); seg([x + 40 * k, y + 2 * k], [x + 40 * k, y - 64 * k], mix(I.dach, I.tinte, 0.3), 3 * k);
-        poly([[x - 8 * k, y - 62 * k], [x + 48 * k, y - 62 * k], [x + 48 * k, y - 40 * k], [x - 8 * k, y - 40 * k]], I.dach);
+        const x = X(sA), y = Y(sA), wood = mix(I.dach, I.tinte, 0.3);
+        slab(x - 2 * k, y, x + 2 * k, y, 64 * k, 4 * k, wood); slab(x + 38 * k, y + 2 * k, x + 42 * k, y + 2 * k, 66 * k, 4 * k, wood);
+        const T3 = slab(x - 8 * k, y - 40 * k, x + 48 * k, y - 40 * k, 22 * k, 6 * k, I.dach);
+        snowCap(T3[0][0] + 3 * k, T3[0][1] - 2.5 * k, T3[1][0] + 3 * k, T3[1][1] - 2.5 * k, 2 * k);
         ctx.fillStyle = I.papier; ctx.font = `800 ${Math.round(9 * k)}px Futura, 'Avenir Next Condensed', 'Arial Narrow', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         ctx.fillText("STATION", x + 20 * k, y - 51 * k);
-        for (let j = 0; j < 4; j++) seg([X(sA + 2 + j * 1.6), Y(sA + 2 + j * 1.6)], [X(sA + 2 + j * 1.6), Y(sA + 2 + j * 1.6) - 9 * k], I.dach, 3 * k);
+        for (let j = 0; j < 4; j++) { const xx = X(sA + 2 + j * 1.6), yy = Y(sA + 2 + j * 1.6); slab(xx - 1.5 * k, yy, xx + 1.5 * k, yy, 9 * k, 3 * k, I.dach); }
       }
-      // Schießstand: Dach, Rückwand mit Scheiben am Ende der Runde
+      // Schießstand: Schneewall als Kugelfang, Scheibenwand auf Beinen (Körper), Dach mit Schnee, Bahnnummern, Matten
       if (!pen && !hunt && L.format !== "xc") for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
         const sA = base - 22, sB = base - 9; if (sB < s0 - 2 || sA > s1 + 2) continue;
-        const xa = X(sA), xb = X(sB), y = Math.min(Y(sA), Y(sB)) - 34 * k;
-        poly([[xa - 6 * k, y - 46 * k], [xb + 6 * k, y - 46 * k], [xb, y - 58 * k], [xa, y - 58 * k]], I.dach);
-        ctx.fillStyle = I.papier; ctx.fillRect(xa, y - 40 * k, xb - xa, 26 * k);
-        ctx.strokeStyle = I.tinte; ctx.lineWidth = 1.5 * k; ctx.strokeRect(xa, y - 40 * k, xb - xa, 26 * k);
-        // drei Bahnen mit je fünf Scheiben, Bahnnummern darüber, Trennstriche dazwischen
+        const xa = X(sA), xb = X(sB), gy = Math.min(Y(sA), Y(sB)) - 14 * k, y = gy - 22 * k;
+        // Kugelfang: langer Schneewall hinter den Scheiben
+        ctx.fillStyle = mix(I.papier, I.dunst, 0.3); ctx.beginPath(); ctx.moveTo(xa - 30 * k, gy); ctx.bezierCurveTo(xa - 10 * k, gy - 70 * k, xb + 10 * k, gy - 70 * k, xb + 40 * k, gy); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.moveTo(xa - 22 * k, gy - 6 * k); ctx.bezierCurveTo(xa, gy - 64 * k, xb, gy - 66 * k, xb + 30 * k, gy - 8 * k); ctx.lineTo(xb + 14 * k, gy - 30 * k); ctx.bezierCurveTo(xb - 10 * k, gy - 55 * k, xa + 20 * k, gy - 52 * k, xa - 22 * k, gy - 6 * k); ctx.fill();
+        // Beine
+        for (const lx of [xa + 3 * k, xa + (xb - xa) / 2, xb - 6 * k]) slab(lx, gy, lx + 3 * k, gy, 22 * k, 4 * k, I.tinte);
+        // Scheibenwand
+        slab(xa, y, xb, y, 28 * k, 7 * k, I.papier);
+        ctx.strokeStyle = I.tinte; ctx.lineWidth = 1.5 * k; ctx.strokeRect(xa, y - 28 * k, xb - xa, 28 * k);
+        // Dach mit Schnee und Schatten auf der Wand
+        const TR = slab(xa - 6 * k, y - 34 * k, xb + 6 * k, y - 34 * k, 7 * k, 14 * k, I.dach);
+        snowCap(TR[0][0] + 5 * k, TR[0][1] - 5 * k, TR[TR.length - 1][0] + 6 * k, TR[TR.length - 1][1] - 5 * k, 2.6 * k);
+        ctx.fillStyle = "rgba(30,39,52,0.16)"; ctx.fillRect(xa, y - 28 * k, xb - xa, 6 * k);
         const lw2 = (xb - xa) / 3;
         ctx.font = `700 ${Math.round(7 * k)}px Futura, 'Avenir Next', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
         for (let ln = 0; ln < 3; ln++) {
           const lx = xa + ln * lw2;
-          if (ln) seg([lx, y - 40 * k], [lx, y - 14 * k], I.tinte, 1 * k);
-          ctx.fillStyle = I.tinte; ctx.fillText(String(28 + ln), lx + lw2 / 2, y - 35 * k);
-          for (let i = 0; i < 5; i++) { const xx = lx + lw2 * (0.16 + i * 0.17); ctx.beginPath(); ctx.arc(xx, y - 24 * k, Math.min(3.2 * k, lw2 * 0.07), 0, Math.PI * 2); ctx.fill(); }
+          if (ln) seg([lx, y - 28 * k], [lx, y], I.tinte, 1 * k);
+          ctx.fillStyle = I.tinte; ctx.fillText(String(28 + ln), lx + lw2 / 2, y - 18 * k);
+          for (let i = 0; i < 5; i++) { const xx = lx + lw2 * (0.16 + i * 0.17), r = Math.min(3.2 * k, lw2 * 0.07); disc(xx, y - 9 * k, r + 1 * k, mix(I.papier, I.schatten, 0.5)); disc(xx, y - 9 * k, r, I.tinte); }
         }
-        // Matten vor dem Stand
-        for (let ln = 0; ln < 3; ln++) { const lx = xa + ln * lw2; poly([[lx + 3 * k, y + 30 * k], [lx + lw2 - 3 * k, y + 30 * k], [lx + lw2 - 6 * k, y + 27 * k], [lx + 6 * k, y + 27 * k]], ln % 2 ? I.navy : mix(I.navy, I.tinte, 0.3)); }
-        seg([xa, y - 14 * k], [xa, y + 30 * k], I.tinte, 3 * k); seg([xb, y - 14 * k], [xb, y + 30 * k], I.tinte, 3 * k);
+        // Matten vor dem Stand (flache Körper)
+        for (let ln = 0; ln < 3; ln++) { const lx = xa + ln * lw2; slab(lx + 4 * k, gy + 10 * k, lx + lw2 - 6 * k, gy + 10 * k, 1.5 * k, 10 * k, ln % 2 ? I.navy : mix(I.navy, I.tinte, 0.3)); }
       }
     };
     return { decor, stadium: (s) => inStadium(s) || crowd.some(([a, b]) => { const q = ((s % L.L) + L.L) % L.L; return q >= a - 2 && q <= b + 2; }) };
@@ -8284,7 +8326,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // Einzelstart: Platz und Rückstand an genau dieser Stelle der Strecke (wie die Zwischenzeit im Fernsehen)
     if (Rc.ai && !Rc.together && Rc.phase !== "count" && Rc.kind !== "learn") {
       const lb = liveBoard(), i = lb.findIndex((x) => x.me), me = lb[i];
-            setText($("hRival"), nb(i === 0 ? `Platz 1 · Bestzeit${lb[1] ? " · " + fmtB(lb[1].t - me.t).replace("+", "−") : ""}` : `Platz ${i + 1} · ${fmtB(me.t - lb[0].t)}`));
+            setText($("hRival"), nb(i === 0 ? `Platz 1 · Bestzeit${lb[1] && lb[1].t - me.t >= 0.05 ? " · " + fmtB(lb[1].t - me.t).replace("+", "−") : ""}` : `Platz ${i + 1} · ${fmtB(me.t - lb[0].t)}`));
     }
     // nächste Gegner (Massenstart, Verfolgung)
     else if (Rc.ai) {
