@@ -388,6 +388,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #ui.narrow .menu-grid .btn:not(.big):not(.venue) { font-size: 17px; letter-spacing: 0.02em; }
 .side-cards { position: absolute; right: 24px; bottom: 22px; width: 240px; display: flex; flex-direction: column; gap: 10px; }
 .side-cards .hunt, .side-cards .xc { position: static; width: 100%; }
+/* 0.18.2: Höhenprofil weg (Mat: zu überladen, nicht notwendig); Rangliste oben links */
+#hud .h-prev, #hud.help .h-prev { display: none !important; }
+#hud.help .h-board { top: 10px; }
+#hud .cs-hint { bottom: auto; top: 74px; font-size: 14px; max-width: 52%; }   /* nicht über der Läuferin */
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -6565,7 +6569,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.18.1";
+  const VERSION = "0.18.2";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
