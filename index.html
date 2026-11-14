@@ -407,6 +407,23 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #hud .hr-bar i.hot { background: var(--red); }
 #hud .hr-val.hot { color: var(--red); }
 #hud .cs-hint { top: 94px; }   /* 0.18.3: unter Zeit + Tempozeile */
+/* 0.18.4: Startbildschirm, rechte Spalte genau 240 breit (Figur, Gruppen/Code/Zahnrad, Langlauf, Jagd), Raster links schmäler,
+   damit sich nichts überdeckt (Mat, iPhone quer) */
+.menu-grid { grid-template-columns: 222px 222px; width: 456px; }
+.athlete { width: 240px; max-width: 240px; box-sizing: border-box; }
+.side-chips { width: 240px; top: 80px; gap: 6px; }
+.side-chips .chip-btn { padding: 0 8px; gap: 5px; font-size: 13.5px; letter-spacing: 0.03em; justify-content: center; }
+.side-chips #btnGroups, .side-chips #btnCode { flex: 1 1 0; min-width: 0; }
+.hunt .hs, .xc .hs { text-transform: none; letter-spacing: 0; }
+.side-chips #btnGroups { flex: 1.3 1 0; } .side-chips .chip-btn { letter-spacing: 0.02em; }
+/* 0.18.4: Fenster „Deine Figur“ (pass/) im Biathlon so dicht, dass der Reiter Code ohne Scrollen passt (Mat, iPhone) */
+#figure .ps-dialog { padding-top: 10px; padding-bottom: 12px; max-height: calc(100% - 12px); }
+#figure .ps-codebox { gap: 5px; }
+#figure .ps-codebox .ps-hint { font-size: 11.5px; line-height: 14.5px; max-width: none; }
+#figure .ps-codebox .ps-code-top { min-height: 30px; }
+#figure .ps-codebox .ps-btn { height: 34px; }
+#figure .ps-codebox .ps-sep { margin-top: 2px; }
+#figure .ps-dialog:has(.ps-codebox:not([hidden])) .ps-stage { height: 180px; }
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -641,7 +658,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   </div>
   <div class="side-cards">
   <button type="button" id="btnXc" class="btn xc"><span class="hk">LANGLAUF</span><b>OHNE GEWEHR</b><span class="hs" id="xcSub">10 km · Einzelstart</span></button>
-  <button type="button" id="btnHunt" class="btn hunt"><span class="hk">NOSTALGIE</span><b>JAGD 1960</b><span class="hs">Kimme und Korn · 3D-Attrappen</span></button>
+  <button type="button" id="btnHunt" class="btn hunt"><span class="hk">NOSTALGIE</span><b>JAGD 1960</b><span class="hs">Kimme und Korn · 3D‑Attrappen</span></button>
   </div>
   <div class="foot"><span id="verLine">Version 0.1 · Fanspiel</span> · <button type="button" id="btnInfo" class="link">Info</button></div>
 </section>
@@ -1076,7 +1093,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const t = G.t, A = G.st.hit * TREM * (G.stance === "stand" ? 1.12 : 1) * (0.45 + 0.9 * clamp(G.hr, 0, 1.1)) * (G.ease || 1) * (G.hold && G.holdT > 0.45 && G.holdT < 2.2 ? 0.8 : 1) * (1 + (G.after || 0));
     return { x: A * (0.6 * Math.sin(8.1 * t + G.ph[0] * 2) + 0.4 * Math.sin(13.7 * t + G.ph[1] * 3)), y: A * (0.6 * Math.sin(9.3 * t + G.ph[2] * 2) + 0.4 * Math.sin(12.1 * t + G.ph[3] * 3)) };
   }
-  const TREM = 0.8, FLINCH = 0.7;
+  const TREM = 0.68, FLINCH = 0.58;   // 0.18.4: etwas leichter (Mat), vorher 0.8 / 0.7
   function swaySlow(G) {
     const st = G.st, t = G.t;
     const k = 0.35 + 1.15 * clamp(G.hr, 0, 1.1);
@@ -6618,7 +6635,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.18.3";
+  const VERSION = "0.18.4";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7195,7 +7212,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const m = renderer.MM * (Hs / 390);
     const hk = Rc.G.hunt ? renderer.MM / renderer.MMH : 1;   // Jagd: kleinerer Maßstab, gleiche Fingerwege am Bildschirm
     // Feinzielen: nah an der Scheibe bewegt sich das Visier langsamer (wie die Zielhilfe in Scharfschützenspielen), der Finger bleibt genau
-    const G = Rc.G, fine = !G.hunt && S.help === "anf" && Math.hypot(G.aim.x, G.aim.y) < G.st.hit * 2.2 ? 0.42 : 0.6;   // Zielhilfe nur für Anfänger
+    const G = Rc.G, near = !G.hunt && Math.hypot(G.aim.x, G.aim.y) < G.st.hit * 2.2,
+      fine = near ? (S.help === "anf" ? 0.42 : 0.5) : 0.6;   // 0.18.4: leichtes Feinzielen auch ohne Anfängerhilfe
     G.aim.x = G.aim.x + dx / m * fine * hk; G.aim.y = G.aim.y + dy / m * fine * hk; clampAim(G);
   }
   function clampAim(G) {
