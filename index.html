@@ -5876,7 +5876,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       G.tuck += ((Rn.tuck ? 1 : Rn.matK || 0) - G.tuck) * fa(0.18);
       const corr = G.err * Math.min(1, dt / Math.max(0.2, G.stepT)) * Math.PI;
       G.err -= corr / Math.PI;
-      G.th += dt * Math.PI / G.stepT * (0.35 + 0.65 * G.A) * (1 - G.tuck) + corr;
+      // Abstoß gehalten: langer Schwung – die Bewegung schwingt weit aus und verweilt in der Streckung, statt in die Hocke zu gehen
+      G.sw = (G.sw || 0) + ((Rn.glideHold ? 1 : 0) - (G.sw || 0)) * fa(0.22);
+      G.th += dt * Math.PI / G.stepT * (0.35 + 0.65 * G.A) * (1 - G.tuck) * (1 - 0.72 * G.sw) + corr * (1 - G.sw);
       let J = joints({ stride: 1, th: G.th, A: G.A, dbl: G.dbl, tuck: G.tuck });
       // 0.19: im Ziel: Arme hoch (Jubel) oder auf die Stöcke gestützt; weich eingeblendet
       if (V.pose && V.poseK > 0) {
@@ -5910,6 +5912,57 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if (!WXM || !WX) return;
       // Schleier etwas dünner als im Schneeball, damit die Läuferin im Sturm gut zu sehen bleibt
       WXM.ueber(ctx, { lage: wxSky(), W, H, t, cx, boden: R.lite ? null : boden, flocken: !R.lite, x: WX.x || 0, k, dicht: 0.7, nacht: false });
+    }
+
+    // Birke: weißer Stamm mit dunklen Querstrichen, feine hängende Zweige (wiegen im Wind)
+    function birch(x, y, h, seed, t) {
+      const lean = (hsh(seed) - 0.5) * 0.12, tx = x + Math.sin(lean) * h * 0.9, w = Math.max(1.4, h * 0.035), sw = Math.sin(t * 1.3 + seed) * h * 0.012;
+      seg([x, y], [tx, y - h * 0.9], "#EFEAE0", w); seg([x + w * 0.3, y], [tx + w * 0.3, y - h * 0.9], mix("#EFEAE0", I.dunst, 0.6), w * 0.35);
+      for (let i = 1; i < 7; i++) { const u = i / 8, bx = x + (tx - x) * u, by = y - h * 0.9 * u; seg([bx - w * 0.5, by], [bx + w * 0.3, by - w * 0.4], I.tinte, w * 0.35); }
+      ctx.strokeStyle = mix(I.dach, I.tinte, 0.35); ctx.lineWidth = Math.max(0.5, w * 0.25);
+      for (let i = 0; i < 14; i++) { const u = 0.35 + 0.6 * hsh(seed * 7 + i), bx = x + (tx - x) * u, by = y - h * 0.9 * u, d = hsh(seed + i) < 0.5 ? -1 : 1, l = h * (0.12 + 0.12 * hsh(seed * 3 + i));
+        ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx + d * l * 0.7 + sw, by - l * 0.35, bx + d * l + sw * 1.6, by + l * 0.25); ctx.stroke(); }
+    }
+    // Almhütte als Körper (Vorderseite, Seite, Dach mit dicker Schneedecke), Fenster leuchten warm, Holzstoß, Rauch im Wind
+    function almhut(x, y, s, t) {
+      const w = 54 * s, h = 26 * s, d = 22 * s, dx = d * 0.5, dy = -d * 0.42, wood = mix(I.dach, I.tinte, 0.15), woodD = mix(I.dach, I.tinte, 0.45);
+      poly([[x + w / 2, y], [x + w / 2 + dx, y + dy], [x + w / 2 + dx, y - h + dy], [x + w / 2, y - h]], woodD);
+      poly([[x - w / 2, y], [x + w / 2, y], [x + w / 2, y - h], [x - w / 2, y - h]], wood);
+      for (let i = 1; i < 7; i++) seg([x - w / 2, y - h * i / 7], [x + w / 2, y - h * i / 7], mix(wood, I.tinte, 0.3), 0.7 * s);
+      const warm = WX && WX.tod === "evening" ? "#FFD27A" : mix(I.ocker, I.papier, 0.3);
+      for (const fx of [-0.28, 0.22]) { poly([[x + fx * w - 5 * s, y - h * 0.35], [x + fx * w + 5 * s, y - h * 0.35], [x + fx * w + 5 * s, y - h * 0.72], [x + fx * w - 5 * s, y - h * 0.72]], warm); seg([x + fx * w, y - h * 0.35], [x + fx * w, y - h * 0.72], woodD, 1 * s); }
+      // Dach: Giebel als Körper, dicke Schneedecke mit Überhang
+      const ry = y - h, top = [x - 2 * s, ry - 22 * s];
+      poly([[x - w / 2 - 6 * s, ry + 2 * s], top, [top[0] + dx, top[1] + dy], [x + w / 2 + 6 * s + dx, ry + 2 * s + dy], [x + w / 2 + 6 * s, ry + 2 * s]], mix(I.papier, I.dunst, 0.35));
+      poly([[x - w / 2 - 7 * s, ry + 3 * s], top, [x + w / 2 + 7 * s, ry + 3 * s], [x + w / 2 + 7 * s, ry + 6 * s], [x - w / 2 - 7 * s, ry + 6 * s]], "#FBF8F1");
+      for (let i = 0; i < 7; i++) { const ix = x - w / 2 + i * w / 6; seg([ix, ry + 6 * s], [ix, ry + (9 + 3 * hsh(i)) * s], "rgba(230,240,250,0.9)", 1.2 * s); }   // Eiszapfen
+      const cx = x + w * 0.2; poly([[cx - 3 * s, ry - 8 * s], [cx + 3 * s, ry - 8 * s], [cx + 3 * s, ry - 24 * s], [cx - 3 * s, ry - 24 * s]], woodD); disc(cx, ry - 25 * s, 3.4 * s, "#FBF8F1");
+      // Holzstoß neben der Hütte
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 4 - r; c++) { const lx = x + w / 2 + 12 * s + c * 5 * s + r * 2.5 * s, ly = y - 2.5 * s - r * 4.5 * s; disc(lx, ly, 2.4 * s, mix(I.ocker, I.dach, 0.4)); disc(lx, ly, 1 * s, mix(I.ocker, I.papier, 0.3)); }
+      // Rauch (gemeinsames Wetter-Modul, sonst eigene Kringel)
+      if (!R.lite) {
+        const WXM2 = root.CMKulisse && root.CMKulisse.wetter;
+        if (WXM2 && WXM2.rauch) WXM2.rauch(ctx, cx, ry - 27 * s, 12 * s, t, 0.6, WXM2.wind((WX && WX.sky) || "klar", t, (WX && WX.x) || 0));
+        else for (let i = 0; i < 6; i++) { const e = ((t * 0.25 + i / 6) % 1); ctx.globalAlpha = 0.45 * (1 - e); disc(cx + e * 26 * s, ry - 28 * s - e * 46 * s, (3 + e * 8) * s, mix(I.dunst, I.papier, 0.4)); ctx.globalAlpha = 1; }
+      }
+    }
+    // Brückengeländer über dem Bach: dy = Abstand zur Spur (− hinten, + vorn)
+    function bridgeRail(sc, X, Y, dy, hh) {
+      const c = mix(I.dach, I.tinte, 0.3), a = sc - 5, b = sc + 5;
+      for (let s = a; s <= b + 0.01; s += 2.5) { const x = X(s), y = Y(s) + dy * k; seg([x, y], [x, y - hh * k], c, 2.2 * k); disc(x, y - (hh + 0.6) * k, 1.8 * k, "#FBF8F1"); }
+      ctx.beginPath(); for (let s = a; s <= b; s += 0.5) ctx.lineTo(X(s), Y(s) + (dy - hh + 2) * k); ctx.strokeStyle = c; ctx.lineWidth = 2 * k; ctx.stroke();
+      ctx.beginPath(); for (let s = a; s <= b; s += 0.5) ctx.lineTo(X(s), Y(s) + (dy - hh + 0.6) * k); ctx.strokeStyle = "#FBF8F1"; ctx.lineWidth = 1.2 * k; ctx.stroke();
+      ctx.beginPath(); for (let s = a; s <= b; s += 0.5) ctx.lineTo(X(s), Y(s) + (dy - hh * 0.4) * k); ctx.strokeStyle = c; ctx.lineWidth = 1.2 * k; ctx.stroke();
+    }
+    // zugefrorener Bach: Band vom Fernpunkt (y0, schmal) zum Nahpunkt (y1, breit), weiche Ufer, Eis mit Schimmer
+    function creek(x, y0, y1, w0, w1, t) {
+      const P = (u, side) => { const y = y0 + (y1 - y0) * u, w = (w0 + (w1 - w0) * u * u) * k, c = Math.sin(u * 5 + 1) * 6 * k * (1 - u * 0.5); return [x + c + side * w, y]; };
+      const band = (grow, col) => { ctx.beginPath(); for (let i = 0; i <= 12; i++) { const [px, py] = P(i / 12, -1); ctx.lineTo(px - grow * k, py); } for (let i = 12; i >= 0; i--) { const [px, py] = P(i / 12, 1); ctx.lineTo(px + grow * k, py); } ctx.closePath(); ctx.fillStyle = col; ctx.fill(); };
+      band(5, "#FBF8F1"); band(1.5, mix(I.papier, I.dunst, 0.6));
+      const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, mix(I.dunst, I.fichte, 0.12)); g.addColorStop(1, mix(I.dunst, I.fichte, 0.38));
+      band(0, g);
+      ctx.strokeStyle = `rgba(255,255,255,${0.55 + 0.25 * Math.sin(t * 1.4)})`; ctx.lineWidth = 0.9 * k;
+      for (const u of [0.35, 0.7]) { const [ax, ay] = P(u, -0.5), [bx] = P(u, 0.4); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, ay); ctx.stroke(); }
     }
 
     function drawRun(V) {
@@ -5966,16 +6019,93 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), top(s) + 3 * k);
         ctx.strokeStyle = mix(I.papier, I.schatten, 0.3); ctx.globalAlpha = 0.55; ctx.lineWidth = 2.2 * k; ctx.stroke(); ctx.globalAlpha = 1;
       }
-      // Bäume hinter der Loipe (fest in der Welt, Abstand je nach Abschnitt)
-      const sb = Math.floor(s0 / 3) * 3;
-      for (let s = sb; s < s1 + 3; s += 3) {
+      // 0.25 (Mat: „in diese Welt verlieren“): die Runde ist eine Folge von Orten, jede Runde gleich (fest in der Welt):
+      // Wiese mit Zaun und Heustadel → dichter Fichtenwald → Bach mit Holzbrücke → Lichtung mit Almhütte und Wild → lichter Birkenwald → Stadion.
+      const LL = V.T && !V.pen ? V.T.L : 0;
+      const zoneAt = (s) => {
+        if (!LL) return V.pen ? "stadion" : "wiese";
+        if (V.stadium && V.stadium(s)) return "stadion";
+        const q = (((s % LL) + LL) % LL) / LL;
+        return q < 0.22 ? "wiese" : q < 0.47 ? "wald" : q < 0.53 ? "bach" : q < 0.72 ? "lichtung" : "birke";
+      };
+      const sunny = WX ? WX.sky === "klar" && WX.tod !== "evening" : true, shadowA = sunny ? 0.16 : WX && WX.sky === "grau" ? 0.06 : 0;
+      // Schatten eines Baums im Schnee: lang nach vorn links, bis über die Loipe (Sonne hinten rechts)
+      const castShadow = (x, y, h, w) => {
+        if (!shadowA || R.lite) return;
+        const len = Math.min(h * 0.9, 70 * k), dx = -len * 0.55;
+        ctx.fillStyle = `rgba(70,96,140,${shadowA})`; ctx.beginPath();
+        ctx.moveTo(x - w * 0.5, y); ctx.lineTo(x + w * 0.5, y); ctx.lineTo(x + dx + w * 0.15, y + len * 0.5); ctx.lineTo(x + dx - w * 0.35, y + len * 0.45); ctx.closePath(); ctx.fill();
+      };
+      const trees = [];   // erst Schatten, dann Bäume (Schatten liegen unter allen Bäumen)
+      const plant = (kind, x, y, h, a, b) => { trees.push([kind, x, y, h, a, b]); castShadow(x, y, h, h * (kind === "bare" ? 0.12 : 0.32)); };
+      // hinterste Waldreihe im Wald (dunkel, eng, etwas kleiner): eine Wand mit Lücken
+      for (let s = Math.floor(s0 / 1.3) * 1.3; s < s1 + 2; s += 1.3) {
+        const z = zoneAt(s); if (z !== "wald" && z !== "birke") continue;
+        const r = hsh(Math.round(s * 10) + 313); if (z === "birke" && r < 0.55) continue; if (r < 0.12) continue;
+        const x = X(s), y = Y(s) - (36 + 8 * r) * k, hh = (58 + 40 * hsh(Math.round(s * 10) + 7)) * k;
+        trees.push(z === "birke" && r < 0.8 ? ["birch", x, y, hh * 0.9, Math.round(s * 10)] : ["spruce", x, y, hh, true, 0.3 + 0.6 * r]);
+      }
+      const sb = Math.floor(s0 / 1.5) * 1.5;
+      for (let s = sb; s < s1 + 3; s += 1.5) {
+        const z = zoneAt(s); if (z === "stadion" || z === "bach") continue;
         const q = hsh(Math.round(s * 7) + (V.pen ? 999 : 0));
-        if (V.stadium && V.stadium(s)) continue;
-        if (q < 0.62) continue;   // lichter: Gruppen und Lücken statt einer Wand gleicher Bäume
-        // direkt hinter der Loipe auf dem Schnee (nicht darüber schwebend); etwas weiter hinten = etwas kleiner
-        const back = hsh(Math.round(s * 13)), x = X(s + q * 2), y = Y(s + q * 2) - (5 + 12 * back) * k, hh = (40 + 44 * hsh(Math.round(s * 5))) * k * (1 - 0.25 * back), v = hsh(Math.round(s * 3) + 55);
-        if (v < 0.18) bareTree(x, y, hh * 1.1, Math.round(s * 11));
-        else spruce(x, y, hh, q > 0.85, (v - 0.18) / 0.82);
+        const dens = { wiese: 0.86, wald: 0.25, lichtung: 0.82, birke: 0.5 }[z];
+        if (q < dens) continue;
+        const back = hsh(Math.round(s * 13)), x = X(s + q), y = Y(s + q) - (5 + 14 * back) * k, hh = (44 + 46 * hsh(Math.round(s * 5))) * k * (1 - 0.25 * back), v = hsh(Math.round(s * 3) + 55);
+        if (z === "birke" && v < 0.6) plant("birch", x, y, hh, Math.round(s * 11));
+        else if (v < (z === "wiese" || z === "lichtung" ? 0.4 : 0.12)) plant("bare", x, y, hh * 1.1, Math.round(s * 11));
+        else plant("spruce", x, y, hh, z === "wald" && q > 0.6, (v - 0.12) / 0.88);
+      }
+      // Orte: Zaun und Heustadel (Wiese), Almhütte mit Holzstoß und Wild (Lichtung)
+      if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) {
+        const at = (f) => base + f * LL;
+        // Zaun entlang der Wiese, direkt hinter der Loipe
+        for (let s = Math.max(s0, at(0.07)); s < Math.min(s1, at(0.2)); s += 2.2) {
+          const x = X(s), y = Y(s) - 12 * k, x2 = X(s + 2.2), y2 = Y(s + 2.2) - 12 * k, c = mix(I.tinte, I.dach, 0.4);
+          seg([x, y], [x, y - 13 * k], c, 1.8 * k); disc(x, y - 13.5 * k, 1.6 * k, "#FFFFFF");
+          seg([x, y - 5 * k], [x2, y2 - 5 * k], c, 1.1 * k); seg([x, y - 10 * k], [x2, y2 - 10 * k], c, 1.1 * k);
+          seg([x, y - 10.8 * k], [x2, y2 - 10.8 * k], "#FFFFFF", 0.9 * k);
+        }
+        const sh = at(0.13); if (sh > s0 - 6 && sh < s1 + 6) { const x = X(sh), y = Y(sh) - 30 * k; castShadow(x, y, 50 * k, 40 * k); trees.push(["stadel", x, y]); }
+        const hu = at(0.62); if (hu > s0 - 8 && hu < s1 + 8) { const x = X(hu), y = Y(hu) - 34 * k; castShadow(x, y, 60 * k, 56 * k); trees.push(["huette", x, y]); }
+        for (const [f, kd, dir] of [[0.57, "hirsch", 1], [0.585, "gams", -1], [0.68, "gams", 1]]) {
+          const sa = at(f); if (sa < s0 - 3 || sa > s1 + 3) continue;
+          trees.push(["wild", X(sa), Y(sa) - 40 * k, kd, dir]);
+        }
+      }
+      // Wald: Lichtstrahlen durch die Bäume (nur bei Sonne)
+      if (sunny && !R.lite) {
+        for (let s = Math.floor(s0 / 5) * 5; s < s1; s += 5) {
+          if (zoneAt(s) !== "wald" || hsh(Math.round(s) + 71) < 0.5) continue;
+          const x = X(s), y = Y(s) - 90 * k, a = 0.07 + 0.04 * Math.sin(V.t * 0.6 + s);
+          const g = ctx.createLinearGradient(x, y, x - 40 * k, y + 100 * k); g.addColorStop(0, `rgba(255,246,214,${a})`); g.addColorStop(1, "rgba(255,246,214,0)");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 6 * k, y); ctx.lineTo(x + 10 * k, y); ctx.lineTo(x - 30 * k, y + 104 * k); ctx.lineTo(x - 58 * k, y + 104 * k); ctx.closePath(); ctx.fill();
+        }
+      }
+      // Bach: zugefrorener Bach von hinten unter der Brücke durch nach vorn
+      if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) {
+        const sc = base + 0.5 * LL; if (sc < s0 - 8 || sc > s1 + 8) continue;
+        const x = X(sc), y = Y(sc);
+        creek(x, y - 62 * k, y - 6 * k, 3, 22, V.t);
+        for (const [dx, dy] of [[-24, -10], [-12, -40], [22, -12], [10, -44]]) { disc(x + dx * k, y + dy * k, 3.6 * k, mix(I.tinte, I.dunst, 0.5)); ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x + dx * k, y + (dy - 2.2) * k, 3.8 * k, 1.8 * k, 0, Math.PI, 0); ctx.fill(); }
+        // hinteres Brückengeländer (vorderes wird nach der Läuferin gezeichnet)
+        bridgeRail(sc, X, Y, -9, 13);
+      }
+      for (const T of trees) {
+        const [kind, x, y] = T;
+        if (kind === "spruce") {
+          spruce(x, y, T[3], T[4], T[5]);
+          // ab und zu rutscht Schnee von einem Ast und stäubt herunter (Wald, nicht im Sturm schon genug los)
+          if (!R.lite && wxSky() !== "sturm") { const per = 2.6, n = Math.floor(V.t / per), ph = (V.t % per) / per, sd = Math.round(x / k + n * 97);
+            if (hsh(sd) > 0.94 && ph < 0.7) { const fy = y - T[3] * (0.55 + 0.3 * hsh(sd + 1)), fx = x + (hsh(sd + 2) - 0.4) * T[3] * 0.3;
+              for (let i = 0; i < 7; i++) { const e = ph / 0.7, px = fx + (hsh(sd * 3 + i) - 0.5) * 8 * k * (0.4 + e), py = fy + e * e * T[3] * 0.55 + i * 1.5 * k;
+                ctx.globalAlpha = 0.85 * (1 - e * 0.7); disc(px, py, (1.2 + 1.6 * hsh(sd + i)) * k * (1 + e), "#FFFFFF"); } ctx.globalAlpha = 1; } }
+        }
+        else if (kind === "bare") bareTree(x, y, T[3], T[4]);
+        else if (kind === "birch") birch(x, y, T[3], T[4], V.t);
+        else if (kind === "stadel") heustadel(x, y, k * 1.6);
+        else if (kind === "huette") almhut(x, y, k * 1.15, V.t);
+        else if (kind === "wild") { const A = BIPhysAnimals()[T[3]]; animal(T[3], x, y, 15 * k, T[4], A, { t: V.t, ph: x * 0.01 }); }
       }
       // Schneekörper unter der Loipe
       ctx.beginPath(); ctx.moveTo(X(s0), HB);
@@ -5998,6 +6128,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + 5 * k);
       ctx.strokeStyle = I.schatten; ctx.lineWidth = 1.6 * k; ctx.stroke();
 
+      // Bach vorn unter der Brücke hervor (bis zum unteren Rand) und Brückenbelag aus Bohlen über der Spur
+      if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) {
+        const sc = base + 0.5 * LL; if (sc < s0 - 8 || sc > s1 + 8) continue;
+        const x = X(sc), y = Y(sc);
+        creek(x - 4 * k, HB, y + 6 * k, 46, 24, V.t);
+        ctx.fillStyle = "rgba(30,39,52,0.35)"; ctx.beginPath(); ctx.ellipse(x - 2 * k, y + 8 * k, 26 * k, 3 * k, 0, 0, TAU); ctx.fill();   // Schatten unter der Brücke
+        const wood = mix(I.dach, I.papier, 0.25), a = sc - 5.5, b = sc + 5.5;
+        ctx.beginPath(); for (let s = a; s <= b; s += 0.4) ctx.lineTo(X(s), Y(s) - 7 * k); for (let s = b; s >= a; s -= 0.4) ctx.lineTo(X(s), Y(s) + 6 * k); ctx.closePath(); ctx.fillStyle = wood; ctx.fill();
+        for (let s = a; s <= b; s += 0.55) seg([X(s), Y(s) - 7 * k], [X(s) - 2 * k, Y(s) + 6 * k], mix(wood, I.tinte, 0.3), 0.7 * k);
+        ctx.beginPath(); for (let s = a; s <= b; s += 0.4) ctx.lineTo(X(s), Y(s) + 6 * k); for (let s = b; s >= a; s -= 0.4) ctx.lineTo(X(s), Y(s) + 9 * k); ctx.closePath(); ctx.fillStyle = mix(I.dach, I.tinte, 0.4); ctx.fill();
+        // dünne Schneeschicht auf den Bohlen in der Spur
+        ctx.beginPath(); for (let s = a; s <= b; s += 0.4) ctx.lineTo(X(s), Y(s) - 1.5 * k); for (let s = b; s >= a; s -= 0.4) ctx.lineTo(X(s), Y(s) + 1.5 * k); ctx.closePath(); ctx.fillStyle = "rgba(251,248,241,0.7)"; ctx.fill();
+      }
       // Klassisch: gespurte Loipe, zwei Rillen
       if (V.classic) for (const o of [4, 7.5]) { ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), Y(s) + o * k); ctx.strokeStyle = mix(I.schatten, I.tief, 0.35); ctx.lineWidth = 1.3 * k; ctx.stroke(); }
       // Schneekristalle fest im Gelände: ziehen mit dem Tempo vorbei, bei hohem Tempo als Striche
@@ -6096,12 +6239,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       puffs = puffs.filter((p) => (p.life -= dt * 0.9) > 0);
       for (const p of puffs) { p.r += dt * 9 * k; p.up += dt * 4 * k; p.s -= dt * 0.25; ctx.globalAlpha = 0.5 * p.life * p.life; disc(X(p.s), Y(p.s) - p.up, p.r, "#FFFFFF"); }
       ctx.globalAlpha = 1;
+      // vorderes Brückengeländer (vor der Läuferin)
+      if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) { const sc = base + 0.5 * LL; if (sc > s0 - 8 && sc < s1 + 8) bridgeRail(sc, X, Y, 15, 9); }
       // Markierung über dir, sobald andere auf der Strecke sind
       if (others.length) { const yy = yr - (V.run.tuck ? 52 : 80) * k, mk = k / Math.sqrt(C); poly([[xr - 6 * mk, yy - 8 * mk], [xr + 6 * mk, yy - 8 * mk], [xr, yy]], I.ocker); }
       ctx.restore();
       // vorn: vereinzelte verschneite Fichten am unteren Rand (ziehen schneller vorbei, geben Tiefe)
       for (let s = Math.floor((s0 - 20) / 9) * 9; s < s1 + 20; s += 9) {
-        const q = hsh(Math.round(s) + 9091); if (q < 0.72) continue;
+        const q = hsh(Math.round(s) + 9091), zf = zoneAt(s); if (q < (zf === "wald" ? 0.4 : zf === "birke" ? 0.6 : 0.8)) continue;
         const x = xr + (s - V.s) * ppm * 1.35 * C; if (x < -80 * k || x > W + 80 * k ) continue;
         // nie höher als bis knapp unter die Ski der Läuferin (sonst verdecken sie sie)
         const fh = Math.min((70 + 50 * q) * k * (0.5 + 0.5 * C), H + 18 * k - (yr + (yP - yr) * C) - 14 * k);
@@ -6984,7 +7129,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.24.2";
+  const VERSION = "0.25.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7768,8 +7913,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     // Halten: Hocke; die Seite des gehaltenen Fingers ist die Lage in der Kurve
     if (!auto) {
       let held = null;
-      for (const q of inp.ptrs.values()) if (simT - q.t0 > Ph.P.holdMs / 1000 && (!held || q.t0 < held.t0)) held = q;
-      R.tuck = !!held; R.lean = held ? held.side : 0;
+      let glide = false;
+      for (const q of inp.ptrs.values()) { if (q.glide) { if (simT - q.t0 > 0.15) glide = true; continue; } if (simT - q.t0 > Ph.P.holdMs / 1000 && (!held || q.t0 < held.t0)) held = q; }
+      R.tuck = !!held; R.lean = held ? held.side : 0; R.glideHold = glide && !held;
       if (Rc.simple) R.lean = Rc.phase === "pen" ? 0 : L.curveAt(R.s);   // einfach: die Kurven nimmt die Figur selbst
     }
     R.draft = Rc.ai ? drafting() : 0;
@@ -8387,7 +8533,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const csMap = (dx, dy) => (rotated ? [dy, -dx] : [dx, dy]);
   const csRun = (fn) => (id) => { if (paused || !Rc || Rc.watch || mode !== "run") return; advanceTo(performance.now()); Snd.unlock(); fn("cs" + id); };
   const kL = CS.knopf($("hud"), { seite: "links", text: "Abstoß", symbol: "lauf",
-    onDown: csRun((id) => { if (Rc.simple) runPress(id, undefined, 0); else runPress(id, -1); }), onUp: (id) => { advanceTo(performance.now()); runRelease("cs" + id); } });
+    onDown: csRun((id) => { if (Rc.simple) { runPress(id, undefined, 0); const q = inp.ptrs.get(id); if (q) q.glide = true; } else runPress(id, -1); }), onUp: (id) => { advanceTo(performance.now()); runRelease("cs" + id); } });   // 0.25: Abstoß halten = langer Schwung, keine Hocke
   const kR = CS.knopf($("hud"), { seite: "rechts", text: "Hocke", symbol: "hocke",
     onDown: csRun((id) => { if (Rc.simple) inp.ptrs.set(id, { side: 0, t0: simT - 1, noPush: true }); else runPress(id, 1); }), onUp: (id) => { advanceTo(performance.now()); runRelease("cs" + id); } });
   const tk = CS.takt($("hud"));
