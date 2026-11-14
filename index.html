@@ -392,6 +392,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 #hud .h-prev, #hud.help .h-prev { display: none !important; }
 #hud.help .h-board { top: 10px; }
 #hud .cs-hint { bottom: auto; top: 74px; font-size: 14px; max-width: 52%; }   /* nicht über der Läuferin */
+/* 0.18.3: eine Taktanzeige (Ring am Knopf). Unter der Läuferin ein kurzes Wort nach jedem Abstoß, Puls ohne Ampel,
+   Tempo und Serie klein unter der Zeit */
+#hud .cs-takt { display: none !important; }
+.h-sub { font-family: var(--font-label); font-weight: 600; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.h-sub:empty { display: none; }
+.h-fb { position: absolute; transform: translate(-50%, 0); pointer-events: none; opacity: 0; white-space: nowrap;
+  font-family: var(--font-display); font-weight: 800; font-size: 15px; letter-spacing: 0.05em; text-shadow: 0 1px 3px rgba(0,0,0,0.55); }
+.h-fb.good { color: var(--good); } .h-fb.bad { color: #F0846F; } .h-fb.press { color: var(--gold); }
+.h-fb.on { animation: hFb 0.6s ease-out forwards; }
+@keyframes hFb { 0% { opacity: 1; transform: translate(-50%, 0); } 60% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 6px); } }
+#hud.watch .h-fb, #hud.watch .h-sub { display: none; }
+#hud .hr-bar i, #hud .hr-bar i.mid { background: rgba(245, 237, 218, 0.85); }
+#hud .hr-bar i.hot { background: var(--red); }
+#hud .hr-val.hot { color: var(--red); }
+#hud .cs-hint { top: 94px; }   /* 0.18.3: unter Zeit + Tempozeile */
 
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
@@ -527,6 +542,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 }
 @media (prefers-reduced-motion: reduce) { .ps-btn:active, .ps-stage:active { transform: none; } }
 
+/* 14.11.2026 (Mat: „das Figurenmenü muss vereinheitlicht und schöner gestaltet werden“, iPhone-Schriften laufen breiter):
+   Kopf mit Zeile „Athletenpass“, Bühne mit Rahmen wie ein Passbild, Reiter und Auswahlknöpfe schrumpfen statt überzulaufen,
+   Bildunterschrift einzeilig. Nur Aussehen und Platz; Aufbau, Klassen und Verhalten bleiben gleich. */
+.ps-head { padding-bottom: 6px; border-bottom: 2px solid var(--ps-ink-deep); }
+.ps-title::before { content: "Athletenpass · Cold Medal Games"; display: block; margin-bottom: 2px; font-family: var(--ps-label); font-weight: 700;
+  font-size: 11px; line-height: 13px; letter-spacing: 0.24em; color: var(--ps-red); }
+.ps-stage { border-width: 3px; box-shadow: inset 0 0 0 3px #FBF8F1, inset 0 0 0 4px rgba(30, 39, 52, 0.25), 0 3px 0 rgba(20, 27, 37, 0.35); }
+.ps-cap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ps-tabs button { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-row > .ps-seg { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.ps-row > .ps-seg button { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; font-size: 15px; }
+.ps-opts, .ps-tabbox { min-width: 0; }
+.ps-dialog { gap: 8px; }
+.ps-head { padding-bottom: 4px; }
+.ps-title { font-size: 28px; line-height: 29px; }
+
 /* oberflaeche/steuerung.css – Spielsteuerung (CMSteuer). Farben aus dem Spiel (--ink, --paper, --gold …), sonst Plakatfarben. */
 .cs-knopf, .cs-stick { position: absolute; bottom: 14px; width: 104px; height: 104px; border-radius: 50%; padding: 0;
   pointer-events: auto; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
@@ -572,6 +603,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   padding: 6px 12px; font: 600 15px/1.3 var(--font-label, "Avenir Next", sans-serif); pointer-events: none; }
 .cs-hint-k { display: inline-block; margin-right: 8px; padding: 1px 6px; border-radius: 3px; background: var(--red, #B23524); color: #FBF4E4; font: 800 11px/1.4 var(--font-display, Futura, sans-serif); letter-spacing: 0.1em; vertical-align: 1px; }
 .cs-hint.cs-oben { bottom: auto; top: 12px; }
+
+/* seit 14.11.2026 (Schneeball): Zielkreis, der sich auf den Knopf zusammenzieht (wie bei Rhythmusspielen), und Pulsieren */
+.cs-zu { position: absolute; inset: -4px; border-radius: 50%; border: 5px solid var(--gold, #DDA43B); pointer-events: none; transform-origin: 50% 50%; opacity: 0.95; }
+.cs-knopf.cs-ok .cs-zu { border-color: #4E9A4A; }
+.cs-knopf.cs-puls { animation: cs-puls 0.6s ease-in-out infinite; border-color: var(--red, #C23B2A); background: #FBE3D9; }
+@keyframes cs-puls { 0%, 100% { box-shadow: 0 4px 0 var(--ink-deep, #141C28), 0 0 0 0 rgba(194, 59, 42, 0.55); } 50% { box-shadow: 0 4px 0 var(--ink-deep, #141C28), 0 0 0 14px rgba(194, 59, 42, 0); } }
+@media (prefers-reduced-motion: reduce) { .cs-knopf.cs-puls { animation: none; } }
 
 </style>
 </head>
@@ -724,7 +762,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   <div class="panel h-prev"><canvas id="hPrev" width="200" height="50" aria-hidden="true"></canvas><span id="hPrevTxt" class="prev-txt"></span></div>
   <div class="panel h-board" id="hBoard" hidden aria-label="Live-Rangliste"></div>
   <div class="panel h-map"><canvas id="hMap" width="84" height="56" aria-label="Streckenplan"></canvas></div>
-  <div class="panel hud-tc"><span id="hTime" class="num h-time">0:00,0</span><span id="hSplit" class="h-split" hidden></span><span id="hRival" class="h-rival"></span></div>
+  <div class="panel hud-tc"><span id="hTime" class="num h-time">0:00,0</span><span id="hSplit" class="h-split" hidden></span><span id="hRival" class="h-rival"></span><span id="hSub" class="h-sub"></span></div>
+  <span id="hFb" class="h-fb" aria-live="polite"></span>
   <div class="hud-cues"><span id="hCue" class="h-cue" hidden></span><span id="hToast" class="h-toast" hidden></span><span id="hDraft" class="chip draft" hidden>WINDSCHATTEN</span></div>
   <span id="zoneL" class="zone zl" hidden>LINKS</span><span id="zoneM" class="zone zm" hidden>BEIDE</span><span id="zoneR" class="zone zr" hidden>RECHTS</span>
   <div class="hud-tr"><div class="panel h-lap"><span id="hLap" class="num">Runde 1/3</span><span id="hKm" class="sub">0,0 km</span></div><button type="button" id="btnPause" class="icon-btn" aria-label="Pause"><i class="ico" data-i="pause"></i></button></div>
@@ -6450,13 +6489,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-  // Symbole (Plakatstil, Strich), in Knöpfen nutzbar: symbol: "lauf" | "hocke" | "feuer" | "links" | "rechts" | "stock"
+  // Symbole (Plakatstil, Strich), in Knöpfen nutzbar: symbol: "lauf" | "hocke" | "feuer" | "links" | "rechts" | "stock" | "wurf"
   const SYM = {
     lauf: '<path d="M9 21l3-6 3 2 2 5M12 15l1-5 4 2 2 3M13 10l-4 1-2 3"/><circle cx="15" cy="5" r="2"/><path d="M3 22h18"/>',
     hocke: '<path d="M5 18c3-1 6-1 9-3l3-4M14 15l-4-3 2-4 4 1"/><circle cx="16" cy="5" r="2"/><path d="M2 21l20-3"/>',
     feuer: '<circle cx="12" cy="12" r="7"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/>',
     links: '<path d="M14 6l-6 6 6 6"/>', rechts: '<path d="M10 6l6 6-6 6"/>',
     stock: '<path d="M7 3l3 18M17 3l-3 18M5 21h14"/>',
+    // seit 14.11.2026 (Schneeball): Wurf (Arm wirft einen Ball im Bogen)
+    wurf: '<circle cx="18" cy="6" r="2.4"/><path d="M5 21l3-6 3 1 1-5M8 15l-2-4 4-3 4 1M14 9c1-2 2-3 4-3"/><circle cx="10" cy="4" r="1.8"/>',
   };
   const svg = (k) => (SYM[k] ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${SYM[k]}</svg>` : "");
 
@@ -6475,22 +6516,26 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     return { release() { for (const id of [...ids]) { ids.delete(id); if (on.up) on.up(id, null, true); } node.classList.remove("cs-down"); } };
   }
 
-  // Runder Knopf unten links oder rechts. Ring: Takt (fill 0 … 1, ok = im grünen Bereich). o: { seite, text, symbol, klein,
+  // Runder Knopf unten links oder rechts. Ring: Takt (fill 0 … 1, ok = im grünen Bereich); zu: Zielkreis 0 … 1; puls. o: { seite, text, symbol, klein,
   // onDown(id, e), onUp(id, e, abgebrochen) }. Rückgabe { el, set({ fill, ok, text, symbol, hidden, aktiv, seite }), release() }
   function knopf(host, o) {
     const b = el("button", `cs-knopf cs-${o.seite === "rechts" ? "rechts" : "links"}${o.klein ? " cs-klein" : ""}`);
     b.type = "button";
-    b.innerHTML = `<svg class="cs-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="cs-ring-bg" cx="50" cy="50" r="46"/><circle class="cs-ring-v" cx="50" cy="50" r="46" pathLength="100" stroke-dasharray="0 100" style="opacity:0"/></svg><span class="cs-sym">${svg(o.symbol)}</span><span class="cs-txt">${esc(o.text || "")}</span>`;
+    b.innerHTML = `<span class="cs-zu" hidden></span><svg class="cs-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="cs-ring-bg" cx="50" cy="50" r="46"/><circle class="cs-ring-v" cx="50" cy="50" r="46" pathLength="100" stroke-dasharray="0 100" style="opacity:0"/></svg><span class="cs-sym">${svg(o.symbol)}</span><span class="cs-txt">${esc(o.text || "")}</span>`;
     b.setAttribute("aria-label", o.text || o.symbol || "Knopf");
     host.appendChild(b);
     const g = grab(b, { down: o.onDown && ((id, e) => o.onDown(id, e)), up: o.onUp && ((id, e, c) => o.onUp(id, e, c)) });
-    const ringV = b.querySelector(".cs-ring-v"), txt = b.querySelector(".cs-txt"), sym = b.querySelector(".cs-sym");
+    const ringV = b.querySelector(".cs-ring-v"), txt = b.querySelector(".cs-txt"), sym = b.querySelector(".cs-sym"), zu = b.querySelector(".cs-zu");
     let last = {};
     return { el: b, release: g.release, set(s) {
       if ("hidden" in s && s.hidden !== last.hidden) b.hidden = !!s.hidden;
       if (s.seite && s.seite !== last.seite) { b.classList.toggle("cs-links", s.seite !== "rechts"); b.classList.toggle("cs-rechts", s.seite === "rechts"); }   // z. B. Links- oder Rechtshänder
       if ("fill" in s) { const f = s.fill == null ? 0 : clamp(s.fill, 0, 1); const v = Math.round(f * 100); if (v !== last.v) { ringV.setAttribute("stroke-dasharray", `${v} ${100 - v}`); ringV.style.opacity = v ? "" : "0"; last.v = v; } }
       if ("ok" in s && s.ok !== last.ok) b.classList.toggle("cs-ok", !!s.ok);
+      // seit 14.11.2026 (Schneeball): zu = Zielkreis 0 … 1, zieht sich von außen auf den Knopf zusammen (1 = jetzt tippen), null = aus;
+      // puls = Knopf pulsiert (jetzt ist der Moment, z. B. Abwurfzone)
+      if ("zu" in s) { const on = s.zu != null; if (on !== last.zuOn) { zu.hidden = !on; last.zuOn = on; } if (on) zu.style.transform = `scale(${(1 + 0.85 * (1 - clamp(s.zu, 0, 1))).toFixed(3)})`; }
+      if ("puls" in s && s.puls !== last.puls) b.classList.toggle("cs-puls", !!s.puls);
       if ("aktiv" in s && s.aktiv !== last.aktiv) b.classList.toggle("cs-aktiv", !!s.aktiv);
       if ("text" in s && s.text !== last.text) { txt.textContent = s.text; b.setAttribute("aria-label", s.text); }
       if ("symbol" in s && s.symbol !== last.symbol) sym.innerHTML = svg(s.symbol);
@@ -6533,6 +6578,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       if ("fill" in s) fill.style.width = `${Math.round(clamp(s.fill || 0, 0, 1) * 100)}%`;
       if (s.win) { win.style.left = `${s.win[0] * 100}%`; win.style.width = `${Math.max(0, s.win[1] - s.win[0]) * 100}%`; }
       if ("ok" in s && s.ok !== last.ok) b.classList.toggle("cs-ok", !!s.ok);
+      // seit 14.11.2026 (Schneeball): zu = Zielkreis 0 … 1, zieht sich von außen auf den Knopf zusammen (1 = jetzt tippen), null = aus;
+      // puls = Knopf pulsiert (jetzt ist der Moment, z. B. Abwurfzone)
+      if ("zu" in s) { const on = s.zu != null; if (on !== last.zuOn) { zu.hidden = !on; last.zuOn = on; } if (on) zu.style.transform = `scale(${(1 + 0.85 * (1 - clamp(s.zu, 0, 1))).toFixed(3)})`; }
+      if ("puls" in s && s.puls !== last.puls) b.classList.toggle("cs-puls", !!s.puls);
       if ("text" in s && s.text !== last.text) txt.textContent = s.text || "";
       last = Object.assign(last, s);
     } };
@@ -6569,7 +6618,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.18.2";
+  const VERSION = "0.18.3";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7170,7 +7219,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   }
   let beatFlash = 0;
   const KIND_LBL = { early: ["zu früh", "bad"], press: ["Druck", "press"], beat: ["im Takt", "good"], late: ["spät", "bad"], wrong: ["falscher Fuß", "bad"], double: ["Doppelstock", "good"] };
-  function flashBeat(kind) { const [t, c] = KIND_LBL[kind]; const e = $("beatLbl"); e.textContent = t; e.className = "beat-lbl " + c; beatFlash = 0.8; }
+  function flashBeat(kind) { const [t, c] = KIND_LBL[kind]; const e = $("beatLbl"); e.textContent = t; e.className = "beat-lbl " + c; beatFlash = 0.8;
+    // 0.18.3: kurze Rückmeldung unter der Läuferin, verblasst nach einer halben Sekunde
+    const f = $("hFb"); f.textContent = kind === "press" ? "" : t; f.className = "h-fb " + c; void f.offsetWidth; f.classList.add("on"); }
 
   function pause() { if (!Rc || mode === "result" || mode === "menu") return; paused = true; show("pause"); inp.down = false; inp.ptrs.clear(); inp.rangeId = null; if (Rc && Rc.G) Rc.G.hold = false; }
   function resume() { paused = false; show(null); last = performance.now(); }
@@ -7666,7 +7717,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     const km = (Rc.lap * L.realLap + clamp(R.s, 0, L.L) * T.SCALE) / 1000;
     if (Rc.kind !== "learn") setText($("hKm"), nb(`${dec(km, 1)} km von ${dec(L.km * (Rc.laps / L.laps), 1)} km`));
     setText($("hHr"), String(bpm(R.hr)));
-    const f = $("hHrFill"); f.style.width = clamp((R.hr - 0.25) / 0.8, 0, 1) * 100 + "%"; f.className = R.hr > Ph.P.acidOn ? "hot" : R.hr > 0.8 ? "mid" : "";
+    const f = $("hHrFill"); f.style.width = clamp((R.hr - 0.25) / 0.8, 0, 1) * 100 + "%"; f.className = R.hr > Ph.P.acidOn ? "hot" : "";   // 0.18.3: neutral, rot erst wenn die Kraft nachlässt
+    $("hHr").classList.toggle("hot", R.hr > Ph.P.acidOn);
     $("hKraft").style.width = (1 - R.acid) * 100 + "%";
     setText($("hSpeed"), String(Math.round(R.v * 3.6)));
     $("hTuck").hidden = !R.tuck;
@@ -7784,7 +7836,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     kL.set({ seite: sw ? "rechts" : "links", fill: going && !tuck ? ph / z : 0, ok, text: Rc.simple ? "Abstoß" : "Links", symbol: Rc.simple ? "lauf" : "links" });
     kR.set({ seite: sw ? "links" : "rechts", fill: Rc.simple ? 0 : going && !tuck ? ph / z : 0, ok: Rc.simple ? false : ok, aktiv: Rc.simple && tuck, text: Rc.simple ? "Hocke" : "Rechts", symbol: Rc.simple ? "hocke" : "rechts" });
     const pp = renderer.player;
-    if (pp) tk.set({ hidden: !going || Rc.kind === "learn", x: pp.x / uiS, y: (pp.y - pp.h * 1.18) / uiS, fill: tuck ? 0 : ph / top, win: [a / top, z / top], ok, text: nb(`${Math.round(R.v * 3.6)} km/h${tuck ? " · Hocke" : R.streak >= 3 ? " · Serie " + R.streak : ""}`) });
+    // 0.18.3: eine Taktanzeige, der Ring am Knopf. Unter der Läuferin nur das Rückmeldewort nach jedem Abstoß
+    tk.set({ hidden: true });
+    if (pp) { const f = $("hFb"); f.style.left = pp.x / uiS + "px"; f.style.top = (pp.y + pp.h * 0.12) / uiS + "px"; }
+    setText($("hSub"), going ? nb(`${Math.round(R.v * 3.6)} km/h${tuck ? " · Hocke" : R.streak >= 3 ? " · Serie " + R.streak : ""}`) : "");
     // Hinweise beim ersten Rennen (nicht in Erste Schritte und beim Ansehen)
     if (Rc.kind === "learn" || Rc.phase === "count") return;
     const T = S.tips;
