@@ -4184,6 +4184,190 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     hangPlan, drawWith, OVT, FLAG_OF };
 })(typeof window !== "undefined" ? window : globalThis);
 
+/* Cold Medal Games · Wetter für alle Spiele (kulisse/wetter.js, CMKulisse.wetter)
+ *
+ * Vier Wetterlagen, sichtbar und spürbar verschieden (erprobt im Schneeball 0.8 bis 0.11, Mat 13. und 14.11.2026; herausgelöst
+ * für alle Spiele am 14.11.2026): klar (sonnig), grau (bedeckt), neu (Schneefall), sturm (Schneesturm). Hier liegen das Bild des
+ * Wetters und das Wetter des Tages; was es mit der Physik macht (Wind, Schnee, Ski, Ball), legt jedes Spiel selbst fest.
+ * Gezeichnet wird ohne Zustand, nur aus der Zeit t: kein Zufall im Bild, gleiche Zeit gibt gleiches Bild.
+ *
+ *   W.tag(ort, datum, o)     Wetter des Tages je Ort, aus Ort und Datum gerechnet, für alle gleich. datum: beliebiger Schlüssel
+ *                            ("2026-11-14", Seed einer Gruppenrunde). o.gewicht { klar, grau, neu, sturm } (Standard 2, 1, 1, 1),
+ *                            o.schnee: Neigung des Orts zu Schneefall (Faktor auf neu)
+ *   W.wind(lage, t, x)       Wind für Animationen: { d: Richtung ±1, k: Grundstärke 0 … 1, g: Stärke mit Böen }; x: Wind in m/s
+ *   W.himmel(c, o)           über Himmel und Bergen, direkt nach dem Panorama: Sonne mit Glanz und Strahlen, Alpendohlen; Hochnebel,
+ *                            Nebel- und Wolkenbänke, im Sturm fast weiß. o: { lage, W, unten (Horizont, bis dahin wird getönt), t,
+ *                            nacht, sonne: [x, y] oder tageszeit ("morning" links tief, sonst rechts hoch), x (Wind m/s), k (Maßstab,
+ *                            Bildhöhe / 390), voegel (Standard ja) }
+ *   W.ueber(c, o)            über der ganzen Szene, zuletzt: Glitzern auf dem Schnee, Flocken, Sturmnebel, Schneefahnen am Boden.
+ *                            o: { lage, W, H, t, cx (Kameraweg in px auf Bodenhöhe, für die Parallaxe), boden (y der Schneefläche; ohne
+ *                            kein Glitzern und keine Schneefahnen), flocken (eigene Flocken, Standard ja), nacht, x, k, dicht (Stärke
+ *                            des Schleiers bei bedeckt und Sturm, Standard 1; das Skispringen nimmt weniger, damit der Springer gut
+ *                            zu sehen bleibt) }
+ *   W.rauch(c, x, y, s, t, a0, w)  Rauch, der mit dem Wind zieht (w aus W.wind): bei Windstille gerade, im Sturm flach weggerissen
+ *   W.temp(lage, tageszeit)  Abweichung der Temperatur in °C: Sonne wärmt am Tag, Schneefall kühlt etwas, Sturm deutlich
+ *   W.flocken(lage)          Menge Schneefall 0 … 1,3 für Spiele mit eigenen Flocken
+ *   W.KEYS, W.NAME (sonnig, bedeckt …), W.SICHT (klare Sicht, graues Licht …)
+ */
+(function (root) {
+  "use strict";
+  const TAU = Math.PI * 2;
+  const KEYS = ["klar", "grau", "neu", "sturm"];
+  const NAME = { klar: "sonnig", grau: "bedeckt", neu: "Schneefall", sturm: "Schneesturm" };
+  const SICHT = { klar: "klare Sicht", grau: "graues Licht", neu: "es schneit", sturm: "kaum Sicht" };
+  const BASE = { klar: 0.08, grau: 0.2, neu: 0.28, sturm: 0.82 };   // Grundstärke des Winds je Lage (0 still … 1 Sturm)
+  const ok = (l) => (NAME[l] ? l : "klar");
+
+  // FNV-1a über den Text: gleiche Eingabe, gleiche Zahl, auf jedem Gerät
+  function hash(s) {
+    let h = 0x811c9dc5;
+    s = String(s);
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+    return h >>> 0;
+  }
+  // Rauschwert 0 … 1 aus zwei Zahlen (Positionen der Flocken und Funken, ohne Zustand)
+  const hsh = (i, k) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+
+  function tag(ort, datum, o) {
+    o = o || {};
+    const w = Object.assign({ klar: 2, grau: 1, neu: 1, sturm: 1 }, o.gewicht || {});
+    if (o.schnee != null) w.neu *= Math.max(0, o.schnee);
+    let sum = 0;
+    for (const k of KEYS) sum += Math.max(0, w[k] || 0);
+    if (!(sum > 0)) return "klar";
+    let x = (hash(`wetter|${String(ort || "").split("-")[0]}|${datum}`) % 100000) / 100000 * sum;
+    for (const k of KEYS) { x -= Math.max(0, w[k] || 0); if (x < 0) return k; }
+    return "klar";
+  }
+
+  function wind(lage, t, x) {
+    x = +x || 0;
+    const k = Math.min(1, BASE[ok(lage)] + Math.abs(x) * 0.05), gust = 0.7 + 0.3 * Math.sin(t * 1.3) * Math.sin(t * 0.47 + 2);
+    return { d: x < 0 ? -1 : 1, k, g: k * gust };
+  }
+
+  const temp = (lage, tageszeit) => (lage === "klar" ? (tageszeit === "evening" ? 0 : 1.5) : lage === "neu" ? -1 : lage === "sturm" ? -4 : 0);
+  const flocken = (lage) => ({ klar: 0, grau: 0.2, neu: 1, sturm: 1.3 })[ok(lage)];
+
+  function rauch(c, x, y, s, t, a0, w) {
+    w = w || { d: 1, k: 0, g: 0 };
+    const dx = w.d * (0.5 + w.g * 5), up = 3.2 * (1 - w.g * 0.7), sp = 0.22 + w.g * 0.4;
+    for (let i = 0; i < 7; i++) {
+      const a = (t * sp + i / 7) % 1;
+      c.fillStyle = `rgba(210,212,216,${a0 * (1 - a)})`;
+      c.beginPath(); c.arc(x + a * dx * s + Math.sin(t + i) * 0.15 * s * (1 - w.k), y - a * up * s, (0.25 + a * 0.7 * (1 + w.g * 0.6)) * s, 0, TAU); c.fill();
+    }
+  }
+
+  function himmel(c, o) {
+    const lage = ok(o.lage), W = o.W, bottom = o.unten, t = o.t || 0, night = !!o.nacht, k = o.k || 1, dir = (+o.x || 0) < 0 ? -1 : 1;
+    c.save();
+    if (lage === "klar") {
+      if (night) { c.restore(); return; }
+      const sun = o.sonne || (o.tageszeit === "morning" ? [W * 0.18, 70 * k] : [W * 0.72, 40 * k]), sx = sun[0], sy = sun[1];
+      const g = c.createRadialGradient(sx, sy, 4 * k, sx, sy, 260 * k);
+      g.addColorStop(0, "rgba(255,250,225,0.95)"); g.addColorStop(0.08, "rgba(255,244,210,0.55)"); g.addColorStop(0.4, "rgba(255,236,200,0.12)"); g.addColorStop(1, "rgba(255,236,200,0)");
+      // Glanz nur im Umkreis der Sonne füllen (außerhalb ist der Verlauf durchsichtig)
+      const x0 = Math.max(0, sx - 260 * k), x1 = Math.min(W, sx + 260 * k), y1 = Math.min(bottom, sy + 260 * k);
+      c.fillStyle = g; if (x1 > x0 && y1 > 0) c.fillRect(x0, 0, x1 - x0, y1);
+      c.fillStyle = "rgba(255,255,248,1)"; c.beginPath(); c.arc(sx, sy, 13 * k, 0, TAU); c.fill();
+      // Strahlen, langsam drehend
+      c.translate(sx, sy); c.rotate(t * 0.03); c.fillStyle = "rgba(255,248,220,0.10)";
+      for (let i = 0; i < 9; i++) { c.rotate(TAU / 9); c.beginPath(); c.moveTo(0, 0); c.lineTo(220 * k, (-12 - (i % 3) * 6) * k); c.lineTo(220 * k, (12 + (i % 2) * 6) * k); c.closePath(); c.fill(); }
+      c.restore(); c.save();
+      // Alpendohlen kreisen über dem Tal
+      if (o.voegel !== false) {
+        c.strokeStyle = "rgba(30,30,36,0.85)"; c.lineWidth = 1.4 * k; c.lineCap = "round";
+        for (let i = 0; i < 5; i++) {
+          const ang = t * (0.25 + i * 0.04) + i * 1.3, bx = W * (0.3 + 0.12 * i) + Math.cos(ang) * (40 + i * 9) * k, by = (70 + i * 11 + Math.sin(ang) * 16) * k, fl = Math.sin(t * 9 + i * 2) * 2.5 * k, sz = (3.6 - i * 0.25) * k;
+          c.beginPath(); c.moveTo(bx - sz, by - fl); c.quadraticCurveTo(bx - sz * 0.4, by - k, bx, by); c.quadraticCurveTo(bx + sz * 0.4, by - k, bx + sz, by - fl); c.stroke();
+        }
+      }
+      c.restore();
+      return;
+    }
+    const a = lage === "grau" ? [0.55, 0.3] : lage === "neu" ? [0.62, 0.42] : [0.9, 0.82];
+    const col = night ? "110,112,130" : lage === "sturm" ? "226,230,236" : "190,196,205";
+    const g = c.createLinearGradient(0, 0, 0, bottom); g.addColorStop(0, `rgba(${col},${a[0]})`); g.addColorStop(1, `rgba(${col},${a[1]})`);
+    c.fillStyle = g; c.fillRect(0, 0, W, bottom);
+    // Nebelbänke ziehen über die Bergflanken (bei bedeckt deutlich, sonst zart)
+    const fa = lage === "grau" ? 0.5 : lage === "neu" ? 0.35 : 0.25, fc = night ? "150,150,170" : "236,238,242", span = W + 500 * k;
+    for (let i = 0; i < 5; i++) {
+      const sp = (6 + i * 3) * dir * (lage === "sturm" ? 4 : 1) * k, x = ((i * 211 * k + t * sp) % span + span) % span - 250 * k, y = bottom - (70 - i * 13) * k + Math.sin(t * 0.2 + i) * 4 * k;
+      const g2 = c.createRadialGradient(x, y, 4 * k, x, y, 200 * k); g2.addColorStop(0, `rgba(${fc},${fa})`); g2.addColorStop(1, `rgba(${fc},0)`);
+      c.fillStyle = g2; c.save(); c.translate(x, y); c.scale(1, 0.16); c.translate(-x, -y); c.fillRect(x - 200 * k, y - 200 * k, 400 * k, 400 * k); c.restore();
+    }
+    // Wolkenbänke (nicht bei Hochnebel)
+    if (lage !== "grau") {
+      c.fillStyle = `rgba(${night ? "90,92,110" : "160,168,180"},${lage === "sturm" ? 0.35 : 0.3})`;
+      const sp2 = W + 300 * k;
+      for (let i = 0; i < 7; i++) {
+        const x = ((i * 157 * k + t * (lage === "sturm" ? 30 : 4) * dir * k) % sp2 + sp2) % sp2 - 150 * k, y = (30 + (i % 3) * 38) * k;
+        c.beginPath(); c.ellipse(x, y, 150 * k, 24 * k, 0, 0, TAU); c.fill();
+      }
+    }
+    c.restore();
+  }
+
+  function ueber(c, o) {
+    const lage = ok(o.lage), W = o.W, H = o.H, t = o.t || 0, cx = o.cx || 0, k = o.k || 1, boden = o.boden, flk = o.flocken !== false;
+    const dir = (+o.x || 0) < 0 ? -1 : 1, md = (v, m) => ((v % m) + m) % m, dk = o.dicht != null ? Math.max(0, +o.dicht) : 1;
+    c.save();
+    if (lage === "klar") {
+      // Glitzern: einzelne Kristalle funkeln auf dem Schnee auf (nicht am Abend)
+      if (boden != null && !o.nacht) {
+        c.strokeStyle = "rgba(255,255,255,0.95)"; c.lineWidth = 1;
+        for (let i = 0; i < 70; i++) {
+          const x = md(hsh(i, 1) * W * 1.5 - cx, W), y = boden + 10 * k + hsh(i, 2) * (H - boden - 12 * k), tw = Math.sin(t * (2 + hsh(i, 3) * 4) + i * 3);
+          if (tw > 0.75) { const r = (tw - 0.75) * 10 * (0.5 + hsh(i, 4)) * k; c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); }
+        }
+      }
+      c.restore();
+      return;
+    }
+    if (lage === "grau") {
+      c.fillStyle = `rgba(110,120,135,${0.1 * dk})`; c.fillRect(0, 0, W, H);
+      if (flk) {   // vereinzelte Flocken
+        c.fillStyle = "rgba(255,255,255,0.7)";
+        for (let i = 0; i < 18; i++) { const x = md(hsh(i, 8) * W - cx / 3 + Math.sin(t * 0.6 + i) * 18 * k, W), y = md(hsh(i, 9) * H + t * 12 * k, H); c.beginPath(); c.arc(x, y, 1.1 * k, 0, TAU); c.fill(); }
+      }
+      c.restore();
+      return;
+    }
+    const st = lage === "sturm";
+    if (st) {   // Nebel: oben dicht, unten lichter, schwillt mit den Böen
+      const gu = 0.5 + 0.5 * Math.sin(t * 0.9) * Math.sin(t * 0.37 + 1), g = c.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, `rgba(232,236,242,${(0.55 + 0.2 * gu) * dk})`); g.addColorStop(0.62, `rgba(232,236,242,${(0.25 + 0.22 * gu) * dk})`); g.addColorStop(1, `rgba(232,236,242,${(0.05 + 0.08 * gu) * dk})`);
+      c.fillStyle = g; c.fillRect(0, 0, W, H);
+    }
+    if (flk) {
+      const n = st ? 420 : 120, vx = st ? 260 * dir : 14, vy = st ? 120 : 26;
+      c.fillStyle = "rgba(255,255,255,0.88)"; c.strokeStyle = "rgba(255,255,255,0.8)"; c.lineCap = "round";
+      for (let i = 0; i < n; i++) {
+        const d = 0.4 + hsh(i, 5) * 0.9, x = md(hsh(i, 6) * W - cx * 0.5 * d + Math.sin(t * 0.7 + i) * 12 * k + t * vx * d * k, W), y = md(hsh(i, 7) * H + t * vy * d * k, H);
+        if (st) { c.lineWidth = (0.8 + d) * k; c.beginPath(); c.moveTo(x, y); c.lineTo(x - dir * 9 * d * k, y - 4 * d * k); c.stroke(); }
+        else { c.beginPath(); c.arc(x, y, (0.9 + d * 1.1) * k, 0, TAU); c.fill(); }
+      }
+      if (!st) {   // große, nahe Flocken taumeln vorbei
+        c.fillStyle = "rgba(255,255,255,0.75)";
+        for (let i = 0; i < 14; i++) { const x = md(hsh(i, 14) * W - cx * 1.8 + Math.sin(t * 1.1 + i * 2) * 26 * k + t * 20 * k, W), y = md(hsh(i, 15) * H + t * 55 * k, H), r = (2.2 + hsh(i, 16) * 2.2) * k; c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }
+      }
+    }
+    if (st && boden != null) {   // Schneefahnen fegen über den Boden
+      const w = wind(lage, t, o.x), span = W + 400 * k;
+      for (let i = 0; i < 26; i++) {
+        const d = 0.5 + hsh(i, 10), y = boden + 6 * k + hsh(i, 11) * (H - boden - 6 * k), len = (60 + hsh(i, 12) * 140) * d * k, x = md(hsh(i, 13) * span - cx * 0.85 * d + t * 420 * d * dir * k, span) - 200 * k;
+        const g = c.createLinearGradient(x - dir * len, y, x, y); g.addColorStop(0, "rgba(250,252,255,0)"); g.addColorStop(1, `rgba(250,252,255,${0.35 * w.g + 0.1})`);
+        c.strokeStyle = g; c.lineWidth = (2 + d * 3) * k; c.beginPath(); c.moveTo(x - dir * len, y + Math.sin(t * 3 + i) * 2 * k); c.quadraticCurveTo(x - dir * len * 0.5, y - 3 * d * k, x, y); c.stroke();
+      }
+    }
+    c.restore();
+  }
+
+  const K = root.CMKulisse || (root.CMKulisse = {});
+  K.wetter = { KEYS, NAME, SICHT, hash, tag, wind, himmel, ueber, rauch, temp, flocken };
+})(typeof window !== "undefined" ? window : globalThis);
+
 /* Cold Medal Games · gemeinsame Figur (figur/figur.js, global CMFigur)
  *
  * Ein Körper für alle Spiele der Reihe, im Plakatstil: gleicher Körperbau und gleiche Posen für alle, erkennbar nur an Frisur,
@@ -5708,70 +5892,24 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       R.poseJ = J;   // R.poseJ: für Tests
       return { J };
     }
-    // ---------------------------------------------------------------- Wetter (0.21)
+    // ---------------------------------------------------------------- Wetter (seit 0.23 aus kulisse/wetter.js, CMKulisse.wetter)
+    // Bild des Wetters gemeinsam für alle Spiele; hier nur, wo es im Biathlon sitzt: Himmel nach dem Panorama, Schleier, Flocken,
+    // Glitzern und Schneefahnen über der Loipe, Tönung je Tageszeit. Flocken und Glanz im Visier bleiben hier (nur Biathlon).
+    const WXM = root.CMKulisse && root.CMKulisse.wetter;
     const wxSky = () => (WX && WX.sky) || "klar";
     function setWx(w) { WX = w || null; }
-    function windNow(t) { const s = wxSky(), b = { klar: 0.1, grau: 0.35, neu: 0.45, sturm: 0.85 }[s]; return Math.min(1, b + (s === "sturm" ? 0.25 : 0.1) * Math.sin(t * 0.7) * Math.sin(t * 0.23 + 1)); }
-    // Nebelbänke über den Bergflanken (bedeckt, Schneefall), im Sturm fast weiß
+    function windNow(t) { return WXM ? WXM.wind(wxSky(), t, (WX && WX.x) || 0).g : 0.1; }
     function wxFog(hor, t) {
-      const s = wxSky(); if (s === "klar") return;
-      const a = s === "grau" ? 0.32 : s === "neu" ? 0.36 : 0.55;
-      // grauer Himmel: Wolkendecke über dem blauen Plakathimmel, zum Horizont hin dunstig
-      const ga = { grau: 0.62, neu: 0.7, sturm: 0.85 }[s], sg = ctx.createLinearGradient(0, 0, 0, hor + 10 * k);
-      sg.addColorStop(0, s === "sturm" ? `rgba(196,204,214,${ga})` : `rgba(150,160,174,${ga})`); sg.addColorStop(1, `rgba(214,220,228,${ga * 0.75})`);
-      ctx.fillStyle = sg; ctx.fillRect(0, 0, W, hor + 10 * k);
-      for (let i = 0; i < 3; i++) {
-        const y = hor - (70 - i * 28) * k, hh = (26 + i * 8) * k, x = ((t * (4 + i * 3) * k * (s === "sturm" ? 6 : 1)) % (W * 1.5)) - W * 0.25;
-        const g = ctx.createLinearGradient(0, y - hh, 0, y + hh);
-        g.addColorStop(0, "rgba(232,236,242,0)"); g.addColorStop(0.5, `rgba(232,236,242,${a})`); g.addColorStop(1, "rgba(232,236,242,0)");
-        ctx.fillStyle = g; ctx.fillRect(-10, y - hh, W + 20, hh * 2);
-        ctx.globalAlpha = a * 0.8; ctx.fillStyle = "rgba(240,243,247,1)";
-        for (let j = 0; j < 3; j++) { ctx.beginPath(); ctx.ellipse((x + j * W * 0.55) % (W * 1.4), y, (90 + 30 * j) * k, 9 * k, 0, 0, TAU); ctx.fill(); }
-        ctx.globalAlpha = 1;
-      }
+      if (!WXM || !WX) return;
+      WXM.himmel(ctx, { lage: wxSky(), W, unten: hor + 10 * k, t, tageszeit: WX.tod, x: WX.x || 0, k, voegel: wxSky() === "klar" });
     }
-    // Glitzern im Schnee bei Sonne, Schneefahnen über die Loipe im Sturm (Weltkoordinaten unter der Kamera)
-    function wxGround(V, X, Y, s0, s1, C, xr, yr) {
-      const s = wxSky(); if (R.lite) return;
-      const tx = (x, y) => [xr + (x - xr) * C, yr + (y - yr) * C];
-      if (s === "klar") {
-        for (let i = Math.floor(s0 / 0.7); i < s1 / 0.7; i++) {
-          const h = hsh(i * 31 + 7), tw = Math.sin(V.t * (3 + Math.floor(h * 5)) + i), w = i * 0.7;
-          if (tw < 0.86) continue;
-          const [x, y] = tx(X(w), Y(w) + (4 + h * 24) * k);
-          ctx.globalAlpha = (tw - 0.86) * 7; ctx.fillStyle = "#FFFFFF";
-          const r = 2.4 * k; ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(x, y - r * 0.25); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r * 0.25); ctx.closePath(); ctx.fill();
-          ctx.beginPath(); ctx.moveTo(x, y - r); ctx.lineTo(x + r * 0.25, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r * 0.25, y); ctx.closePath(); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      }
-      if (s === "sturm" || s === "neu") {
-        const n = s === "sturm" ? 7 : 3, sp = s === "sturm" ? 260 : 60;
-        for (let i = 0; i < n; i++) {
-          const ph = ((V.t * sp * k + i * W / n * 1.7) % (W * 1.6)) - W * 0.3, y = H * (0.66 + 0.05 * (i % 4)) + Math.sin(V.t + i) * 4 * k;
-          const g = ctx.createLinearGradient(ph - 160 * k, 0, ph + 40 * k, 0);
-          g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.75, `rgba(255,255,255,${s === "sturm" ? 0.45 : 0.18})`); g.addColorStop(1, "rgba(255,255,255,0)");
-          ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(ph - 60 * k, y, 110 * k, (5 + (i % 3) * 3) * k, -0.04, 0, TAU); ctx.fill();
-        }
-      }
-    }
-    // Tönung je Tageszeit und Wetter, dann der Schneefall (Bildschirm); vx: Mitbewegung mit dem Tempo
-    function wxSnow(dt, vx, t) {
-      const s = wxSky(), tod = WX && WX.tod;
-      const tint = s === "sturm" ? "rgba(226,231,238,0.34)" : s === "neu" ? "rgba(200,208,220,0.16)" : s === "grau" ? "rgba(160,170,184,0.16)" : null;
-      if (tint) { ctx.fillStyle = tint; ctx.fillRect(0, 0, W, H); }
+    function wxOver(t, cx, boden) {
+      const tod = WX && WX.tod;
       if (tod === "evening") { ctx.fillStyle = "rgba(110,60,120,0.10)"; ctx.fillRect(0, 0, W, H); }
-      else if (tod === "morning" && s === "klar") { ctx.fillStyle = "rgba(255,226,170,0.07)"; ctx.fillRect(0, 0, W, H); }
-      if (R.lite) return;
-      const n = { klar: 0, grau: 14, neu: 130, sturm: 230 }[s], wind = s === "sturm" ? -260 * k : s === "neu" ? -30 * k : -8 * k;
-      while (flakes.length < n) flakes.push({ x: Math.random() * W, y: Math.random() * H, r: 0.8 + Math.random() * (s === "neu" ? 2.6 : 1.7), v: 14 + Math.random() * 22, ph: Math.random() * 6 });
-      if (flakes.length > n) flakes.length = n;
-      ctx.fillStyle = "rgba(255,255,255,0.88)";
-      for (const f of flakes) {
-        f.y += f.v * k * dt * (s === "sturm" ? 2.2 : 1); f.x += ((vx + wind) * (0.6 + f.r * 0.3) + Math.sin(t * 1.3 + f.ph) * 6 * k) * dt;
-        if (f.y > H + 4) { f.y = -4; f.x = Math.random() * W; } if (f.x < -6) f.x += W + 12; if (f.x > W + 6) f.x -= W + 12;
-        if (s === "sturm") { ctx.fillRect(f.x, f.y, f.r * k * 4, f.r * k * 0.9); } else { ctx.beginPath(); ctx.arc(f.x, f.y, f.r * k, 0, TAU); ctx.fill(); }
-      }
+      else if (tod === "morning" && wxSky() === "klar") { ctx.fillStyle = "rgba(255,226,170,0.07)"; ctx.fillRect(0, 0, W, H); }
+      if (!WXM || !WX) return;
+      // Schleier etwas dünner als im Schneeball, damit die Läuferin im Sturm gut zu sehen bleibt
+      WXM.ueber(ctx, { lage: wxSky(), W, H, t, cx, boden: R.lite ? null : boden, flocken: !R.lite, x: WX.x || 0, k, dicht: 0.7, nacht: false });
     }
 
     function drawRun(V) {
@@ -5942,9 +6080,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         const fh = Math.min((70 + 50 * q) * k * (0.5 + 0.5 * C), H + 18 * k - (yr + (yP - yr) * C) - 14 * k);
         if (fh > 30 * k) spruce(x, H + 18 * k, fh, true, hsh(Math.round(s) + 4));
       }
-      // 0.21: Wetter im Bild: Glitzern (sonnig), Tönung, Schneefall je Wetterlage, Schneefahnen im Sturm
-      wxGround(V, X, Y, s0, s1, C, xr, yr);
-      wxSnow(dt, -((V.run && V.run.v) || 0) * ppm * 0.08, V.t);
+      // Wetter über der Szene (kulisse/wetter.js): Glitzern, Flocken, Sturmnebel, Schneefahnen ab der Loipe
+      wxOver(V.t, V.s * ppm * C, yr + 6 * k);
       return { X: (s) => xr + (X(s) - xr) * C, Y: (s) => yr + (Y(s) - yr) * C, xr, yr, C };
     }
 
@@ -6820,7 +6957,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.22.0";
+  const VERSION = "0.23.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7125,8 +7262,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     Rc.R.cycK = 1;
     Rc.wx = race ? wxFor(seed) : WX_CALM; Rc.wax = race ? (o.wax || S.wax || "u") : "u"; Rc.fit = race ? waxFit(Rc.wax, Rc.wx.band) : waxFit("u");
     Rc.R.muK = Rc.wx.snowK * Rc.fit.k;
-    renderer.setWx(Rc.wx);
     Rc.wind.base *= Rc.wx.windMul; Rc.wind.gust *= Rc.wx.windMul * (Rc.wx.sky === "sturm" ? 1.3 : 1);
+    Rc.wx = Object.assign({}, Rc.wx, { x: Rc.wx.course ? Rc.wx.course * (Math.cos(Rc.wx.cph) < 0 ? -1 : 1) : Rc.wind.base });   // Wind fürs Bild (m/s, Richtung)
+    renderer.setWx(Rc.wx);
     Rc.FM = FM; Rc.R.footQ = S.help === "anf" ? 0.85 : 0.6; Rc.R.simple = easy(); Rc.simple = easy(); Rc.R.acidMul = level === "easy" ? 0.5 : 1;
     Rc.rec = race && kind !== "pursuit" && !Rc.watch ? { P: [], next: 0, hits: [], kills: [] } : null;   // Rennverlauf (Geist für die Gruppe)
     Rc.together = kind === "mass" || kind === "pursuit";   // Platz nach Fortschritt: wer zuerst ins Ziel kommt
@@ -7168,7 +7306,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   // Die KI wird nach dem Simulieren auf Spielzeit umgerechnet (Laufen ÷ SCALE, Stand 1 : 1, Strafzeit neu); alles danach rechnet in Spielzeit.
   // ------------------------------------------------------------------ Wetter, Schnee und Wachs (0.21, Gesamtkonzept „Wetter, Schnee und Material“)
   // Aus dem Seed: in einer Gruppe haben alle dasselbe Wetter. Wachs ist frei wählbar (Wissen, kein Kauf); passend gleitet besser.
-  const SKY_N = { klar: "Sonnig", grau: "Bedeckt", neu: "Schneefall", sturm: "Schneesturm" };
+  const WXM = window.CMKulisse.wetter;   // Wetter der Reihe (kulisse/wetter.js): Namen, Wind, Bild
+  const SKY_N = Object.fromEntries(WXM.KEYS.map((l) => [l, WXM.NAME[l][0].toUpperCase() + WXM.NAME[l].slice(1)]));
   const TOD_N = { morning: "morgens", afternoon: "nachmittags", evening: "abends" };
   const WAX = {
     u: { n: "Universal", d: "für jeden Schnee, nie ganz optimal", col: "#B9B2A3" },
