@@ -511,6 +511,34 @@ body.intro #hud, body.intro #banner { visibility: hidden; }
 #introFx .iskip { position: absolute; right: 4%; bottom: 3.2%; font-family: var(--font-label); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255, 253, 246, 0.55); transition: opacity 0.6s; }
 body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-weight: 400; letter-spacing: 0.01em; }
 
+/* 0.36 Jagd 1960: Anzeigen drastisch reduziert (Mat). Kein Streckenplan, keine Rangliste, kein Rang/Rückstand, keine km,
+   kein Name, kein Windschatten; Rang nur beim Durchgang am Start/Ziel und am Ende. Steuerknöpfe als Filmtafeln. */
+body.era60 #hud .h-map, body.era60 #hBoard, body.era60 #hRival, body.era60 #hSplit, body.era60 #hSub, body.era60 #hKm, body.era60 #hud .hud-tl,
+body.era60 #hud .h-prev, body.era60 #hDraft, body.era60 #hFb, body.era60 #rWind, body.era60 #rSub { display: none !important; }
+body.era60 #hud .h-lap { padding: 6px 12px; }
+body.era60 #hLap { font-family: var(--font-body); font-style: italic; font-weight: 400; font-size: 17px; }
+body.era60 .cs-knopf { background: rgba(26, 19, 12, 0.9); color: #EFE4CC; border: 1.5px solid rgba(239, 228, 204, 0.85);
+  box-shadow: 0 0 0 3px rgba(26, 19, 12, 0.9), 0 0 0 4px rgba(239, 228, 204, 0.35), 0 6px 14px rgba(0, 0, 0, 0.35); }
+body.era60 .cs-knopf.cs-down, body.era60 .cs-knopf.cs-aktiv { background: rgba(58, 44, 28, 0.95); transform: translateY(2px); }
+body.era60 .cs-txt { font-family: var(--font-body); font-style: italic; font-weight: 400; font-size: 13px; letter-spacing: 0.04em; text-transform: none; }
+body.era60 .cs-ring-bg { stroke: rgba(239, 228, 204, 0.18); }
+body.era60 .cs-ring-v, body.era60 #hud .cs-ring-v, body.era60 .cs-knopf.cs-ok .cs-ring-v { stroke: #D9C9A3; }
+body.era60 .cs-knopf.cs-ok { border-color: #EFE4CC; }
+body.era60 .cs-stick { border-color: rgba(239, 228, 204, 0.7); background: radial-gradient(circle, rgba(26, 19, 12, 0.35) 0 38%, rgba(26, 19, 12, 0.2) 39% 100%); }
+body.era60 .cs-stick-knob { background: #2A2017; border: 1.5px solid #EFE4CC; box-shadow: none; }
+body.era60 .icon-btn { background: rgba(18, 13, 8, 0.86); color: #EFE4CC; border-color: rgba(239, 228, 204, 0.8); }
+body.era60 .h-toast, body.era60 .h-toast.bad, body.era60 .h-toast.good, body.era60 .h-cue { background: rgba(13, 10, 7, 0.92); color: #F1E7CF; border: 1px solid rgba(239, 228, 204, 0.7);
+  font-family: var(--font-body); font-style: italic; font-weight: 400; }
+body.era60 .cs-hint, body.era60 .chip { background: rgba(13, 10, 7, 0.85); color: #EFE4CC; border: 1px solid rgba(239, 228, 204, 0.6); font-family: var(--font-body); font-style: italic; }
+body.era60 .bar i, body.era60 #hKraft, body.era60 #rBreath { background: #D9C9A3 !important; }
+body.era60 .ico.heart { filter: sepia(0.9) saturate(0.6); }
+body.era60 .cs-mag { background: rgba(18, 13, 8, 0.88) !important; border: 1.5px solid rgba(239, 228, 204, 0.8) !important; border-radius: 1px !important; color: #EFE4CC; }
+body.era60 .cs-mag-n b { font-family: var(--font-body); font-style: italic; font-weight: 400; }
+body.era60 .cs-mag-n svg { color: #D9C9A3; }
+body.era60 .cs-mag-dots i { background: #1A130C; border-color: #D9C9A3; }
+body.era60 .cs-mag-dots i.cs-hit { background: #EFE4CC; }
+body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
+
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
    Buchschrift für Lesetext. Farben und Schriften kommen aus den Variablen des Spiels (alle Spiele der Reihe haben sie),
@@ -7599,7 +7627,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.35.0";
+  const VERSION = "0.36.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -9071,6 +9099,8 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
     // Einzelstart: Platz und Rückstand an genau dieser Stelle der Strecke (wie die Zwischenzeit im Fernsehen)
     if (Rc.ai && !Rc.together && Rc.phase !== "count" && Rc.kind !== "learn") {
       const lb = liveBoard(), i = lb.findIndex((x) => x.me), me = lb[i];
+      // 0.36 Jagd 1960: kein Rang im Bild, nur beim Durchgang am Start/Ziel kurz angesagt (Mat)
+      if (Rc.hunt && Rc.lapShown !== Rc.lap) { Rc.lapShown = Rc.lap; if (Rc.lap > 0 && i >= 0) toast(`Durchgang · Platz ${i + 1}`, ""); }
             setText($("hRival"), nb(i === 0 ? `Platz 1 · Bestzeit${lb[1] && lb[1].t - me.t >= 0.05 ? " · " + fmtB(lb[1].t - me.t).replace("+", "−") : ""}` : `Platz ${i + 1} · ${fmtB(me.t - lb[0].t)}`));
     }
     // nächste Gegner (Massenstart, Verfolgung)
