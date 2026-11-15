@@ -6358,14 +6358,30 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       ctx.beginPath(); for (let s = a; s <= b; s += 0.5) ctx.lineTo(X(s), Y(s) + (dy - hh * 0.4) * k); ctx.strokeStyle = c; ctx.lineWidth = 1.2 * k; ctx.stroke();
     }
     // zugefrorener Bach: Band vom Fernpunkt (y0, schmal) zum Nahpunkt (y1, breit), weiche Ufer, Eis mit Schimmer
-    function creek(x, y0, y1, w0, w1, t) {
-      const P = (u, side) => { const y = y0 + (y1 - y0) * u, w = (w0 + (w1 - w0) * u * u) * k, c = Math.sin(u * 5 + 1) * 6 * k * (1 - u * 0.5); return [x + c + side * w, y]; };
-      const band = (grow, col) => { ctx.beginPath(); for (let i = 0; i <= 12; i++) { const [px, py] = P(i / 12, -1); ctx.lineTo(px - grow * k, py); } for (let i = 12; i >= 0; i--) { const [px, py] = P(i / 12, 1); ctx.lineTo(px + grow * k, py); } ctx.closePath(); ctx.fillStyle = col; ctx.fill(); };
-      band(5, "#FBF8F1"); band(1.5, mix(I.papier, I.dunst, 0.6));
-      const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, mix(I.dunst, I.fichte, 0.12)); g.addColorStop(1, mix(I.dunst, I.fichte, 0.38));
-      band(0, g);
-      ctx.strokeStyle = `rgba(255,255,255,${0.55 + 0.25 * Math.sin(t * 1.4)})`; ctx.lineWidth = 0.9 * k;
-      for (const u of [0.35, 0.7]) { const [ax, ay] = P(u, -0.5), [bx] = P(u, 0.4); ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, ay); ctx.stroke(); }
+    // 0.38 (Mat: Bach sah aus wie ein Weg): schmaler, geschwungener Bach. Schneeufer mit Überhang, Eis, darin dunkle offene Stellen,
+    // in denen das Wasser zieht; Steine mit Schneehauben am Ufer. w0/w1: halbe Breite oben/unten (px bei k = 1).
+    function creek(x, y0, y1, w0, w1, t, sd) {
+      sd = sd || 0;
+      const P = (u, side) => { const y = y0 + (y1 - y0) * u, w = (w0 + (w1 - w0) * u) * k, c = (Math.sin(u * 7 + 1 + sd) * 7 + Math.sin(u * 13 + sd * 2) * 2.5) * k * (0.5 + 0.5 * u); return [x + c + side * w, y]; };
+      const band = (grow, col, f) => { f = f || 1; ctx.beginPath(); for (let i = 0; i <= 20; i++) { const [px, py] = P(i / 20, -f); ctx.lineTo(px - grow * k * (0.6 + 0.4 * Math.sin(i * 1.7 + sd)), py); }
+        for (let i = 20; i >= 0; i--) { const [px, py] = P(i / 20, f); ctx.lineTo(px + grow * k * (0.6 + 0.4 * Math.sin(i * 2.3 + sd)), py); } ctx.closePath(); ctx.fillStyle = col; ctx.fill(); };
+      band(3.5, mix(I.papier, I.schatten, 0.45));                 // Ufer im Schatten (Böschung)
+      const g = ctx.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, mix(I.dunst, I.papier, 0.35)); g.addColorStop(1, mix(I.dunst, I.fichte, 0.15));
+      band(0, g);                                                  // Eis
+      // offene Stellen: dunkles Wasser in der Mitte, mit ziehenden Lichtern
+      const dark = mix(I.fichteD, I.tief, 0.45);
+      for (let n = 0; n < 4; n++) { const ua = 0.12 + n * 0.22 + 0.06 * Math.sin(sd + n), ub = ua + 0.12;
+        ctx.beginPath(); for (let i = 0; i <= 6; i++) { const u = ua + (ub - ua) * i / 6, f = 0.42 * Math.sin(Math.PI * i / 6); const [px, py] = P(u, -f); ctx.lineTo(px, py); }
+        for (let i = 6; i >= 0; i--) { const u = ua + (ub - ua) * i / 6, f = 0.42 * Math.sin(Math.PI * i / 6); const [px, py] = P(u, f); ctx.lineTo(px, py); } ctx.closePath(); ctx.fillStyle = dark; ctx.fill();
+        ctx.strokeStyle = "rgba(220,235,245,0.55)"; ctx.lineWidth = 0.7 * k;
+        for (let j = 0; j < 2; j++) { const u = ua + (ub - ua) * (((t * 0.25 + j * 0.5 + n * 0.3) % 1)), [cx, cy] = P(u, 0), ww = (w0 + (w1 - w0) * u) * k * 0.25; ctx.beginPath(); ctx.moveTo(cx - ww, cy); ctx.lineTo(cx + ww, cy); ctx.stroke(); } }
+      // Schneeufer mit Überhang (weiße Kante über dem Eis)
+      for (const side of [-1, 1]) { ctx.beginPath(); for (let i = 0; i <= 20; i++) { const [px, py] = P(i / 20, side * 1.02); ctx.lineTo(px, py); }
+        ctx.strokeStyle = "#FBF8F1"; ctx.lineWidth = 2.6 * k; ctx.lineJoin = "round"; ctx.stroke(); }
+      // Steine mit Schneehauben am Ufer
+      for (const [u, side] of [[0.22, 1], [0.48, -1], [0.7, 1], [0.86, -1]]) { const [px, py] = P(u, side * 1.05), r = (1.6 + 2.2 * u) * k;
+        ctx.fillStyle = mix(I.tinte, I.dunst, 0.45); ctx.beginPath(); ctx.ellipse(px, py, r * 1.3, r * 0.75, 0, 0, TAU); ctx.fill();
+        ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(px - r * 0.1, py - r * 0.45, r * 1.15, r * 0.45, 0, Math.PI, 0); ctx.fill(); }
     }
 
     function drawRun(V) {
@@ -6511,10 +6527,10 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) {
         const sc = base + 0.5 * LL; if (sc < s0 - 8 || sc > s1 + 8) continue;
         const x = X(sc), y = Y(sc);
-        creek(x, y - 62 * k, y - 6 * k, 3, 22, V.t);
+        creek(x, y - 60 * k, y - 6 * k, 2.5, 10, V.t, 1);
         // der Bach kommt aus dem Wald: Fichtengruppe und Schneewehe am oberen Ende (er endet nicht im Nichts)
         for (const [dx, dy, hh] of [[-26, -58, 46], [-10, -63, 40], [8, -61, 50], [24, -57, 42], [-38, -55, 36]]) trees.push(["spruce", x + dx * k, y + dy * k, hh * k, true, 0.4 + 0.1 * (dx % 3)]);
-        for (const [dx, dy] of [[-24, -10], [-12, -40], [22, -12], [10, -44]]) { disc(x + dx * k, y + dy * k, 3.6 * k, mix(I.tinte, I.dunst, 0.5)); ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x + dx * k, y + (dy - 2.2) * k, 3.8 * k, 1.8 * k, 0, Math.PI, 0); ctx.fill(); }
+        // (0.38: Steine sitzen jetzt am Ufer im Bach selbst)
         // hinteres Brückengeländer (vorderes wird nach der Läuferin gezeichnet)
         bridgeRail(sc, X, Y, -9, 13);
       }
@@ -6587,7 +6603,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) {
         const sc = base + 0.5 * LL; if (sc < s0 - 8 || sc > s1 + 8) continue;
         const x = X(sc), y = Y(sc);
-        creek(x - 4 * k, HB, y + 6 * k, 46, 24, V.t);
+        creek(x - 4 * k, y + 6 * k, HB, 12, 26, V.t, 2);
         ctx.fillStyle = "rgba(30,39,52,0.35)"; ctx.beginPath(); ctx.ellipse(x - 2 * k, y + 8 * k, 26 * k, 3 * k, 0, 0, TAU); ctx.fill();   // Schatten unter der Brücke
         const wood = mix(I.dach, I.papier, 0.25), a = sc - 5.5, b = sc + 5.5;
         ctx.beginPath(); for (let s = a; s <= b; s += 0.4) ctx.lineTo(X(s), Y(s) - 7 * k); for (let s = b; s >= a; s -= 0.4) ctx.lineTo(X(s), Y(s) + 6 * k); ctx.closePath(); ctx.fillStyle = wood; ctx.fill();
@@ -7641,7 +7657,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.37.0";
+  const VERSION = "0.38.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8950,15 +8966,23 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
         slab(x + 27 * k, y + 6 * k, x + 33 * k, y + 6 * k, 88 * k, 6 * k, pc);       // vorderer Pfosten (vor der Spur)
         mound(x + 30 * k, y + 6 * k, 8 * k, 3 * k); mound(x - 4 * k, y - 4 * k, 7 * k, 2.5 * k);
       }
-      // Jagd: Schießstation im Wald (Hochstand-Tafel auf Pfosten, mit Schnee)
+      // Jagd: Schießstation im Wald ohne Schrift (Mat): Gewehrbock aus Stangen, Pflock mit flatterndem Tuchstreifen, Reisig am Boden, Spurpflöcke
       if (hunt && !pen) for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
         const sA = base - 14; if (sA < s0 - 4 || sA > s1 + 4) continue;
-        const x = X(sA), y = Y(sA), wood = mix(I.dach, I.tinte, 0.3);
-        slab(x - 2 * k, y, x + 2 * k, y, 64 * k, 4 * k, wood); slab(x + 38 * k, y + 2 * k, x + 42 * k, y + 2 * k, 66 * k, 4 * k, wood);
-        const T3 = slab(x - 8 * k, y - 40 * k, x + 48 * k, y - 40 * k, 22 * k, 6 * k, I.dach);
-        snowCap(T3[0][0] + 3 * k, T3[0][1] - 2.5 * k, T3[1][0] + 3 * k, T3[1][1] - 2.5 * k, 2 * k);
-        ctx.fillStyle = I.papier; ctx.font = `800 ${Math.round(9 * k)}px Futura, 'Avenir Next Condensed', 'Arial Narrow', sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        ctx.fillText("STATION", x + 20 * k, y - 51 * k);
+        const x = X(sA), y = Y(sA) - 10 * k, wood = mix(I.dach, I.tinte, 0.35), woodL = mix(I.dach, I.tinte, 0.15);
+        // Gewehrbock: zwei gekreuzte Stangenpaare, Querstange mit Schnee, zwei angelehnte Gewehre
+        for (const dx of [0, 34]) { seg([x + dx - 6 * k, y], [x + dx + 4 * k, y - 26 * k], wood, 2 * k); seg([x + dx + 6 * k, y], [x + dx - 4 * k, y - 26 * k], woodL, 2 * k); }
+        seg([x - 2 * k, y - 21 * k], [x + 36 * k, y - 21 * k], woodL, 2.2 * k); seg([x - 2 * k, y - 22.5 * k], [x + 36 * k, y - 22.5 * k], "#FBF8F1", 1.2 * k);
+        for (const gx of [10, 22]) { seg([x + gx * k, y], [x + (gx + 4) * k, y - 30 * k], mix(I.tinte, I.dach, 0.3), 1.4 * k); seg([x + gx * k, y], [x + (gx + 1.5) * k, y - 9 * k], mix(I.dach, I.tinte, 0.1), 2.6 * k); }
+        // Pflock mit Tuchstreifen (zeigt den Wind)
+        const px = x + 50 * k; seg([px, y + 2 * k], [px, y - 46 * k], wood, 1.8 * k);
+        const wn = Math.min(1.6, Math.abs(Rc && Rc.wx ? (Rc.wx.x || 0) : 1) / 3 + 0.4 + (Rc && Rc.gustNow || 0)), P = [];
+        for (let i = 0; i <= 6; i++) { const u = i / 6; P.push([px + 18 * k * u * wn, y - 44 * k + u * 6 * k * (1.4 - wn * 0.6) + Math.sin(t * 7 + u * 4) * 2 * k * u]); }
+        for (let i = 6; i >= 0; i--) { const u = i / 6; P.push([px + 18 * k * u * wn, y - 41 * k + u * 6 * k * (1.4 - wn * 0.6) + Math.sin(t * 7 + u * 4 + 0.4) * 2 * k * u]); }
+        poly(P, I.rot);
+        // Reisig am Boden und Schnee
+        for (let j = 0; j < 5; j++) seg([x + (6 + j * 7) * k, y + 2 * k], [x + (10 + j * 7) * k, y - 3 * k], mix(I.fichte, I.tinte, 0.3), 1.6 * k);
+        mound(x + 17 * k, y + 2 * k, 30 * k, 2.5 * k);
         for (let j = 0; j < 4; j++) { const xx = X(sA + 2 + j * 1.6), yy = Y(sA + 2 + j * 1.6); slab(xx - 1.5 * k, yy, xx + 1.5 * k, yy, 9 * k, 3 * k, I.dach); }
       }
     };
