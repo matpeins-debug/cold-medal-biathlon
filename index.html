@@ -539,6 +539,13 @@ body.era60 .cs-mag-dots i { background: #1A130C; border-color: #D9C9A3; }
 body.era60 .cs-mag-dots i.cs-hit { background: #EFE4CC; }
 body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
 
+/* 0.37 Kälte (Jagd 1960): Raureif am Bildrand, Deckkraft = Kälte */
+#frostFx { position: absolute; inset: 0; pointer-events: none; transition: opacity 0.8s;
+  background: radial-gradient(ellipse 80% 75% at 50% 50%, transparent 55%, rgba(236, 244, 250, 0.55) 82%, rgba(250, 252, 255, 0.92) 100%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, 0) 0 9px, rgba(255, 255, 255, 0.07) 9px 10px); }
+body.era60 .tip, body.era60 .cs-hint { background: rgba(13, 10, 7, 0.88); color: #EFE4CC; border: 1px solid rgba(239, 228, 204, 0.6); font-family: var(--font-body); font-style: italic; }
+body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
+
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
    Buchschrift für Lesetext. Farben und Schriften kommen aus den Variablen des Spiels (alle Spiele der Reihe haben sie),
@@ -750,6 +757,7 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
 <canvas id="scene" aria-hidden="true"></canvas>
 <div id="grain" aria-hidden="true"></div>
 <div id="filmFx" aria-hidden="true" hidden><div class="fx-tone"></div><div class="fx-grain"></div><div class="fx-scratch"></div><div class="fx-vig"></div></div>
+<div id="frostFx" aria-hidden="true" hidden></div>
 <div id="introFx" aria-hidden="true" hidden><div class="ib top"></div><div class="ib bot"></div><div class="icap"><span id="iKick" class="ik"></span><b id="iTitle"></b><span id="iSub" class="isub"></span></div><span class="iskip">Tippen: los</span></div>
 <div id="ui">
 
@@ -1220,7 +1228,7 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
   // G.ease: Anfänger-Hilfen (0.6), sonst 1.
   function sway(G) { const a = swaySlow(G), b = tremor(G); return { x: a.x + b.x, y: a.y + b.y }; }
   function tremor(G) {
-    const t = G.t, A = G.st.hit * TREM * (G.stance === "stand" ? 1.12 : 1) * (0.45 + 0.9 * clamp(G.hr, 0, 1.1)) * (G.ease || 1) * (G.hold && G.holdT > 0.45 && G.holdT < 2.2 ? 0.8 : 1) * (1 + (G.after || 0));
+    const t = G.t, A = G.st.hit * TREM * (G.stance === "stand" ? 1.12 : 1) * (0.45 + 0.9 * clamp(G.hr, 0, 1.1)) * (G.ease || 1) * (G.hold && G.holdT > 0.45 && G.holdT < 2.2 ? 0.8 : 1) * (1 + (G.after || 0)) * (1 + 1.4 * (G.cold || 0));   // 0.37: Kälte (Jagd): klamme Finger
     return { x: A * (0.6 * Math.sin(8.1 * t + G.ph[0] * 2) + 0.4 * Math.sin(13.7 * t + G.ph[1] * 3)), y: A * (0.6 * Math.sin(9.3 * t + G.ph[2] * 2) + 0.4 * Math.sin(12.1 * t + G.ph[3] * 3)) };
   }
   const TREM = 0.55, FLINCH = 0.48;   // 0.29: leichter (Mat: normales Schießen viel schwerer als Jagd), vorher 0.68 / 0.58
@@ -1230,7 +1238,7 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
     let hf = 1;
     if (G.hold) hf = G.holdT < 0.45 ? 1 - 0.4 * G.holdT / 0.45 : G.holdT < 2.2 ? 0.6 : Math.min(1.8, 0.6 + (G.holdT - 2.2) * 0.8);   // Luft anhalten hilft nur kurz
     if (G.after > 0) hf *= 1 + G.after * 0.8;   // nach dem Schuss: Rückstoß
-    const A = st.sway * k * hf;
+    const A = st.sway * k * hf * (1 + 0.5 * (G.cold || 0));
     const x = A * (0.6 * Math.sin(1.3 * t + G.ph[0]) + 0.4 * Math.sin(2.9 * t + G.ph[1]));
     let y = A * (0.65 * Math.sin(1.1 * t + G.ph[2]) + 0.35 * Math.sin(3.7 * t + G.ph[3]));
     const br = st.breath * (0.55 + 0.6 * clamp(G.hr, 0, 1.1));
@@ -1238,7 +1246,8 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
     return { x, y };
   }
   // Wind am Schießstand: Mittelwert plus langsame Böen (m/s, positiv = von links)
-  function windAt(G) { return G.wind.base + G.wind.gust * Math.sin(G.t * 0.21 + G.wind.ph) * Math.sin(G.t * 0.067 + 1.3); }
+  // 0.37: sq = Sturmböen (Jagd): kurze, kräftige Stöße obendrauf, nicht gleichmäßig wie das Pendeln
+  function windAt(G) { const w = G.wind; return w.base + w.gust * Math.sin(G.t * 0.21 + w.ph) * Math.sin(G.t * 0.067 + 1.3) + (w.sq ? w.sq * Math.pow(Math.max(0, Math.sin(G.t * 0.55 + w.ph * 2)), 8) * (Math.sin(G.t * 3.1) > -0.3 ? 1 : 0.7) : 0); }
   function rangeStep(G) {
     G.t += DT;
     G.hr += (0.32 - G.hr) * DT / 14;   // am Schießstand beruhigt sich der Puls
@@ -6715,6 +6724,11 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
       // Wetter über der Szene (kulisse/wetter.js): Glitzern, Flocken, Sturmnebel, Schneefahnen ab der Loipe
       wxOver(V.t, V.s * ppm * C, yr + 6 * k);
       grade(hor, V.t, V.run.v);
+      // 0.37 Sturmböe (Jagd): Schnee peitscht waagrecht durchs Bild, die Kamera ruckelt leicht
+      if (V.gust > 0.05) { const g = Math.min(1, V.gust), n = R.lite ? 25 : 70; ctx.save(); ctx.strokeStyle = "#FFFFFF"; ctx.lineCap = "round";
+        for (let i = 0; i < n; i++) { const sp = 900 + 500 * hsh(i + 5), x = W - ((V.t * sp * k + hsh(i) * W * 3) % (W * 1.4)) + 0.2 * W, y = hsh(i + 77) * H + Math.sin(V.t * 3 + i) * 6 * k, len = (18 + 40 * hsh(i + 9)) * k * g;
+          ctx.globalAlpha = (0.25 + 0.5 * hsh(i + 3)) * g; ctx.lineWidth = (0.8 + 1.4 * hsh(i + 13)) * k; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y - len * 0.08); ctx.stroke(); }
+        ctx.globalAlpha = 0.18 * g; ctx.fillStyle = "#F4F2EC"; ctx.fillRect(0, 0, W, H); ctx.restore(); }
       return { X: (s) => xr + (X(s) - xr) * C, Y: (s) => yr + (Y(s) - yr) * C, xr, yr, C };
     }
 
@@ -7627,7 +7641,7 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.36.0";
+  const VERSION = "0.37.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8109,7 +8123,9 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
 
   function enterRange(stance, hr) {
     const k = Rc.stages.indexOf(stance) >= 0 ? Rc.rangeT.length : Rc.trainRounds.length;
-    Rc.G = (Rc.hunt ? Ph.newHunt : Ph.newRange)(stance, hr, { base: Rc.wind.base, gust: Rc.wind.gust, ph: Rc.wind.ph + k * 1.7 }, Rc.seed ^ (k + 1) * 7919);
+    const sq = Rc.hunt ? ({ sturm: 3.2, neu: 2.2, grau: 1.4 }[Rc.wx.sky] || 0) : 0;   // 0.37: Böen an der Station (Jagd)
+    Rc.G = (Rc.hunt ? Ph.newHunt : Ph.newRange)(stance, hr, { base: Rc.wind.base * (Rc.hunt ? 1.3 : 1), gust: Rc.wind.gust * (Rc.hunt ? 1.5 : 1), ph: Rc.wind.ph + k * 1.7, sq }, Rc.seed ^ (k + 1) * 7919);
+    if (Rc.hunt) { Rc.G.cold = Rc.cold || 0; if (Rc.cold > 0.5) setTimeout(() => { if (mode === "range") rToast(Rc.cold > 0.75 ? "Die Finger sind steif vor Kälte" : "Klamme Finger", "bad"); }, 700); }
     Rc.G.t = k * 40;   // andere Böen als beim letzten Mal
     Rc.G.ease = Rc.kind === "learn" ? 0.45 : S.help === "anf" ? 0.65 : 1;   // Zittern und Verreißen: mit Anfänger-Hilfen schwächer
     Rc.rangeStart = Rc.range; Rc.arriveHr.push(hr);
@@ -8458,6 +8474,27 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
     const fx = $("introFx"); fx.classList.add("out"); setTimeout(() => { if (fx.classList.contains("out")) fx.hidden = true; }, 1000);
     Snd.beep(false);
   }
+  // ------------------------------------------------------------------ 0.37 Survival in der Jagd 1960 (Mat): Kälte und Sturmböen
+  // Kälte (0 … 1): wer langsam ist oder an der Station steht, kühlt aus; zügiges Laufen wärmt. Je kälter und stürmischer, desto schneller.
+  // Wirkt beim Schießen: Zittern bis +140 %, Schwanken bis +50 %. Zu sehen als Raureif am Bildrand.
+  function coldTick(dt, v, still) {
+    const tf = clamp(-(Rc.wx.t || 0) / 14, 0.25, 1.1), sf = { sturm: 1.6, neu: 1.2, grau: 1, klar: 0.8 }[Rc.wx.sky] || 1;
+    const d = still ? 0.022 * tf * sf : v < 3 ? 0.03 * tf * sf : v < 5 ? 0.006 * tf * sf : -0.014 * (v > 7 ? 1.5 : 1);
+    Rc.cold = clamp((Rc.cold == null ? 0.12 : Rc.cold) + d * dt + (Rc.gustNow || 0) * 0.006 * dt, 0, 1);
+  }
+  // Sturmböen: in unregelmäßigen Abständen ein Stoß von vorn, auf freiem Feld (Wiese, Lichtung) voll, im Wald kaum
+  const exposure = (q) => (q < 0.22 ? 1 : q < 0.47 ? 0.15 : q < 0.53 ? 0.5 : q < 0.72 ? 1 : 0.55);
+  function gustTick(dt, q) {
+    const str = { sturm: 8, neu: 5, grau: 3.5 }[Rc.wx.sky] || 0;
+    if (!str) { Rc.gustNow = 0; return 0; }
+    if (Rc.gustIn == null) Rc.gustIn = 6 + Math.random() * 8;
+    if (Rc.gustT == null) { Rc.gustIn -= dt; if (Rc.gustIn <= 0) { Rc.gustT = 0; Rc.gustL = 2.2 + Math.random() * 1.6; Rc.gustS = str * (0.7 + 0.5 * Math.random()); } Rc.gustNow = 0; return 0; }
+    Rc.gustT += dt; const u = Rc.gustT / Rc.gustL;
+    if (u >= 1) { Rc.gustT = null; Rc.gustIn = 9 + Math.random() * 14; Rc.gustNow = 0; return 0; }
+    const g = Math.sin(Math.PI * u) * (0.75 + 0.25 * Math.sin(Rc.gustT * 9)) * exposure(q);
+    Rc.gustNow = g * Rc.gustS / 8;   // 0 … ~1 fürs Bild und den Ton
+    return Rc.gustS * g;
+  }
   // ------------------------------------------------------------------ 0.34 Wildwechsel in der Jagd 1960: zufällig (nicht jede Runde) kreuzt ein Tier
   // die Loipe. Es bricht aus dem Wald und quert kurz vor dir (Abstand nach Tempo). Ein Keiler kann dich treffen (Tempo weg,
   // Puls hoch), wenn du genau dann ankommst; wer Tempo herausnimmt oder vorher durchzieht, kommt vorbei. Hirsch und Fuchs queren nur.
@@ -8509,6 +8546,7 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
     }
     if (Rc.phase === "mat") return tickMat(dt);
     R.wAlong = Rc.wx.course ? Rc.wx.course * Math.cos(2 * Math.PI * R.s / L.L + Rc.wx.cph) * (0.85 + 0.3 * Math.sin(Rc.ski * 0.9)) : 0;
+    if (Rc.hunt) { R.wAlong -= gustTick(dt, R.s / L.L); coldTick(dt, R.v, false); }
     Ph.step(R, L); Rc.ski += dt;
     // am Rundenende direkt durchs Visier (0.16.5, Mat: keine Pause vor dem Schießstand)
     if (Rc.kind === "learn") learnTick(dt);
@@ -8544,6 +8582,7 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
   function tickRange(dt) {
     const G = Rc.G;
     Rc.range += dt;
+    if (Rc.hunt) { coldTick(dt, 0, true); G.cold = Rc.cold; }   // still stehen kühlt aus
     // Nachbarbahnen: im Rennen schießen die anderen mit (zu hören, nicht zu sehen)
     if (Rc.race && !G.hunt && Rc.kind !== "learn") { Rc.nbT = (Rc.nbT == null ? 0.8 : Rc.nbT) - dt; if (Rc.nbT <= 0) { Rc.nbT = 0.6 + Math.random() * (Rc.together ? 1.4 : 3.2); Snd.farShot(Math.random() < 0.82); } }
     Ph.rangeStep(G);
@@ -8943,9 +8982,10 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
     // Gleitgeräusch nur beim Laufen (Menü, Schießstand, Pause, Ziel: still)
     { const adt = Math.min(0.1, (now - (frame.la || now)) / 1000); frame.la = now;
       Snd.amb(Rc && !paused && (mode === "run" || mode === "fin") && !Rc.watch ? renderer.amb : null, adt); }
-    Snd.wind(Rc && Rc.wx && !paused && (mode === "run" || mode === "range" || mode === "fin") ? (Rc.wx.sky === "klar" ? 0 : renderer.windNow(performance.now() / 1000)) : 0);
+    Snd.wind(Rc && Rc.wx && !paused && (mode === "run" || mode === "range" || mode === "fin") ? Math.min(1, (Rc.wx.sky === "klar" ? 0 : renderer.windNow(performance.now() / 1000)) + (Rc.gustNow || 0) * 0.8) : 0);
     Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen" || Rc.phase === "mat"), Rc ? (Rc.watch ? 0.8 : Rc.flow || 0) : 0);
-    setFilm(!!(Rc && Rc.hunt) || !!tcQ);   // Filmebene nur in der Jagd 1960 (Rennen, Schießen, Ergebnis)
+    setFilm(!!(Rc && Rc.hunt) || !!tcQ);
+    { const fr = $("frostFx"), on = !!(Rc && Rc.hunt && (mode === "run" || mode === "range")); fr.hidden = !on; if (on) fr.style.opacity = (0.12 + 0.88 * (Rc.cold || 0)).toFixed(2); }   // Raureif = Kälte   // Filmebene nur in der Jagd 1960 (Rennen, Schießen, Ergebnis)
     renderer.clear();
     const t = now / 1000;
     if (mode === "menu" || (!Rc && mode !== "result")) { renderer.drawMenu(t); return; }
@@ -8964,7 +9004,7 @@ body.era60 .cs-mag-dots i.cs-miss { background: #6E4A33; }
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
       const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost, lapD: (r.k == null ? Rc.lap : r.k) - Rc.lap })) : [];
-      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1, intro: Rc.phase === "intro" ? clamp(Rc.pt / INTRO_T, 0, 1) : null, beast: Rc.beast && Rc.beast.t != null && !pen ? { kind: Rc.beast.kind, s: Rc.beast.s + (sNow - Rc.R.s), p: clamp(Rc.beast.t / BEAST_T, 0, 1), dir: Rc.beast.dir } : null });
+      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1, intro: Rc.phase === "intro" ? clamp(Rc.pt / INTRO_T, 0, 1) : null, gust: Rc.hunt ? Rc.gustNow || 0 : 0, beast: Rc.beast && Rc.beast.t != null && !pen ? { kind: Rc.beast.kind, s: Rc.beast.s + (sNow - Rc.R.s), p: clamp(Rc.beast.t / BEAST_T, 0, 1), dir: Rc.beast.dir } : null });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
       // Ortswechsel (Schießstand → Strafrunde → Strecke): kurz abblenden, damit der Sprung nicht wie ein Fehler aussieht
