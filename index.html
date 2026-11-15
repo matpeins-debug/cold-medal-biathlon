@@ -5888,7 +5888,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
             const kinds = ["hirsch", "gams", "gams", "hirsch"], n = 2 + Math.floor(hsh(i * 3 + row.seed) * 3);
             for (let j = 0; j < n; j++) { const kd = kinds[(((i + j) % 4) + 4) % 4], A = BIPhysAnimals()[kd]; animal(kd, x + j * 15 * s, y + (j % 2) * 2 * s, PM * s, hsh(i * 11 + j) < 0.5 ? -1 : 1, A, 0); }
           }
-          else if (q < 0.46) { // Jäger mit Hunden auf dem Heimweg
+          else if (q < 0.46) { if (V.retro) continue; // Jäger mit Hunden auf dem Heimweg (nicht in der Jagd 1960: dort ist man allein)
             // Figur 37 Einheiten ≈ 1,8 m, im selben Maßstab wie das Wild
             const dir = hsh(i * 7 + row.seed) < 0.5 ? -1 : 1, hs = PM * s * 1.8 / 37, wx = x + dir * t * 3 * s;
             for (let j = 0; j < 2; j++) hunter(wx - dir * j * 12 * s, y, hs, t, dir, i * 5 + j);
@@ -6372,7 +6372,8 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       // ab hier Welt: um die Läuferin (xr, yr) mit C vergrößert; HB = unterer Bildrand in Weltkoordinaten
       const HB = yr + (H - yr) / C + 4 * k;
       ctx.save(); ctx.translate(xr, yr); ctx.scale(C, C); ctx.translate(-xr, -yr);
-      const s0 = V.s - xr / C / ppm - 2, s1 = V.s + (W - xr) / C / ppm + 2, step = 1.2 / k;
+      // 0.35 (Mat: Zaun und Kanten „flackern“): alle Stützpunkte auf einem festen Raster der Welt, nicht ab dem Bildrand gezählt
+      const step = 1.2 / k, s0 = Math.floor((V.s - xr / C / ppm - 2) / step) * step, s1 = Math.ceil((V.s + (W - xr) / C / ppm + 2) / step) * step;
       // 0.23.1 (Mat: „alles schwebt“): Schneefeld hinter der Loipe. Die Spur liegt in einer Wiese, die nach hinten ansteigt und
       // weich in den Talboden übergeht, statt als dünne Linie vor dem fernen Tal zu hängen. Oben unregelmäßig (Schneewellen).
       if (!V.pen) {
@@ -6434,7 +6435,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) {
         const at = (f) => base + f * LL;
         // Zaun entlang der Wiese, direkt hinter der Loipe
-        for (let s = Math.max(s0, at(0.07)); s < Math.min(s1, at(0.2)); s += 2.2) {
+        for (let s = at(0.07) + Math.max(0, Math.ceil((s0 - at(0.07)) / 2.2)) * 2.2; s < Math.min(s1, at(0.2)); s += 2.2) {   // Pfosten fest in der Welt
           const x = X(s), y = Y(s) - 12 * k, x2 = X(s + 2.2), y2 = Y(s + 2.2) - 12 * k, c = mix(I.tinte, I.dach, 0.4);
           seg([x, y], [x, y - 13 * k], c, 1.8 * k); disc(x, y - 13.5 * k, 1.6 * k, "#FFFFFF");
           seg([x, y - 5 * k], [x2, y2 - 5 * k], c, 1.1 * k); seg([x, y - 10 * k], [x2, y2 - 10 * k], c, 1.1 * k);
@@ -6443,7 +6444,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         // Landschaft (jede Runde gleich): Heustadel, Almhütte mit Bank, Hochsitz am Waldrand, Wegweiser, Schneemann
         const sh = at(0.13); if (sh > s0 - 6 && sh < s1 + 6) { const x = X(sh), y = Y(sh) - 30 * k; castShadow(x, y, 50 * k, 40 * k); trees.push(["stadel", x, y]); }
         const hu = at(0.62); if (hu > s0 - 8 && hu < s1 + 8) { const x = X(hu), y = Y(hu) - 34 * k; castShadow(x, y, 60 * k, 56 * k); trees.push(["huette", x, y]); trees.push(["bank", x - 40 * k, y + 12 * k]); }
-        const kp = at(0.175); if (kp > s0 - 10 && kp < s1 + 10) { const x = X(kp), y = Y(kp) - 46 * k; castShadow(x, y, 70 * k, 50 * k); trees.push(["kapelle", x, y]); }
+        const kp = at(0.175); if (!V.retro && kp > s0 - 10 && kp < s1 + 10) { const x = X(kp), y = Y(kp) - 46 * k; castShadow(x, y, 70 * k, 50 * k); trees.push(["kapelle", x, y]); }
         const hs = at(0.235); if (hs > s0 - 6 && hs < s1 + 6) { const x = X(hs), y = Y(hs) - 26 * k; castShadow(x, y, 50 * k, 18 * k); trees.push(["hochsitz", x, y]); }
         const wg = at(0.545); if (wg > s0 - 4 && wg < s1 + 4) trees.push(["weg", X(wg), Y(wg) - 9 * k]);
         const sm = at(0.8); if (!V.retro && sm > s0 - 4 && sm < s1 + 4) { castShadow(X(sm), Y(sm) - 16 * k, 24 * k, 10 * k); trees.push(["schneemann", X(sm), Y(sm) - 16 * k]); }
@@ -7598,7 +7599,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.34.0";
+  const VERSION = "0.35.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8419,7 +8420,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
     const fx = $("introFx"); fx.classList.remove("out"); fx.hidden = false;
     const venue = ($("venueName").textContent || "Hochfilzen").toUpperCase();
     $("iKick").textContent = kind === "jagd" ? "Wochenschau" : "Biathlon · " + (TOD_I[Rc.wx && Rc.wx.tod] || "");
-    $("iTitle").textContent = venue;
+    $("iTitle").textContent = kind === "jagd" ? "HOCHWALD" : venue;
     $("iSub").textContent = kind === "jagd" ? "Jagdpatrouille, Winter 1960" : `${T.FORMATS[kind].name} · ${SKY_N[Rc.wx.sky]} ${tempTxt(Rc.wx.t)}`;
   }
   function endIntro() {
@@ -8779,7 +8780,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       // Zuschauer: hintere Reihe (Stadion, auf einem Holzpodest, etwas blasser) und vordere Reihe; nahe bei dir jubeln sie und hüpfen
       for (const back of [true, false]) for (let s = Math.floor(s0 / 1.1) * 1.1 + (back ? 0.55 : 0); s < s1; s += 1.1) {
         const q = ((s % L.L) + L.L) % L.L;
-        const cr = pen || inStadium(s) || (!hunt && crowd.some(([a, b]) => q >= a && q <= b));
+        const cr = !hunt && (pen || inStadium(s) || crowd.some(([a, b]) => q >= a && q <= b));   // Jagd 1960: niemand (Mat: Einsamkeit)
         if (!cr) continue;
         const stad = inStadium(s);
         if (back && !stad) continue;
@@ -8807,22 +8808,25 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       }
       // Bande im Stadion: Planen auf Rahmen (Körper mit Deckel und Seite), Oberkante bewegt sich im Wind, Schnee am Fuß
       for (let s = Math.floor(s0 / 4) * 4; s < s1; s += 4) {
-        if (!inStadium(s)) continue;
+        if (!inStadium(s) || hunt) continue;
         const x = X(s), y = Y(s) - 6 * k, x2 = X(s + 4) - 1 * k, y2 = Y(s + 4) - 6 * k;
-        const bn = ((Math.round(s / 4) % 3) + 3) % 3, bc = bn === 0 ? I.navy : bn === 1 ? I.ocker : I.rot, ph = s * 0.7;
+        const bn = ((Math.round(s / 4) % 3) + 3) % 3, bc = bn === 1 ? "#F1ECE1" : mix(I.navy, I.tinte, bn === 2 ? 0.35 : 0.1), ph = s * 0.7;   // 0.35 (Mat: „edler“): Navy und Creme statt Rot/Gelb
         slab(x, y, x2, y2, 14 * k, 5 * k, bc, (u) => Math.sin(t * (2 + 3 * wind) + ph + u * 5) * (0.5 + 1.6 * wind) * k * Math.sin(u * Math.PI));
         // Falten der Plane: zwei weiche Schatten
         ctx.globalAlpha = 0.12; seg([x + (x2 - x) * 0.33, y - 13 * k], [x + (x2 - x) * 0.36, y - 1 * k], I.tinte, 2 * k); seg([x + (x2 - x) * 0.7, y - 13 * k], [x + (x2 - x) * 0.67, y - 1 * k], I.tinte, 2 * k); ctx.globalAlpha = 1;
         if (x2 - x > 40 * k) {
           ctx.save(); ctx.translate((x + x2) / 2, (y + y2) / 2 - 7 * k); ctx.rotate(Math.atan2(y2 - y, x2 - x));
           const word = (hunt ? ["JAGDPATROUILLE", "ANNO 1960", "COLD MEDAL"] : ["HOCHFILZEN", "COLD MEDAL", "BIATHLON"])[bn], bw = Math.hypot(x2 - x, y2 - y);
-          ctx.fillStyle = bn === 1 ? I.tinte : I.papier; ctx.font = `800 ${Math.max(5, Math.min(8 * k, bw * 1.25 / word.length))}px Futura, 'Avenir Next Condensed', 'Arial Narrow', sans-serif`;
-          ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(word, 0, 0.5); ctx.restore();
+          const sp = word.split("").join("\u200A");   // gesperrt (Haarspatium), kleiner und leichter
+          ctx.fillStyle = bn === 1 ? mix(I.navy, I.tinte, 0.2) : "#EFE7D6"; ctx.font = `600 ${Math.max(4.5, Math.min(6 * k, bw * 0.95 / word.length))}px Futura, 'Avenir Next', 'Gill Sans', sans-serif`;
+          ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(sp, 0, 0.5);
+          ctx.globalAlpha = 0.5; ctx.fillRect(-bw * 0.42, -5.2 * k, bw * 0.84, 0.5 * k); ctx.fillRect(-bw * 0.42, 4.8 * k, bw * 0.84, 0.5 * k); ctx.globalAlpha = 1;   // feine Linien
+          ctx.restore();
         }
         mound((x + x2) / 2, (y + y2) / 2 + 1 * k, (x2 - x) * 0.55, 3.5 * k);
       }
       // je Land eine Flagge im Stadion (Mast mit Kugel und Schatten)
-      if (!pen) for (const [fs, col, col2] of [[-6, I.rot, I.papier], [L.L - 14, I.navy, I.ocker]]) {
+      if (!pen && !hunt) for (const [fs, col, col2] of [[-6, I.rot, I.papier], [L.L - 14, I.navy, I.ocker]]) {
         for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
           const s = base + fs; if (s < s0 - 4 || s > s1 + 4) continue;
           const x = X(s), y = Y(s) - 30 * k;
@@ -8835,24 +8839,45 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
           ctx.globalAlpha = 0.18; band(5.5, 10, I.tinte); ctx.globalAlpha = 1;
         }
       }
+      // Jagd 1960: kein Portal, sondern eine Blockhütte am Waldrand (Rauch aus dem Kamin), Holzstoß, Laterne am Pfahl
+      if (!pen && hunt) for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
+        const s = base - 3; if (s < s0 - 10 || s > s1 + 10) continue;
+        const x = X(s), y = Y(s) - 30 * k, wood = mix(I.dach, I.tinte, 0.35), woodL = mix(I.dach, I.tinte, 0.15);
+        const B = slab(x - 30 * k, y, x + 24 * k, y, 24 * k, 16 * k, woodL);
+        for (let i = 1; i < 6; i++) seg([x - 30 * k, y - i * 4 * k], [x + 24 * k, y - i * 4 * k], wood, 1 * k);   // Balken
+        poly([[x - 8 * k, y], [x + 1 * k, y], [x + 1 * k, y - 15 * k], [x - 8 * k, y - 15 * k]], mix(I.tinte, I.dach, 0.2));   // Tür
+        poly([[x + 8 * k, y - 9 * k], [x + 17 * k, y - 9 * k], [x + 17 * k, y - 16 * k], [x + 8 * k, y - 16 * k]], "#E9C36A");   // Fenster mit Licht
+        const ry = y - 24 * k;
+        poly([[x - 35 * k, ry + 2 * k], [x - 3 * k, ry - 16 * k], [x + 29 * k, ry + 2 * k]], mix(I.dach, I.tinte, 0.5));
+        poly([[x - 36 * k, ry + 1 * k], [x - 3 * k, ry - 17 * k], [x + 30 * k, ry + 1 * k], [x + 24 * k, ry - 1 * k], [x - 3 * k, ry - 13 * k], [x - 30 * k, ry - 1 * k]], "#FBF8F1");
+        slab(x + 12 * k, ry - 6 * k, x + 17 * k, ry - 6 * k, 10 * k, 4 * k, mix(I.tinte, I.dach, 0.3));   // Kamin
+        for (let i = 0; i < 5; i++) { const u = ((t * 0.25 + i / 5) % 1); ctx.globalAlpha = 0.35 * (1 - u); disc(x + 15 * k + u * 18 * k + Math.sin(t + i) * 3 * k, ry - 18 * k - u * 40 * k, (3 + u * 8) * k, "#E8E4DA"); } ctx.globalAlpha = 1;
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 4 - i; j++) disc(x + 34 * k + j * 5 * k + i * 2.5 * k, y - 2.5 * k - i * 4.5 * k, 2.4 * k, j % 2 ? "#B98A5A" : "#A87A4C");   // Holzstoß
+        mound(x - 3 * k, y + 1 * k, 36 * k, 3 * k);
+        const lx = X(base + 4), ly = Y(base + 4) - 2 * k;   // Laterne am Pfahl an der Spur
+        slab(lx - 1.2 * k, ly, lx + 1.2 * k, ly, 40 * k, 2 * k, wood); seg([lx, ly - 38 * k], [lx + 6 * k, ly - 38 * k], wood, 1.2 * k);
+        disc(lx + 6 * k, ly - 33 * k, 6 * k, "rgba(255,210,120,0.25)"); poly([[lx + 4 * k, ly - 36 * k], [lx + 8 * k, ly - 36 * k], [lx + 8 * k, ly - 30 * k], [lx + 4 * k, ly - 30 * k]], "#F2C46A");
+      }
       // Start/Ziel: Portal aus zwei Pfosten und Querbalken (Körper), darauf eine Zeitanzeige mit der laufenden Zeit
-      if (!pen) for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
+      if (!pen && !hunt) for (const base of [Math.floor(s0 / L.L) * L.L, Math.ceil(s0 / L.L) * L.L]) {
         const s = base; if (s < s0 - 6 || s > s1 + 6) continue;
         const x = X(s), y = Y(s);
         const j = (Rc ? Rc.lap : 0) + Math.round(base / L.L), nSt = (T.FORMATS[L.format] || T.FORMATS.sprint).stages.length;
         const word = Rc && Rc.kind === "lap" ? (j >= 1 ? "ZIEL" : "START") : j <= 0 ? "START" : j <= nSt ? (hunt ? "STATION ›" : "SCHIESSEN ›") : j >= L.laps ? "ZIEL" : "RUNDE " + (j + 1);
-        ctx.font = `800 ${Math.round(13 * k)}px Futura, 'Avenir Next Condensed', 'Arial Narrow', sans-serif`;
-        const tw = Math.max(64 * k, ctx.measureText(word).width + 20 * k), xl = x + 13 * k - tw / 2, xr2 = x + 13 * k + tw / 2;
-        const pc = mix(I.tinte, I.navy, 0.3), bc = word === "ZIEL" ? I.rot : word === "START" ? I.navy : mix(I.dach, I.tinte, 0.2);
+        ctx.font = `600 ${Math.round(9.5 * k)}px Futura, 'Avenir Next', 'Gill Sans', sans-serif`;
+        const wsp = word.split("").join("\u2009");   // gesperrt
+        const tw = Math.max(64 * k, ctx.measureText(wsp).width + 26 * k), xl = x + 13 * k - tw / 2, xr2 = x + 13 * k + tw / 2;
+        const pc = mix(I.tinte, I.navy, 0.3), bc = word === "ZIEL" ? mix(I.rot, I.tinte, 0.35) : mix(I.navy, I.tinte, 0.25);   // 0.35: gedeckt
         slab(x - 7 * k, y - 4 * k, x - 1 * k, y - 4 * k, 86 * k, 6 * k, pc);          // hinterer Pfosten (steht hinter der Spur)
         const T2 = slab(xl, y - 82 * k, xr2, y - 82 * k, 20 * k, 9 * k, bc);           // Querbalken
         snowCap(T2[0][0] + 3 * k, T2[0][1] + 9 * DY * k, T2[1][0] + 3 * k, T2[1][1] + 9 * DY * k, 2 * k);
-        ctx.save(); ctx.fillStyle = I.papier; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(word, (xl + xr2) / 2, y - 92 * k); ctx.restore();
+        ctx.save(); ctx.fillStyle = "#EFE7D6"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(wsp, (xl + xr2) / 2, y - 92 * k);
+        ctx.globalAlpha = 0.55; ctx.strokeStyle = "#EFE7D6"; ctx.lineWidth = 0.7 * k; ctx.strokeRect(xl + 3 * k, y - 100 * k, xr2 - xl - 6 * k, 16 * k); ctx.restore();   // feiner Rahmen
         // Zeitanzeige über dem Balken
         if (Rc && Rc.race && word !== "START" || (Rc && Rc.race && Rc.phase !== "count")) {
           const cw = 46 * k, cx0 = (xl + xr2) / 2 - cw / 2;
           slab(cx0, y - 104 * k, cx0 + cw, y - 104 * k, 14 * k, 5 * k, I.tinte);
-          ctx.fillStyle = "#F7C94A"; ctx.font = `700 ${Math.round(9 * k)}px 'SF Mono', Menlo, Consolas, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillStyle = "#EFE7D6"; ctx.font = `500 ${Math.round(8.5 * k)}px 'SF Mono', Menlo, Consolas, monospace`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
           ctx.fillText(fmtT(dispTime()), cx0 + cw / 2, y - 111 * k);
         }
         slab(x + 27 * k, y + 6 * k, x + 33 * k, y + 6 * k, 88 * k, 6 * k, pc);       // vorderer Pfosten (vor der Spur)
