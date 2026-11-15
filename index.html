@@ -6422,7 +6422,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         const z = zoneAt(s, true); if (z === "stadion" || z === "bach" || nearCreek(s, 8)) continue;
         if (LL) { const d = (((s - 0.235 * LL) % LL) + LL) % LL, d2 = (((s - 0.175 * LL) % LL) + LL) % LL; if (Math.min(d, LL - d) < 4 || Math.min(d2, LL - d2) < 5) continue; }   // vor dem Hochsitz eine Lücke (er steht frei am Waldrand)
         const q = hsh(Math.round(s * 7) + (V.pen ? 999 : 0));
-        const dens = { wiese: 0.86, wald: 0.25, lichtung: 0.82, birke: 0.5 }[z];
+        const dens = (V.retro ? { wiese: 0.7, wald: 0.12, lichtung: 0.6, birke: 0.38 } : { wiese: 0.86, wald: 0.25, lichtung: 0.82, birke: 0.5 })[z];   // Jagd 1960: wilder, dichter
         if (q < dens) continue;
         const back = hsh(Math.round(s * 13)), x = X(s + q), y = Y(s + q) - (5 + 14 * back) * k, hh = (44 + 46 * hsh(Math.round(s * 5))) * k * (1 - 0.25 * back), v = hsh(Math.round(s * 3) + 55);
         if (z === "birke" && v < 0.6) plant("birch", x, y, hh, Math.round(s * 11));
@@ -6446,11 +6446,11 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         const kp = at(0.175); if (kp > s0 - 10 && kp < s1 + 10) { const x = X(kp), y = Y(kp) - 46 * k; castShadow(x, y, 70 * k, 50 * k); trees.push(["kapelle", x, y]); }
         const hs = at(0.235); if (hs > s0 - 6 && hs < s1 + 6) { const x = X(hs), y = Y(hs) - 26 * k; castShadow(x, y, 50 * k, 18 * k); trees.push(["hochsitz", x, y]); }
         const wg = at(0.545); if (wg > s0 - 4 && wg < s1 + 4) trees.push(["weg", X(wg), Y(wg) - 9 * k]);
-        const sm = at(0.8); if (sm > s0 - 4 && sm < s1 + 4) { castShadow(X(sm), Y(sm) - 16 * k, 24 * k, 10 * k); trees.push(["schneemann", X(sm), Y(sm) - 16 * k]); }
+        const sm = at(0.8); if (!V.retro && sm > s0 - 4 && sm < s1 + 4) { castShadow(X(sm), Y(sm) - 16 * k, 24 * k, 10 * k); trees.push(["schneemann", X(sm), Y(sm) - 16 * k]); }
         // Leben (jede Runde anders, 0.28): Wild, Fotograf, Rodelkinder, Spaziergänger mit Hund – ob, wo und welche, entscheidet die Runde
         const n = (V.lap || 0) + Math.round(base / LL), rr = (i) => hsh(n * 7919 + i * 131 + 17);
-        if (rr(1) < 0.75) { const fo = at(0.06 + 0.12 * rr(2)); if (fo > s0 - 4 && fo < s1 + 4) trees.push(["foto", X(fo), Y(fo) - 14 * k, fo]); }
-        if (rr(3) < 0.65) { const ro = at(0.64 + 0.04 * rr(4)); if (ro > s0 - 10 && ro < s1 + 10) trees.push(["rodel", X(ro), Y(ro) - 44 * k]); }
+        if (!V.retro && rr(1) < 0.75) { const fo = at(0.06 + 0.12 * rr(2)); if (fo > s0 - 4 && fo < s1 + 4) trees.push(["foto", X(fo), Y(fo) - 14 * k, fo]); }
+        if (!V.retro && rr(3) < 0.65) { const ro = at(0.64 + 0.04 * rr(4)); if (ro > s0 - 10 && ro < s1 + 10) trees.push(["rodel", X(ro), Y(ro) - 44 * k]); }
         const KINDS = ["hirsch", "gams", "gams", "hirsch", "fuchs", "hase", "keiler"];
         const herds = Math.floor(rr(5) * 4);
         for (let h = 0; h < herds; h++) {
@@ -6458,7 +6458,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
           for (let j = 0; j < cnt; j++) { const sa = at(f0) + j * 1.4; if (sa < s0 - 3 || sa > s1 + 3 || nearCreek(sa, 6) || (V.stadium && V.stadium(sa))) continue;
             trees.push(["wild", X(sa), Y(sa) - (30 + 12 * rr(50 + h * 5 + j)) * k, kd, rr(60 + h * 5 + j) < 0.5 ? -1 : 1]); }
         }
-        if (rr(7) < 0.55) { const wa = at(0.1 + 0.6 * rr(8)), dir = rr(9) < 0.5 ? -1 : 1; if (wa > s0 - 8 && wa < s1 + 8 && !nearCreek(wa, 8) && !(V.stadium && V.stadium(wa))) trees.push(["spazier", X(wa), Y(wa) - 40 * k, dir, n]); }
+        if (!V.retro && rr(7) < 0.55) { const wa = at(0.1 + 0.6 * rr(8)), dir = rr(9) < 0.5 ? -1 : 1; if (wa > s0 - 8 && wa < s1 + 8 && !nearCreek(wa, 8) && !(V.stadium && V.stadium(wa))) trees.push(["spazier", X(wa), Y(wa) - 40 * k, dir, n]); }
       }
       // Wald: Lichtstrahlen durch die Bäume (nur bei Sonne)
       if (sunny && !R.lite) {
@@ -6511,6 +6511,13 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         else if (kind === "wild") { const A = BIPhysAnimals()[T[3]]; animal(T[3], x, y, 15 * k, T[4], A, { t: V.t, ph: x * 0.01 }); }
       }
       forestShafts(X, Y, s0, s1, zoneAt, V.t, hor);
+      const beastDraw = () => { const B = V.beast, A = BIPhysAnimals()[B.kind], e = B.p, x = X(B.s) + B.dir * (1 - e) * 10 * k, dy = 70 - 100 * e;   // von hinten (Wald) nach vorn über die Loipe
+        const y = Y(B.s) - dy * k - Math.abs(Math.sin(V.t * 13)) * 2.2 * k, sz = (22 + 10 * e) * k * (B.kind === "hirsch" ? 1.1 : B.kind === "fuchs" ? 0.75 : 1);
+        ctx.fillStyle = "rgba(60,80,110,0.18)"; ctx.beginPath(); ctx.ellipse(x, y + 1 * k, sz * 0.7, sz * 0.12, 0, 0, TAU); ctx.fill();
+        animal(B.kind, x, y, sz, B.dir, A, { t: V.t * 2.4, ph: 0.3, run: true });
+        for (let i = 0; i < 3; i++) { ctx.globalAlpha = 0.5; disc(x - B.dir * (6 + i * 5) * k, y - (1 + i) * k, (2.2 - i * 0.5) * k, "#FFFFFF"); } ctx.globalAlpha = 1; };
+      const beastFront = V.beast && V.beast.p > 0.62;
+      if (V.beast && !beastFront) beastDraw();
       // Klang des Ortes (game.js gibt R.amb an audio.js): Wald (Vögel), Bach (Plätschern unter dem Eis), Glocken (Hütte, Stadion), Publikum
       if (LL) {
         const near = (f, r) => { let d = 1e9; for (const b of [Math.floor(V.s / LL) * LL, Math.ceil(V.s / LL) * LL]) d = Math.min(d, Math.abs(b + f * LL - V.s)); return Math.max(0, 1 - d / r); };
@@ -6654,6 +6661,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       if (vb > 0 && !R.lite) for (let i = 2; i >= 1; i--) { ctx.globalAlpha = 0.12 * vb / i; skier(xr - i * (4 + 5 * vb) * k, yP, 62 * k, aP, PPp, lookP, V.retro, faceP); }
       ctx.globalAlpha = 1;
       skier(xr, yP, 62 * k, aP, PPp, lookP, V.retro, faceP);
+      if (beastFront) beastDraw();
       // Pulverschnee hinter den Ski: je schneller, desto mehr; in der Sonne funkeln einzelne Körner
       if (!R.lite && V.run.v > 4 && Math.random() < Math.min(0.9, (V.run.v - 4) / 8)) for (let i = 0; i < 2; i++) parts.push({ s: null, ds: -0.5 - Math.random() * 0.4, vs: -0.6 - Math.random() * 0.6, y: 0.05, vy: 0.5 + Math.random() * (0.4 + V.run.v * 0.08), life: 0.5 + Math.random() * 0.3, r: 0.6 + Math.random() * 0.9, sp: 1, gl: SL.L > 0.4 && Math.random() < 0.35 });
       // 0.19: Atemwolken: je höher der Puls, desto öfter; treiben nach hinten weg und lösen sich auf
@@ -7590,7 +7598,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.33.1";
+  const VERSION = "0.34.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7848,7 +7856,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
   function prerace(kind, o) {
     o = o || {};
     if (!RACE_KINDS.includes(kind) || o.watch) return startRace(kind, o);
-    const seed = o.seed != null ? o.seed >>> 0 : (Date.now() ^ (Math.random() * 1e9)) >>> 0, wx = wxFor(seed);
+    const seed = o.seed != null ? o.seed >>> 0 : (Date.now() ^ (Math.random() * 1e9)) >>> 0, wx = wxFor(seed, kind === "jagd");
     pre = { kind, o: Object.assign({}, o, { seed }), wx, wax: WAX_KEYS.includes(S.wax) ? S.wax : "u" };
     $("rpKick").textContent = nb(`SCHNEEBERICHT · HOCHFILZEN · ${TOD_N[wx.tod].toUpperCase()}`);
     $("rpTitle").textContent = nb(`${SKY_N[wx.sky]} · ${tempTxt(wx.t)}`);
@@ -7929,7 +7937,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
     // gespurte Loipe im Bild (Langlauf, Jagd 1960)
     Rc.classic = (Rc.hunt || fmt === "xc") && race;
     Rc.R.cycK = 1;
-    Rc.wx = race ? wxFor(seed) : WX_CALM; Rc.wax = race ? (o.wax || S.wax || "u") : "u"; Rc.fit = race ? waxFit(Rc.wax, Rc.wx.band) : waxFit("u");
+    Rc.wx = race ? wxFor(seed, Rc.hunt) : WX_CALM; Rc.wax = race ? (o.wax || S.wax || "u") : "u"; Rc.fit = race ? waxFit(Rc.wax, Rc.wx.band) : waxFit("u");
     Rc.R.muK = Rc.wx.snowK * Rc.fit.k;
     Rc.wind.base *= Rc.wx.windMul; Rc.wind.gust *= Rc.wx.windMul * (Rc.wx.sky === "sturm" ? 1.3 : 1);
     Rc.wx = Object.assign({}, Rc.wx, { x: Rc.wx.course ? Rc.wx.course * (Math.cos(Rc.wx.cph) < 0 ? -1 : 1) : Rc.wind.base });   // Wind fürs Bild (m/s, Richtung)
@@ -7950,7 +7958,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
     }
     paused = false; inp.down = false; inp.key = false; inp.ptrs.clear(); inp.rangeId = null;
     show(null); $("result").hidden = true; tip(null);
-    canvas.style.filter = Rc.hunt ? "sepia(0.42) saturate(0.72) contrast(1.1) brightness(0.95)" : "";   // 0.31: verblasster Farbfilm 1960 (Attrappen bleiben unterscheidbar)
+    canvas.style.filter = Rc.hunt ? "grayscale(1) brightness(0.84) sepia(1) saturate(1.35) hue-rotate(-10deg) contrast(1.06)" : "";   // 0.34: Sepia wie Skispringen 1928 (Mat)
     $("hFlag").innerHTML = flag(Rc.watch ? Rc.watch.c : myNat(), 22, 15); $("hName").textContent = Rc.watch ? Rc.watch.n : myName(); $("hBib").textContent = Rc.bib;
     $("beatLbls").hidden = S.help !== "anf";
     // Taktbalken: einfach = breites grünes Feld (nachsichtig), Profi = enge Felder
@@ -7998,9 +8006,10 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
   const tempTxt = (t) => `${t < 0 ? "−" : t > 0 ? "+" : "±"}${Math.abs(t)} °C`;
   // Seed gut mischen: ähnliche Seeds (1, 2, 3 …) sollen ganz verschiedenes Wetter geben
   const mix32 = (n) => { n = Math.imul((n ^ 0x9e3779b9) >>> 0, 0x85ebca6b) >>> 0; n ^= n >>> 13; n = Math.imul(n, 0xc2b2ae35) >>> 0; return (n ^ (n >>> 16)) >>> 0; };
-  function wxFor(seed) {
+  function wxFor(seed, rough) {
     const r = Ph.rng(mix32(seed ^ 0x3e7a1));
-    const sky = ["klar", "klar", "grau", "neu", "sturm"][Math.floor(r() * 5)];
+    // 0.34: Jagd 1960 rauer (Mat): öfter grau, Neuschnee und Sturm, selten klar
+    const sky = (rough ? ["klar", "grau", "grau", "neu", "neu", "sturm", "sturm"] : ["klar", "klar", "grau", "neu", "sturm"])[Math.floor(r() * (rough ? 7 : 5))];
     const tod = ["morning", "afternoon", "evening"][Math.floor(r() * 3)];
     const t = Math.round(-5 + { morning: -3, afternoon: 2, evening: -2 }[tod] + { klar: 1, grau: 0, neu: -1, sturm: -4 }[sky] + r() * 6 - 3);
     const band = t < -8 ? "k" : t < -2 ? "m" : "w";
@@ -8420,8 +8429,29 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
     const fx = $("introFx"); fx.classList.add("out"); setTimeout(() => { if (fx.classList.contains("out")) fx.hidden = true; }, 1000);
     Snd.beep(false);
   }
+  // ------------------------------------------------------------------ 0.34 Wildwechsel in der Jagd 1960: zufällig (nicht jede Runde) kreuzt ein Tier
+  // die Loipe. Es bricht aus dem Wald und quert kurz vor dir (Abstand nach Tempo). Ein Keiler kann dich treffen (Tempo weg,
+  // Puls hoch), wenn du genau dann ankommst; wer Tempo herausnimmt oder vorher durchzieht, kommt vorbei. Hirsch und Fuchs queren nur.
+  const BEAST_T = 2.4;
+  function beastTick(dt) {
+    const R = Rc.R, L = Rc.L;
+    if (!Rc.hunt || Rc.watch || Rc.phase !== "go") return;
+    if (Rc.beastLap !== Rc.lap) {
+      Rc.beastLap = Rc.lap; Rc.beast = null;
+      const rr = Ph.rng(mix32((Rc.seed ^ 0x5eed) + Rc.lap * 7919 + (Rc.tries || 0)));
+      if (rr() < 0.45 && Rc.lap < L.laps) { const u = rr(); Rc.beast = { kind: u < 0.5 ? "keiler" : u < 0.8 ? "hirsch" : "fuchs", s: L.L * (0.28 + 0.5 * rr()), t: null, hit: false, dir: rr() < 0.5 ? -1 : 1 }; }
+    }
+    const B = Rc.beast; if (!B) return;
+    if (B.t == null) { if (B.s - R.s < Math.max(10, R.v * 1.7) && B.s > R.s) B.t = 0; return; }
+    B.t += dt;
+    if (B.kind === "keiler" && !B.hit && B.t > BEAST_T * 0.5 && B.t < BEAST_T * 0.78 && Math.abs(R.s - B.s) < 1.6) {
+      B.hit = true; R.v *= 0.45; R.hr = Math.min(1, R.hr + 0.08); toast("Keiler! Er rennt dich fast um", "bad"); Hap([60, 40, 90]); Snd.beep(false);
+    }
+    if (B.t > BEAST_T + 0.5) Rc.beast = null;
+  }
   function tickRun(dt, auto) {
     const R = Rc.R, L = Rc.L;
+    beastTick(dt);
     if (Rc.phase === "intro") { if (Rc.pt >= INTRO_T) endIntro(); return; }
     if (Rc.phase === "count") {
       const n = 3 - Math.floor(Rc.pt);
@@ -8881,7 +8911,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
       const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost, lapD: (r.k == null ? Rc.lap : r.k) - Rc.lap })) : [];
-      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1, intro: Rc.phase === "intro" ? clamp(Rc.pt / INTRO_T, 0, 1) : null });
+      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1, intro: Rc.phase === "intro" ? clamp(Rc.pt / INTRO_T, 0, 1) : null, beast: Rc.beast && Rc.beast.t != null && !pen ? { kind: Rc.beast.kind, s: Rc.beast.s + (sNow - Rc.R.s), p: clamp(Rc.beast.t / BEAST_T, 0, 1), dir: Rc.beast.dir } : null });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
       // Ortswechsel (Schießstand → Strafrunde → Strecke): kurz abblenden, damit der Sprung nicht wie ein Fehler aussieht
