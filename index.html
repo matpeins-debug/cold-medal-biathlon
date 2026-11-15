@@ -4268,7 +4268,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
  *                            Bildhöhe / 390), voegel (Standard ja) }
  *   W.ueber(c, o)            über der ganzen Szene, zuletzt: Glitzern auf dem Schnee, Flocken, Sturmnebel, Schneefahnen am Boden.
  *                            o: { lage, W, H, t, cx (Kameraweg in px auf Bodenhöhe, für die Parallaxe), boden (y der Schneefläche; ohne
- *                            kein Glitzern und keine Schneefahnen), flocken (eigene Flocken, Standard ja), nacht, x, k, dicht (Stärke
+ *                            kein Glitzern und keine Schneefahnen), flocken (eigene Flocken, Standard ja), nacht, x, k, glitzer (Tempo und Menge des Funkelns, Standard 1; kleiner = ruhiger), dicht (Stärke
  *                            des Schleiers bei bedeckt und Sturm, Standard 1; das Skispringen nimmt weniger, damit der Springer gut
  *                            zu sehen bleibt) }
  *   W.rauch(c, x, y, s, t, a0, w)  Rauch, der mit dem Wind zieht (w aus W.wind): bei Windstille gerade, im Sturm flach weggerissen
@@ -4384,8 +4384,9 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       // Glitzern: einzelne Kristalle funkeln auf dem Schnee auf (nicht am Abend)
       if (boden != null && !o.nacht) {
         c.strokeStyle = "rgba(255,255,255,0.95)"; c.lineWidth = 1;
-        for (let i = 0; i < 70; i++) {
-          const x = md(hsh(i, 1) * W * 1.5 - cx, W), y = boden + 10 * k + hsh(i, 2) * (H - boden - 12 * k), tw = Math.sin(t * (2 + hsh(i, 3) * 4) + i * 3);
+        const gz = o.glitzer != null ? Math.max(0.05, +o.glitzer) : 1;   // glitzer < 1: langsamer und seltener (ruhiger, kein Flackern)
+        for (let i = 0, n = Math.round(70 * Math.min(1, gz + 0.3)); i < n; i++) {
+          const x = md(hsh(i, 1) * W * 1.5 - cx, W), y = boden + 10 * k + hsh(i, 2) * (H - boden - 12 * k), tw = Math.sin(t * (2 + hsh(i, 3) * 4) * gz + i * 3);
           if (tw > 0.75) { const r = (tw - 0.75) * 10 * (0.5 + hsh(i, 4)) * k; c.beginPath(); c.moveTo(x - r, y); c.lineTo(x + r, y); c.moveTo(x, y - r); c.lineTo(x, y + r); c.stroke(); }
         }
       }
@@ -5707,13 +5708,55 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         const c = cv.getContext("2d");
         c.setTransform(res, 0, 0, res, -c0 * res, L.top * res);
         PK.paintLayer(L.id, c, O, { c0: c0 - 4, c1: c1 + 4, top: L.top, bot: L.bot }, tod, live);
+        glowLayer(c, L, c0, c1, res);
         layers.push({ cv, top: L.top, bot: L.bot, w: c1 - c0, c0, ground: PK.layerGround(L.id, tod) });
       }
-      pano = { sky, layers, live, key: W + "x" + H, tod };
+      pano = { sky, layers, live, key: W + "x" + H, tod, wk: panoKey() };
+    }
+    const panoKey = () => (WX ? WX.tod + "/" + WX.sky : "x");
+    // 0.33 Alpenglühen (Mat, Vorbild Abendfoto): Gipfel im Licht rosa bis golden, Flanken darunter kühl blau. Nur auf die gemalten
+    // Berge (source-atop), einmal beim Aufbau der Ebene, kostet im Lauf nichts. Bewölkt: kaum Glühen, nur das kühle Blau.
+    function glowLayer(c, L, c0, c1, res) {
+      const tod = WX ? WX.tod : "afternoon", sky = WX ? WX.sky : "klar", sun = sky === "klar" ? 1 : sky === "neu" ? 0.45 : 0.12;
+      const warm = tod === "evening" ? [255, 120, 140] : tod === "morning" ? [255, 176, 130] : [255, 236, 210];
+      const aw = (tod === "afternoon" ? 0.16 : L.id === "far" ? 0.55 : 0.32) * sun, ab = L.id === "far" ? 0.3 : 0.18;
+      c.save(); c.globalCompositeOperation = "source-atop";
+      const g = c.createLinearGradient(0, -L.top, 0, L.bot);
+      g.addColorStop(0, `rgba(${warm},${aw})`); g.addColorStop(0.32, `rgba(${warm},${aw * 0.6})`);
+      g.addColorStop(0.58, "rgba(120,140,200,0)"); g.addColorStop(1, `rgba(96,118,186,${ab})`);
+      c.fillStyle = g; c.fillRect(c0 - 10, -L.top - 10, c1 - c0 + 20, L.top + L.bot + 20);
+      c.restore();
+    }
+    // Wolkenbänder an den Bergflanken und Nebelmeer im Tal (zwischen fernen Bergen und Mittelgrund): weiche Bänke aus Kreisen
+    function cloudsAndSea(hor, t) {
+      const tod = WX ? WX.tod : "afternoon", sky = WX ? WX.sky : "klar";
+      const tint = tod === "evening" ? [246, 214, 226] : tod === "morning" ? [252, 232, 222] : [244, 248, 255];
+      const sea = { klar: tod === "afternoon" ? 0.55 : 0.85, neu: 0.7, grau: 0.9, sturm: 0.6 }[sky] || 0.6;
+      const col = (a) => `rgba(${tint},${a})`;
+      // Wolkenbänder an den Flanken (ziehen langsam)
+      const nB = R.lite ? 2 : 4;
+      for (let i = 0; i < nB; i++) {
+        const span = W + 400 * k, wdt = (140 + 120 * hsh(i + 401)) * k;
+        const x = ((((hsh(i + 403) * span + t * (2 + 2 * hsh(i + 409)) * k) % span) + span) % span) - 200 * k;
+        const y = hor - (30 + 34 * hsh(i + 407)) * k;
+        for (let j = 0; j < 7; j++) { const u = j / 6, px = x + (u - 0.5) * wdt, r = (10 + 9 * Math.sin(u * Math.PI)) * k * (0.8 + 0.4 * hsh(i * 7 + j)), py = y + (hsh(i * 11 + j) - 0.5) * 6 * k;
+          const g = ctx.createRadialGradient(px, py, 0, px, py, r * 1.6); g.addColorStop(0, col(0.55)); g.addColorStop(0.6, col(0.32)); g.addColorStop(1, col(0));
+          ctx.fillStyle = g; ctx.fillRect(px - r * 1.6, py - r * 1.6, r * 3.2, r * 3.2); }
+      }
+      // Nebelmeer: flache, oben wellige Decke knapp über dem Horizont, unten dicht
+      const y0 = hor + 4 * k, hh = 30 * k;
+      const g = ctx.createLinearGradient(0, y0 - hh * 0.6, 0, y0 + hh);
+      g.addColorStop(0, col(0)); g.addColorStop(0.4, col(0.7 * sea)); g.addColorStop(1, col(0.95 * sea));
+      ctx.fillStyle = g; ctx.fillRect(0, y0 - hh * 0.6, W, hh * 1.6 + 40 * k);
+      if (!R.lite) for (let i = 0; i < 16; i++) {   // Wellen oben auf der Decke
+        const x = ((i / 16) * (W + 120 * k) + t * 4 * k) % (W + 120 * k) - 60 * k, r = (22 + 18 * hsh(i + 77)) * k, y = y0 - hh * 0.15 + Math.sin(i * 1.7) * 4 * k;
+        const gg = ctx.createRadialGradient(x, y, 0, x, y, r); gg.addColorStop(0, col(0.6 * sea)); gg.addColorStop(1, col(0));
+        ctx.fillStyle = gg; ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+      }
     }
     // f: Fortschritt 0 … 1 (Kulisse wandert von links nach rechts), hor: Horizont in px
     function drawPano(f, hor, t) {
-      if (!pano || pano.tod !== (WX && WX.tod === "evening" ? "evening" : "day")) buildPano();
+      if (!pano || pano.tod !== (WX && WX.tod === "evening" ? "evening" : "day") || pano.wk !== panoKey()) buildPano();
       const S = pano.sky, sh = S.cv.height / S.res;
       const y0 = hor + (S.ya - PK.HOR) * S.s;
       ctx.fillStyle = S.top; ctx.fillRect(0, 0, W, Math.max(0, y0 + 1));
@@ -5729,6 +5772,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         ctx.drawImage(L.cv, ox, dy, wpx, (L.top + L.bot) * k);
         ctx.fillStyle = L.ground; ctx.fillRect(0, dy + (L.top + L.bot) * k - 1, W, H);
         pos.push({ ox: ox - L.c0 * k, oy: hor });
+        if (i === 0) cloudsAndSea(hor, t);   // zwischen den fernen Bergen und dem Mittelgrund: der Wald ragt aus dem Nebel
       }
       // bewegte Details (Loipe im Tal, Fahne, Schneefahnen)
       const A = pano.live.anim;
@@ -5874,14 +5918,69 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
     function spruce(x, y, h, dark, v) {
       v = v == null ? 0.5 : v;
       const kind = v < 0.3 ? 0 : v < 0.55 ? 1 : v < 0.8 ? 2 : 3;
-      const n = [6, 3, 4, 3][kind], wf = [0.27, 0.52, 0.42, 0.36][kind], snow = [0.35, 0.55, 1, 0.5][kind];
+      const n = [6, 3, 4, 3][kind], wf = [0.27, 0.52, 0.42, 0.36][kind], snow = [0.6, 0.8, 1.15, 0.75][kind];   // 0.33: viel mehr Schnee (Vorbild Seefeld)
       const g = mix(dark ? I.fichteD : I.fichte, v > 0.5 ? I.tief : I.dach, 0.12 * ((v * 7) % 1)), w = h * wf, lean = (((v * 13) % 1) - 0.5) * 0.06 * h;
       seg([x, y], [x, y - h * 0.15], mix(I.dach, I.tinte, 0.4), Math.max(1, h * 0.05));
       for (let i = 0; i < n; i++) {
         const f = i / n, yb = y - h * (0.12 + f * 0.84), yt = yb - h * (0.86 / n + 0.16), ww = w * (1 - f * 0.85), xs = x + lean * f;
         poly([[xs - ww, yb], [xs + lean * 0.3, yt], [xs + ww, yb]], g);
         if (snow > 0.4 || i % 2 === 0) poly([[xs - ww * (0.35 + 0.35 * snow), yb - h * 0.06 * snow - h * 0.04], [xs + lean * 0.3, yt], [xs + ww * (0.15 + 0.3 * snow), yb - h * 0.1 * snow - h * 0.04]], I.papier);
+        // Schneepolster hängen an den Astenden (links mit leichtem Schatten unten)
+        if (h > 26 * k && i < n - 1) { const pr = Math.max(1.2 * k, ww * 0.2);
+          ctx.fillStyle = mix(I.papier, I.schatten, 0.35); ctx.beginPath(); ctx.ellipse(xs - ww * 0.78, yb + pr * 0.25, pr * 1.15, pr * 0.62, 0, 0, TAU); ctx.ellipse(xs + ww * 0.8, yb + pr * 0.2, pr * 1.05, pr * 0.58, 0, 0, TAU); ctx.fill();
+          ctx.fillStyle = I.papier; ctx.beginPath(); ctx.ellipse(xs - ww * 0.8, yb - pr * 0.05, pr * 1.1, pr * 0.55, 0, 0, TAU); ctx.ellipse(xs + ww * 0.78, yb - pr * 0.1, pr, pr * 0.52, 0, 0, TAU); ctx.fill(); }
       }
+      // Schneehügel am Fuß: der Baum steht im Schnee (kein Schweben)
+      if (h > 20 * k) { ctx.fillStyle = mix(I.papier, I.schatten, 0.25); ctx.beginPath(); ctx.ellipse(x + h * 0.02, y + h * 0.012, h * 0.2, h * 0.045, 0, Math.PI, 0); ctx.fill();
+        ctx.fillStyle = I.papier; ctx.beginPath(); ctx.ellipse(x - h * 0.01, y + h * 0.008, h * 0.17, h * 0.038, 0, Math.PI, 0); ctx.fill(); }
+    }
+    // 0.33 Lärche im Winter: kahl, rostbraune Nadelreste, Äste hängen leicht, Schnee auf den Ästen (Vorbild Abendfoto)
+    function larch(x, y, h, seed) {
+      const trunk = mix(I.dach, I.tinte, 0.45), rust = "#A2603A", rust2 = "#C27A47";
+      seg([x, y], [x + h * 0.01, y - h], trunk, Math.max(1, h * 0.028));
+      const n = 13;
+      for (let i = 0; i < n; i++) {
+        const f = i / n, yb = y - h * (0.18 + 0.8 * f), len = h * (0.3 * (1 - f) + 0.04) * (0.8 + 0.4 * hsh(seed * 7 + i));
+        for (const d of [-1, 1]) {
+          const xe = x + d * len, ye = yb + len * 0.28;
+          seg([x, yb], [xe, ye], mix(trunk, rust, 0.4), Math.max(0.5, h * 0.008));
+          ctx.globalAlpha = 0.7;   // Nadelreste als lockerer Saum
+          for (let j = 1; j <= 3; j++) { const u = j / 3.4; disc(x + d * len * u, yb + len * 0.28 * u + h * 0.006, h * 0.014 * (1.2 - u * 0.5), (i + j) % 2 ? rust : rust2); }
+          ctx.globalAlpha = 1;
+          if ((i + (d > 0 ? 1 : 0)) % 2 === 0) seg([x + d * len * 0.15, yb - h * 0.004], [x + d * len * 0.75, yb + len * 0.2 - h * 0.006], "#FFFFFF", Math.max(0.5, h * 0.009));
+        }
+      }
+      ctx.fillStyle = I.papier; ctx.beginPath(); ctx.ellipse(x, y + h * 0.006, h * 0.12, h * 0.03, 0, Math.PI, 0); ctx.fill();
+    }
+    // 0.33 Kapelle auf der Wiese: weißer Bau mit Zwiebelturm und Kuppel, dunkle Dächer mit Schnee (eigene Gestalt, keine bestimmte Kirche)
+    function chapel(x, y, s, t) {
+      const wall = "#F4F1EA", roof = mix(I.tinte, I.fichteD, 0.35), win = mix(I.tinte, I.navy, 0.3);
+      const onion = (cx, by, r, hgt) => {   // Zwiebel: Bauch, Spitze, Schnee obenauf, Kreuz
+        ctx.fillStyle = roof; ctx.beginPath(); ctx.moveTo(cx - r * 0.55, by); ctx.bezierCurveTo(cx - r * 1.25, by - hgt * 0.35, cx - r * 0.2, by - hgt * 0.7, cx, by - hgt); ctx.bezierCurveTo(cx + r * 0.2, by - hgt * 0.7, cx + r * 1.25, by - hgt * 0.35, cx + r * 0.55, by); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(cx - r * 0.12, by - hgt * 0.5, r * 0.62, hgt * 0.13, -0.15, Math.PI, 0); ctx.fill();
+        seg([cx, by - hgt], [cx, by - hgt - 8 * s], mix(I.tinte, I.dach, 0.3), 0.9 * s); seg([cx - 2.6 * s, by - hgt - 5.5 * s], [cx + 2.6 * s, by - hgt - 5.5 * s], mix(I.tinte, I.dach, 0.3), 0.9 * s);
+      };
+      // Rundbau (Kirchenschiff) rechts
+      const bw = 46 * s, bh = 28 * s, bx = x - 4 * s;
+      box3(bx, y, bw, bh, 22 * s, wall);
+      seg([bx, y - bh], [bx + bw, y - bh], mix(wall, I.tinte, 0.2), 0.8 * s);
+      for (const wx of [0.25, 0.68]) { const cx = bx + bw * wx; ctx.fillStyle = win; ctx.beginPath(); ctx.moveTo(cx - 3 * s, y - 8 * s); ctx.lineTo(cx - 3 * s, y - 17 * s); ctx.arc(cx, y - 17 * s, 3 * s, Math.PI, 0); ctx.lineTo(cx + 3 * s, y - 8 * s); ctx.closePath(); ctx.fill(); }
+      // Kuppeldach mit Laterne
+      const dc = bx + bw * 0.55 + 5 * s, dy = y - bh - 4 * s;
+      ctx.fillStyle = roof; ctx.beginPath(); ctx.ellipse(dc, dy + 4 * s, bw * 0.56, 20 * s, 0, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(dc - 3 * s, dy - 9 * s, bw * 0.32, 6.5 * s, -0.08, Math.PI, 0); ctx.fill();
+      box3(dc - 4 * s, dy - 14 * s, 8 * s, 8 * s, 4 * s, wall); onion(dc, dy - 22 * s, 5 * s, 14 * s);
+      // Vordach-Giebel vorn
+      poly([[bx + bw * 0.38, y - bh + 2 * s], [bx + bw * 0.5, y - bh - 8 * s], [bx + bw * 0.62, y - bh + 2 * s]], roof);
+      seg([bx + bw * 0.4, y - bh], [bx + bw * 0.5, y - bh - 7 * s], "#FBF8F1", 1.4 * s);
+      // Turm links
+      const tw = 15 * s, th = 62 * s, tx = x - 16 * s;
+      box3(tx, y, tw, th, 9 * s, wall);
+      for (const hy of [0.35, 0.72]) { const cx = tx + tw / 2, cy = y - th * hy; ctx.fillStyle = win; ctx.beginPath(); ctx.moveTo(cx - 2.2 * s, cy + 5 * s); ctx.lineTo(cx - 2.2 * s, cy); ctx.arc(cx, cy, 2.2 * s, Math.PI, 0); ctx.lineTo(cx + 2.2 * s, cy + 5 * s); ctx.closePath(); ctx.fill(); }
+      disc(tx + tw / 2, y - th * 0.9, 3 * s, mix(I.ocker, I.papier, 0.2));   // Uhr
+      onion(tx + tw / 2 + 2 * s, y - th - 1 * s, 10 * s, 26 * s);
+      // Schneewehe am Fuß
+      ctx.fillStyle = "#FBF8F1"; ctx.beginPath(); ctx.ellipse(x + 14 * s, y + 1 * s, 52 * s, 4 * s, 0, Math.PI, 0); ctx.fill();
     }
     // Zuschauerin/Zuschauer im Plakatstil: Stiefel, Hose, Wintermantel mit Schattenseite, Schal, Fäustlinge, Mütze mit Bommel;
     // seed (fest in der Welt) wählt Haltung: winken, Fähnchen, Hände in den Taschen, Kind auf den Schultern ist zu viel – bleibt weg
@@ -5980,7 +6079,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       else if (tod === "morning" && wxSky() === "klar") { ctx.fillStyle = "rgba(255,226,170,0.07)"; ctx.fillRect(0, 0, W, H); }
       if (!WXM || !WX) return;
       // Schleier etwas dünner als im Schneeball, damit die Läuferin im Sturm gut zu sehen bleibt
-      WXM.ueber(ctx, { lage: wxSky(), W, H, t, cx, boden: R.lite ? null : boden, flocken: !R.lite, x: WX.x || 0, k, dicht: 0.7, nacht: false });
+      WXM.ueber(ctx, { lage: wxSky(), W, H, t, cx, boden: R.lite ? null : boden, flocken: !R.lite, x: WX.x || 0, k, dicht: 0.7, nacht: false, glitzer: 0.3 });
     }
 
 
@@ -6058,7 +6157,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         // Staubkörner im Licht
         for (let j = 0; j < 6; j++) {
           const u = (hsh(Math.round(s) * 7 + j) + t * 0.03 * (1 + j % 3)) % 1, px = x + dx * (1 - u) + w * hsh(j + Math.round(s)), py = top + (y - top) * u;
-          ctx.globalAlpha = 0.5 + 0.5 * Math.sin(t * 3 + j * 2 + s); disc(px, py + Math.sin(t + j) * 3 * k, 0.9 * k, S.rgb(0.9));
+          ctx.globalAlpha = 0.55 + 0.25 * Math.sin(t * 0.9 + j * 2 + s); disc(px, py + Math.sin(t + j) * 3 * k, 0.9 * k, S.rgb(0.9));
         }
         ctx.globalAlpha = 1;
       }
@@ -6283,7 +6382,8 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         for (let s = s1; s >= s0; s -= step) ctx.lineTo(X(s), Y(s) + 4 * k);
         ctx.closePath();
         const yt = Y(V.s) - 72 * k, g = ctx.createLinearGradient(0, yt, 0, Y(V.s) + 4 * k);
-        g.addColorStop(0, mix(I.papier, I.dunst, 0.45)); g.addColorStop(0.35, mix(I.papier, I.dunst, 0.2)); g.addColorStop(1, I.papier);
+        const sTint = WX && WX.tod === "evening" ? "#C6B4D6" : WX && WX.tod === "morning" ? "#D6C6DA" : "#C4D3EA";   // 0.33: Schnee im Schatten blau-lila
+        g.addColorStop(0, mix(mix(I.papier, I.dunst, 0.45), sTint, 0.45)); g.addColorStop(0.35, mix(mix(I.papier, I.dunst, 0.2), sTint, 0.25)); g.addColorStop(1, I.papier);
         ctx.fillStyle = g; ctx.fill();
         // weiche Kante oben (Schneewelle mit Schatten darunter)
         ctx.beginPath(); for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), top(s) + 3 * k);
@@ -6320,13 +6420,14 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       const sb = Math.floor(s0 / 1.5) * 1.5;
       for (let s = sb; s < s1 + 3; s += 1.5) {
         const z = zoneAt(s, true); if (z === "stadion" || z === "bach" || nearCreek(s, 8)) continue;
-        if (LL) { const d = (((s - 0.235 * LL) % LL) + LL) % LL; if (Math.min(d, LL - d) < 4) continue; }   // vor dem Hochsitz eine Lücke (er steht frei am Waldrand)
+        if (LL) { const d = (((s - 0.235 * LL) % LL) + LL) % LL, d2 = (((s - 0.175 * LL) % LL) + LL) % LL; if (Math.min(d, LL - d) < 4 || Math.min(d2, LL - d2) < 5) continue; }   // vor dem Hochsitz eine Lücke (er steht frei am Waldrand)
         const q = hsh(Math.round(s * 7) + (V.pen ? 999 : 0));
         const dens = { wiese: 0.86, wald: 0.25, lichtung: 0.82, birke: 0.5 }[z];
         if (q < dens) continue;
         const back = hsh(Math.round(s * 13)), x = X(s + q), y = Y(s + q) - (5 + 14 * back) * k, hh = (44 + 46 * hsh(Math.round(s * 5))) * k * (1 - 0.25 * back), v = hsh(Math.round(s * 3) + 55);
         if (z === "birke" && v < 0.6) plant("birch", x, y, hh, Math.round(s * 11));
-        else if (v < (z === "wiese" || z === "lichtung" ? 0.4 : 0.12)) plant("bare", x, y, hh * 1.1, Math.round(s * 11));
+        else if (v < (z === "wiese" || z === "lichtung" ? 0.22 : 0.06)) plant("bare", x, y, hh * 1.1, Math.round(s * 11));
+        else if (v < (z === "wiese" || z === "lichtung" ? 0.42 : 0.2)) plant("larch", x, y, hh * 1.15, Math.round(s * 11));
         else plant("spruce", x, y, hh, z === "wald" && q > 0.6, (v - 0.12) / 0.88);
       }
       // Orte: Zaun und Heustadel (Wiese), Almhütte mit Holzstoß und Wild (Lichtung)
@@ -6342,6 +6443,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         // Landschaft (jede Runde gleich): Heustadel, Almhütte mit Bank, Hochsitz am Waldrand, Wegweiser, Schneemann
         const sh = at(0.13); if (sh > s0 - 6 && sh < s1 + 6) { const x = X(sh), y = Y(sh) - 30 * k; castShadow(x, y, 50 * k, 40 * k); trees.push(["stadel", x, y]); }
         const hu = at(0.62); if (hu > s0 - 8 && hu < s1 + 8) { const x = X(hu), y = Y(hu) - 34 * k; castShadow(x, y, 60 * k, 56 * k); trees.push(["huette", x, y]); trees.push(["bank", x - 40 * k, y + 12 * k]); }
+        const kp = at(0.175); if (kp > s0 - 10 && kp < s1 + 10) { const x = X(kp), y = Y(kp) - 46 * k; castShadow(x, y, 70 * k, 50 * k); trees.push(["kapelle", x, y]); }
         const hs = at(0.235); if (hs > s0 - 6 && hs < s1 + 6) { const x = X(hs), y = Y(hs) - 26 * k; castShadow(x, y, 50 * k, 18 * k); trees.push(["hochsitz", x, y]); }
         const wg = at(0.545); if (wg > s0 - 4 && wg < s1 + 4) trees.push(["weg", X(wg), Y(wg) - 9 * k]);
         const sm = at(0.8); if (sm > s0 - 4 && sm < s1 + 4) { castShadow(X(sm), Y(sm) - 16 * k, 24 * k, 10 * k); trees.push(["schneemann", X(sm), Y(sm) - 16 * k]); }
@@ -6379,10 +6481,10 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
         bridgeRail(sc, X, Y, -9, 13);
       }
       // 0.31: von hinten nach vorn zeichnen (Tiefe = Abstand hinter der Loipe an dieser Stelle), sonst steht z. B. der Hochsitz vor den Bäumen davor
-      { const tx = [], ty = []; for (let s = s0 - 14; s <= s1 + 14; s += 1) { tx.push(X(s)); ty.push(Y(s)); }
-        const trackY = (x) => { let b = 0; for (let i = 1; i < tx.length; i++) if (Math.abs(tx[i] - x) < Math.abs(tx[b] - x)) b = i; return ty[b]; };
-        for (const T of trees) T.dep = trackY(T[1]) - T[2];
-        trees.sort((a, b) => b.dep - a.dep); }
+      // 0.33.1 (Mat: „flackert“): Tiefe exakt aus der Lage (X ist linear, also s = V.s + (x − xr)/ppm), nicht aus Stützstellen;
+      // sonst sprang die Reihenfolge naher Bäume von Bild zu Bild. Gleiche Tiefe: feste Reihenfolge nach Ort in der Welt.
+      for (const T of trees) { const sw = V.s + (T[1] - xr) / ppm; T.dep = Math.round((Y(sw) - T[2]) * 100 / k); T.sw = Math.round(sw * 100); }
+      trees.sort((a, b) => b.dep - a.dep || a.sw - b.sw);
       for (const T of trees) {
         const [kind, x, y] = T;
         if (kind === "spruce") {
@@ -6394,6 +6496,8 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
                 ctx.globalAlpha = 0.85 * (1 - e * 0.7); disc(px, py, (1.2 + 1.6 * hsh(sd + i)) * k * (1 + e), "#FFFFFF"); } ctx.globalAlpha = 1; } }
         }
         else if (kind === "bare") bareTree(x, y, T[3], T[4]);
+        else if (kind === "larch") larch(x, y, T[3], T[4]);
+        else if (kind === "kapelle") chapel(x, y, k * 0.95, V.t);
         else if (kind === "birch") birch(x, y, T[3], T[4], V.t);
         else if (kind === "stadel") stadel3d(x, y, k * 1.5);
         else if (kind === "huette") almhut(x, y, k * 1.15, V.t);
@@ -6527,7 +6631,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
       parts = parts.filter((p) => p.life > 0 && p.s > s0 - 2);
       for (const p of parts) { ctx.globalAlpha = Math.min(1, p.life * 3); const px = X(p.s), py = Y(p.s) - p.y * ppm * 0.9 - 2 * k;
         if (p.sp) { ctx.globalAlpha *= 0.75; disc(px, py, p.r * k * (1.4 + (0.8 - p.life) * 3), "#FFFFFF"); } else { disc(px, py, p.r * k * 1.9, I.schatten); disc(px - 0.4 * k, py - 0.4 * k, p.r * k * 1.2, "#FFFFFF"); }
-        if (p.gl) { const tw = Math.max(0, Math.sin(p.life * 40)); ctx.globalAlpha = Math.min(1, p.life * 2) * tw; seg([px - 2.5 * k, py], [px + 2.5 * k, py], "#FFFFFF", 0.7 * k); seg([px, py - 2.5 * k], [px, py + 2.5 * k], "#FFFFFF", 0.7 * k); } }
+        if (p.gl) { const tw = Math.max(0, Math.sin(p.life * 6)); ctx.globalAlpha = Math.min(1, p.life * 2) * tw; seg([px - 2.5 * k, py], [px + 2.5 * k, py], "#FFFFFF", 0.7 * k); seg([px, py - 2.5 * k], [px, py + 2.5 * k], "#FFFFFF", 0.7 * k); } }
       ctx.globalAlpha = 1;
       // 0.19: Spur hinter dir im Schnee und Stockeinstiche (bleiben in der Welt liegen)
       if (!V.classic && V.T) { ctx.beginPath(); for (let s = Math.max(s0, V.s - 60); s <= V.s - 0.4; s += step) ctx.lineTo(X(s), Y(s) + 4.5 * k); ctx.strokeStyle = mix(I.papier, I.schatten, 0.55); ctx.lineWidth = 1.3 * k; ctx.stroke(); }
@@ -7486,7 +7590,7 @@ body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.32.0";
+  const VERSION = "0.33.1";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
