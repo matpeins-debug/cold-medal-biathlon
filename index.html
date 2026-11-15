@@ -455,6 +455,46 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .h-spd.fast { color: #8FD27F; } .h-spd.mid { color: #F2B45A; } .h-spd.slow { color: #F0846F; }
 #hud.watch .h-spd { display: none; }
 
+/* =====================================================================================================
+   0.31 Jagd 1960 (Nostalgie) wie im Skispringen: Wochenschau. 1928 dort Sepia, 1960 hier verblasster Farbfilm
+   (die Attrappen bleiben unterscheidbar). Korn, Kratzer, flackernde Ränder, Zwischentitel, HUD als Filmtafeln, keine km/h.
+   ===================================================================================================== */
+#filmFx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+#filmFx > div { position: absolute; inset: 0; }
+.fx-tone { background: rgba(70, 48, 20, 0.1); }
+.fx-grain { inset: -64px !important; background-repeat: repeat; opacity: 0.22; animation: fxGrain 0.42s steps(6) infinite; }
+@keyframes fxGrain { 0% { transform: translate(0, 0); } 17% { transform: translate(-23px, 11px); } 33% { transform: translate(17px, -29px); }
+  50% { transform: translate(-41px, -7px); } 67% { transform: translate(29px, 37px); } 83% { transform: translate(-11px, 23px); } 100% { transform: translate(5px, -15px); } }
+.fx-scratch { background: linear-gradient(90deg, transparent 0 31%, rgba(255, 248, 230, 0.5) 31.05%, transparent 31.2% 100%),
+  linear-gradient(90deg, transparent 0 72%, rgba(40, 26, 12, 0.4) 72.05%, transparent 72.15% 100%); animation: fxScratch 1.9s steps(1) infinite; }
+@keyframes fxScratch { 0% { transform: translateX(0); opacity: 0.9; } 13% { transform: translateX(-17%); opacity: 0.4; } 21% { opacity: 0; } 46% { transform: translateX(9%); opacity: 0.7; }
+  58% { transform: translateX(-26%); opacity: 0; } 71% { transform: translateX(4%); opacity: 0.8; } 85% { transform: translateX(14%); opacity: 0.3; } }
+.fx-vig { background: radial-gradient(ellipse 72% 78% at 50% 48%, transparent 58%, rgba(28, 17, 6, 0.6) 100%); animation: fxFlicker 0.19s steps(2) infinite; }
+@keyframes fxFlicker { 0% { opacity: 0.86; } 50% { opacity: 1; } }
+body.era60 #grain { display: none; }
+/* Zwischentitel */
+.ztitel { position: absolute; inset: -80px; z-index: 70; display: flex; align-items: center; justify-content: center; background: #0D0A07; cursor: pointer; }
+.ztitel.first { animation: tcBg 0.25s ease-out; }
+@keyframes tcBg { from { opacity: 0; } to { opacity: 1; } }
+.ztitel.in .tc-in { animation: tcIn 0.45s ease-out, fxFlicker 0.23s steps(2) 0.45s infinite; }
+@keyframes tcIn { 0% { opacity: 0; } 30% { opacity: 0.7; } 45% { opacity: 0.45; } 100% { opacity: 1; } }
+.tc-in { position: relative; width: min(640px, calc(100% - 64px)); padding: 26px 34px 30px; text-align: center; color: #EFE4CC;
+  border: 2px solid rgba(239, 228, 204, 0.85); outline: 1px solid rgba(239, 228, 204, 0.45); outline-offset: 6px; }
+.tc-in::before, .tc-in::after { content: "◆"; position: absolute; left: 50%; transform: translateX(-50%); font-size: 12px; color: rgba(239, 228, 204, 0.85); }
+.tc-in::before { top: -9px; } .tc-in::after { bottom: -9px; }
+.ztitel .tc-text { margin: 0; font-family: var(--font-body); font-style: italic; font-size: 36px; line-height: 42px; color: #F1E7CF; }
+.ztitel .tc-sub { margin: 12px 0 0; font-family: var(--font-body); font-size: 18px; line-height: 24px; color: #D9CDB0; }
+.tc-hint { display: block; margin-top: 16px; font-family: var(--font-label); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(239, 228, 204, 0.5); }
+/* HUD als Filmtafeln */
+body.era60 #hud .panel, body.era60 #rhud .panel { background: rgba(18, 13, 8, 0.86); border: 1.5px solid rgba(239, 228, 204, 0.8); border-radius: 1px;
+  box-shadow: 0 0 0 3px rgba(18, 13, 8, 0.86), 0 0 0 4px rgba(239, 228, 204, 0.38); color: #EFE4CC; }
+body.era60 #hud .kicker, body.era60 #rhud .kicker { color: #D9C9A3; font-family: var(--font-body); font-style: italic; font-weight: 400; letter-spacing: 0.08em; text-transform: none; }
+body.era60 #hud .sub, body.era60 #rhud .sub, body.era60 #hud .h-split, body.era60 #hud .h-name { color: #CDBF9F; }
+body.era60 #hud .num, body.era60 #rhud .num { color: #F1E7CF; }
+body.era60 #hSpd { display: none !important; }
+body.era60 .banner { background: rgba(13, 10, 7, 0.92); color: #F1E7CF; font-family: var(--font-body); font-style: italic; border: 1px solid rgba(239, 228, 204, 0.7); }
+body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family: var(--font-body); }
+
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
    Buchschrift für Lesetext. Farben und Schriften kommen aus den Variablen des Spiels (alle Spiele der Reihe haben sie),
@@ -665,6 +705,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 <div id="stage">
 <canvas id="scene" aria-hidden="true"></canvas>
 <div id="grain" aria-hidden="true"></div>
+<div id="filmFx" aria-hidden="true" hidden><div class="fx-tone"></div><div class="fx-grain"></div><div class="fx-scratch"></div><div class="fx-vig"></div></div>
 <div id="ui">
 
 <!-- ============ Titel ============ -->
@@ -6260,6 +6301,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       const sb = Math.floor(s0 / 1.5) * 1.5;
       for (let s = sb; s < s1 + 3; s += 1.5) {
         const z = zoneAt(s, true); if (z === "stadion" || z === "bach" || nearCreek(s, 8)) continue;
+        if (LL) { const d = (((s - 0.235 * LL) % LL) + LL) % LL; if (Math.min(d, LL - d) < 4) continue; }   // vor dem Hochsitz eine Lücke (er steht frei am Waldrand)
         const q = hsh(Math.round(s * 7) + (V.pen ? 999 : 0));
         const dens = { wiese: 0.86, wald: 0.25, lichtung: 0.82, birke: 0.5 }[z];
         if (q < dens) continue;
@@ -6317,6 +6359,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
         // hinteres Brückengeländer (vorderes wird nach der Läuferin gezeichnet)
         bridgeRail(sc, X, Y, -9, 13);
       }
+      // 0.31: von hinten nach vorn zeichnen (Tiefe = Abstand hinter der Loipe an dieser Stelle), sonst steht z. B. der Hochsitz vor den Bäumen davor
+      { const tx = [], ty = []; for (let s = s0 - 14; s <= s1 + 14; s += 1) { tx.push(X(s)); ty.push(Y(s)); }
+        const trackY = (x) => { let b = 0; for (let i = 1; i < tx.length; i++) if (Math.abs(tx[i] - x) < Math.abs(tx[b] - x)) b = i; return ty[b]; };
+        for (const T of trees) T.dep = trackY(T[1]) - T[2];
+        trees.sort((a, b) => b.dep - a.dep); }
       for (const T of trees) {
         const [kind, x, y] = T;
         if (kind === "spruce") {
@@ -7420,7 +7467,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.30.0";
+  const VERSION = "0.31.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7704,7 +7751,41 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   $("rpWax").addEventListener("click", (e) => { const b = e.target.closest("[data-w]"); if (!b || !pre) return; pre.wax = b.dataset.w; S.wax = pre.wax; save(); paintWax(); Snd.click && Snd.click(); });
   // Wachs ist eine Möglichkeit, keine Pflicht (Mat): zugeklappt, erst „ändern“ zeigt die Auswahl
   $("rpWaxBtn").addEventListener("click", () => { $("rpWax").hidden = !$("rpWax").hidden; });
-  $("rpGo").addEventListener("click", () => { if (!pre) return; const p = pre; pre = null; startRace(p.kind, Object.assign({}, p.o, { wax: p.wax })); });
+  $("rpGo").addEventListener("click", () => { if (!pre) return; const p = pre; pre = null; const go = () => startRace(p.kind, Object.assign({}, p.o, { wax: p.wax }));
+    // Jagd 1960 wie das Nostalgie-Springen: Wochenschau mit Zwischentiteln vorweg (Tippen überspringt)
+    if (p.kind === "jagd") { setFilm(true); titleCards([
+      { text: "Winter 1960", sub: "Jagdpatrouille im Hochwald" },
+      { text: "Vier Stationen im Wald", sub: "Fünf Attrappen je Station, Entfernung unbekannt. Kimme und Korn." }], go); }
+    else go(); });
+  // ------------------------------------------------------------------ Wochenschau 1960 (wie Skispringen 1928): Filmebene und Zwischentitel
+  let filmOn = false, tcQ = null;
+  function setFilm(on) {
+    if (on === filmOn) return; filmOn = on;
+    const fx = $("filmFx");
+    if (on && !fx.dataset.grain) {
+      const g = document.createElement("canvas"); g.width = g.height = 160;
+      const c = g.getContext("2d"), im = c.createImageData(160, 160);
+      for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() < 0.5 ? 20 : 245; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = Math.random() < 0.16 ? 70 + Math.random() * 120 : 0; }
+      c.putImageData(im, 0, 0);
+      fx.querySelector(".fx-grain").style.backgroundImage = `url(${g.toDataURL("image/png")})`;
+      fx.dataset.grain = "1";
+    }
+    fx.hidden = !on;
+    document.body.classList.toggle("era60", on);
+  }
+  function titleCards(cards, done) { if (tcQ) clearTimeout(tcQ.t); tcQ = { cards: cards.slice(), done }; nextCard(); }
+  function nextCard() {
+    let el = document.getElementById("ztitel");
+    if (!tcQ) return;
+    if (!tcQ.cards.length) { const d = tcQ.done; tcQ = null; if (el) el.remove(); if (d) d(); return; }
+    const c = tcQ.cards.shift();
+    if (!el) { el = document.createElement("div"); el.id = "ztitel"; el.className = "ztitel first"; $("stage").appendChild(el);
+      el.addEventListener("pointerdown", (e) => { e.stopPropagation(); e.preventDefault(); if (tcQ) { clearTimeout(tcQ.t); nextCard(); } }); }   // pointerdown: die Bühne fängt sonst den Zeiger
+    else el.classList.remove("first");
+    el.innerHTML = `<div class="tc-in"><p class="tc-text">${c.text}</p>${c.sub ? `<p class="tc-sub">${c.sub}</p>` : ""}<span class="tc-hint">Tippen: weiter</span></div>`;
+    el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
+    tcQ.t = setTimeout(nextCard, (c.dur || 3.2) * 1000);
+  }
   $("rpBack").addEventListener("click", () => { pre = null; show("menu"); });
 
   function startRace(kind, o) {
@@ -7746,7 +7827,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
     }
     paused = false; inp.down = false; inp.key = false; inp.ptrs.clear(); inp.rangeId = null;
     show(null); $("result").hidden = true; tip(null);
-    canvas.style.filter = Rc.hunt ? "sepia(0.2) saturate(0.95) contrast(1.03)" : "";   // 0.22: weniger Sepia, damit die Attrappen farbig bleiben
+    canvas.style.filter = Rc.hunt ? "sepia(0.42) saturate(0.72) contrast(1.1) brightness(0.95)" : "";   // 0.31: verblasster Farbfilm 1960 (Attrappen bleiben unterscheidbar)
     $("hFlag").innerHTML = flag(Rc.watch ? Rc.watch.c : myNat(), 22, 15); $("hName").textContent = Rc.watch ? Rc.watch.n : myName(); $("hBib").textContent = Rc.bib;
     $("beatLbls").hidden = S.help !== "anf";
     // Taktbalken: einfach = breites grünes Feld (nachsichtig), Profi = enge Felder
@@ -8635,6 +8716,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
       Snd.amb(Rc && !paused && (mode === "run" || mode === "fin") && !Rc.watch ? renderer.amb : null, adt); }
     Snd.wind(Rc && Rc.wx && !paused && (mode === "run" || mode === "range" || mode === "fin") ? (Rc.wx.sky === "klar" ? 0 : renderer.windNow(performance.now() / 1000)) : 0);
     Snd.glide(Rc && Rc.R ? Rc.R.v : 0, mode === "run" && !paused && !!Rc && (Rc.phase === "go" || Rc.phase === "pen" || Rc.phase === "mat"), Rc ? (Rc.watch ? 0.8 : Rc.flow || 0) : 0);
+    setFilm(!!(Rc && Rc.hunt) || !!tcQ);   // Filmebene nur in der Jagd 1960 (Rennen, Schießen, Ergebnis)
     renderer.clear();
     const t = now / 1000;
     if (mode === "menu" || (!Rc && mode !== "result")) { renderer.drawMenu(t); return; }
