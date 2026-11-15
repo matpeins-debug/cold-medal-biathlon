@@ -495,6 +495,22 @@ body.era60 #hSpd { display: none !important; }
 body.era60 .banner { background: rgba(13, 10, 7, 0.92); color: #F1E7CF; font-family: var(--font-body); font-style: italic; border: 1px solid rgba(239, 228, 204, 0.7); }
 body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family: var(--font-body); }
 
+/* 0.32 Einstieg (Mat: „stimmungsvoller Einstieg“): Kamera fährt aus der Totale auf die Läuferin zu, Kinobalken, Ortsname */
+body.intro #hud, body.intro #banner { visibility: hidden; }
+#introFx { position: absolute; inset: 0; pointer-events: none; z-index: 40; }
+#introFx .ib { position: absolute; left: 0; right: 0; height: 11%; background: #07090D; transition: transform 0.9s ease-in-out; }
+#introFx .ib.top { top: 0; } #introFx .ib.bot { bottom: 0; }
+#introFx.out .ib.top { transform: translateY(-101%); } #introFx.out .ib.bot { transform: translateY(101%); }
+#introFx .icap { position: absolute; left: 5%; top: calc(11% + 16px); display: flex; flex-direction: column; gap: 2px; color: #FFFDF6;
+  text-shadow: 0 1px 12px rgba(10, 16, 30, 0.55); opacity: 0; transform: translateY(8px); animation: icapIn 1.4s ease-out 0.6s forwards; transition: opacity 0.6s; }
+#introFx.out .icap, #introFx.out .iskip { opacity: 0 !important; }
+@keyframes icapIn { to { opacity: 1; transform: none; } }
+#introFx .ik { font-family: var(--font-label); font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase; opacity: 0.85; }
+#introFx b { font-family: var(--font-display); font-size: 46px; line-height: 1; letter-spacing: 0.06em; }
+#introFx .isub { font-family: var(--font-body); font-style: italic; font-size: 17px; opacity: 0.9; }
+#introFx .iskip { position: absolute; right: 4%; bottom: 3.2%; font-family: var(--font-label); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255, 253, 246, 0.55); transition: opacity 0.6s; }
+body.era60 #introFx b { font-family: var(--font-body); font-style: italic; font-weight: 400; letter-spacing: 0.01em; }
+
 /* Cold Medal Games · Fenster „Deine Figur“ (pass/pass.css)
    Aussehen wie die Menüs des Skispringens: Papier mit Doppelrahmen, Knöpfe wie Druckmarken, Futura für Titel und Knöpfe,
    Buchschrift für Lesetext. Farben und Schriften kommen aus den Variablen des Spiels (alle Spiele der Reihe haben sie),
@@ -706,6 +722,7 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
 <canvas id="scene" aria-hidden="true"></canvas>
 <div id="grain" aria-hidden="true"></div>
 <div id="filmFx" aria-hidden="true" hidden><div class="fx-tone"></div><div class="fx-grain"></div><div class="fx-scratch"></div><div class="fx-vig"></div></div>
+<div id="introFx" aria-hidden="true" hidden><div class="ib top"></div><div class="ib bot"></div><div class="icap"><span id="iKick" class="ik"></span><b id="iTitle"></b><span id="iSub" class="isub"></span></div><span class="iskip">Tippen: los</span></div>
 <div id="ui">
 
 <!-- ============ Titel ============ -->
@@ -6225,19 +6242,21 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
       // Gleitgefühl: nach jedem Abstoß schiebt sich die Läuferin im Bild ein Stück nach vorn und gleitet dann zurück
       const vNow = (V.run && V.run.v) || 0; vAvg = vAvg == null ? vNow : vAvg + (vNow - vAvg) * (1 - Math.exp(-dt / 1.1));
       surge += (Math.max(-0.6, Math.min(1.6, vNow - vAvg)) - surge) * (1 - Math.exp(-dt / 0.12));
-      const ppm = 15 * k * zoom, xr = W * 0.36;   // Läuferin fest im Bild (kein Ruck, kein Vor und Zurück: das wirkte wie Hüpfen)
+      // 0.32 Einstieg: Totale (weit weg, Läuferin klein rechts im Stadion), langsames Schwenken, dann Fahrt auf die Läuferin zu
+      const IN = V.intro == null ? null : V.intro, iq = IN == null ? 1 : (() => { const u = Math.max(0, Math.min(1, (IN - 0.32) / 0.68)); return u * u * (3 - 2 * u); })(), ih = 1 - iq;
+      const ppm = 15 * k * zoom, xr = W * (0.36 + ih * (0.25 - 0.09 * Math.min(1, (IN || 0) / 0.32)));   // Läuferin fest im Bild (kein Ruck, kein Vor und Zurück: das wirkte wie Hüpfen)
       const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
       const hAt = (s) => { let a = 0, w = 0; for (let i = -5; i <= 5; i++) { const g = GW[i + 5]; a += hRaw(s + i * 2.5) * g; w += g; } return a / w; };
       const h0 = hAt(V.s);
       // Kamera: folgt der Höhe vor der Läuferin, ruhig
       let ahead = 0; for (let d = -4; d <= 14; d += 3) ahead += hAt(V.s + d); ahead /= 7;
       // 0.19: Kameranähe: bergauf und langsam näher, bergab mit Tempo weiter weg; weich nachgeführt
-      const camT = CAM * zoom * (V.camK || 1);
-      cam = cam == null ? camT : cam + (camT - cam) * (1 - Math.exp(-dt / 0.6));
+      const camT = CAM * zoom * (V.camK || 1) * (0.34 + 0.66 * iq);
+      cam = cam == null || IN != null ? camT : cam + (camT - cam) * (1 - Math.exp(-dt / 0.6));
       const C = cam;
       const want = (ahead - h0) * ppm * EX * 0.6 * C;
       camY = camY == null ? want : camY + (want - camY) * (1 - Math.exp(-dt / 0.28));
-      const yr = H * 0.72 + camY;
+      const yr = H * (0.72 + 0.06 * ih) + camY;
       const X = (s) => xr + (s - V.s) * ppm, Y = (s) => yr - (hAt(s) - h0) * ppm * EX;
       // Ski liegt als gerades Brett auf dem Schnee: Winkel aus Ende und Spitze (Sehne), in einer Mulde überbrückt er sie,
       // auf einer Kuppe liegt er in der Mitte auf; so taucht er nie in den Schnee ein. Ski: 36 hinter, 44 vor dem Knöchel (Figur-Einheiten).
@@ -6247,7 +6266,7 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
         return [Math.min(Y(s), ym), Math.atan2(yb - ya, (b + f) * ppm)];
       };
       const hor = H * 0.4 + camY * 0.25;
-      drawPano(V.f, hor, V.t);
+      drawPano(V.f - ih * 0.035 * (1 + (IN || 0)), hor, V.t);   // Einstieg: die Berge ziehen langsam mit (Schwenk)
       wxFog(hor, V.t);
       skyLight(V, hor, V.t);
       drawMid(V, hor, ppm, V.t);
@@ -7467,7 +7486,7 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.31.0";
+  const VERSION = "0.32.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -7698,7 +7717,7 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
 
   function toMenu() {
     clearTimeout(clubT);
-    mode = "menu"; Rc = null; paused = false; canvas.style.filter = ""; renderer.setWx(null);
+    mode = "menu"; Rc = null; paused = false; canvas.style.filter = ""; renderer.setWx(null); document.body.classList.remove("intro"); $("introFx").hidden = true;
     $("hud").hidden = true; $("rhud").hidden = true; $("learnCard").hidden = true; banner(null); tip(null);
     show("menu"); refreshMenu();
   }
@@ -7845,6 +7864,8 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
     Rc.phase = "count"; Rc.pt = 0;
     banner(race ? `${Rc.watch ? "ANSEHEN · " : Rc.club ? "GRUPPE · " : ""}${FM.name.toUpperCase()} · ${sex === "m" ? "HERREN" : "DAMEN"}` : "TRAINING", "3", kind === "pursuit" ? `Start als ${Rc.bib}. · ${Rc.off ? fmtB(Rc.off) + " hinter der Ersten" : "du führst"}` : Rc.watch ? `${Rc.watch.n} · antippen: schneller` : Rc.ghosts.length ? `${Rc.ghosts.length} ${Rc.ghosts.length === 1 ? "Geist läuft" : "Geister laufen"} mit` : kind === "jagd" ? `Wie 1960 · vier Stationen · Kimme und Korn` : kind === "xc" ? `${wxLine()} · Startnummer ${Rc.bib}` : race ? `${wxLine()} · Startnummer ${Rc.bib}${kind === "mass" ? " · alle zugleich" : ""}` : "Eine Runde");
     Snd.beep(false);
+    // 0.32: stimmungsvoller Einstieg vor dem Countdown (nur Rennen; Tippen überspringt). Automatische Tests ohne, außer sie wollen ihn.
+    if (race && !Rc.watch && (!navigator.webdriver || window.__biIntro)) startIntro(kind);
     // am Handy erklären seit 0.18 die Knöpfe und die Hinweiszeile
     if (S.help === "anf" && (S.tips.run2 || 0) < 3 && canHover()) { Rc.pendTip = (Rc.simple ? (canHover() ? "<b>Klicken</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>gedrückt halten</b>" : "<b>Tippen</b>, wenn die Stöcke einstechen (Klack) · Abfahrt: <b>halten</b>") : canHover() ? "<b>Linksklick</b> im Takt (grünes Feld) · flach <b>Rechtsklick</b> · <b>halten</b> = Hocke" : "<b>Links/rechts</b> im Takt (grünes Feld) · flach <b>beide Daumen</b> · <b>halten</b> = Hocke") ; S.tips.run2 = (S.tips.run2 || 0) + 1; save(); }
   }
@@ -8134,6 +8155,7 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
   const zone = (x) => (x < W / 3 ? -1 : x > W * 2 / 3 ? 1 : 0);
   const onUi = (e) => e.target.closest && e.target.closest("button, input, select, .screen:not(#hud):not(#rhud), .res-list, .h-board");
   stage.addEventListener("pointerdown", (e) => {
+    if (Rc && Rc.phase === "intro" && !paused) { e.preventDefault(); endIntro(); return; }   // Einstieg überspringen
     if (onUi(e) || paused) return;
     if (turnEl || (Rc && Rc.watch)) return;
     if (mode === "fin") { if (Rc.fin && Rc.fin.t > 0.5) finishNow(); return; }   // Zieleinlauf überspringen
@@ -8175,6 +8197,7 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
     if (e.target && /INPUT|SELECT/.test(e.target.tagName)) return;
     if (e.key === "Escape" && (mode === "run" || mode === "range")) { paused ? resume() : pause(); return; }
     if (paused || !Rc || Rc.watch) return;
+    if (Rc.phase === "intro") { endIntro(); return; }
     if (mode === "range" && e.key.startsWith("Arrow")) { inp.ax = e.key === "ArrowLeft" ? -1 : e.key === "ArrowRight" ? 1 : inp.ax; inp.ay = e.key === "ArrowUp" ? -1 : e.key === "ArrowDown" ? 1 : inp.ay; e.preventDefault(); return; }
     if (mode === "run") {
       if (e.key === "ArrowDown") { e.preventDefault(); if (!e.repeat) { advanceTo(performance.now()); inp.ptrs.set("k" + e.key, { side: 0, t0: simT - 1, noPush: true }); } return; }
@@ -8275,8 +8298,27 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
     if (mode === "range") return tickRange(dt);
     if (mode === "fin") return tickFin(dt);
   }
+  // ------------------------------------------------------------------ 0.32 Einstieg: Totale über Stadion und Tal, dann fährt die Kamera auf die Läuferin zu
+  const INTRO_T = 6.5, TOD_I = { morning: "Morgen", afternoon: "Nachmittag", evening: "Abend" };
+  function startIntro(kind) {
+    Rc.phase = "intro"; Rc.pt = 0;
+    document.body.classList.add("intro");
+    const fx = $("introFx"); fx.classList.remove("out"); fx.hidden = false;
+    const venue = ($("venueName").textContent || "Hochfilzen").toUpperCase();
+    $("iKick").textContent = kind === "jagd" ? "Wochenschau" : "Biathlon · " + (TOD_I[Rc.wx && Rc.wx.tod] || "");
+    $("iTitle").textContent = venue;
+    $("iSub").textContent = kind === "jagd" ? "Jagdpatrouille, Winter 1960" : `${T.FORMATS[kind].name} · ${SKY_N[Rc.wx.sky]} ${tempTxt(Rc.wx.t)}`;
+  }
+  function endIntro() {
+    if (!Rc || Rc.phase !== "intro") return;
+    Rc.phase = "count"; Rc.pt = 0; Rc.cd = null;
+    document.body.classList.remove("intro");
+    const fx = $("introFx"); fx.classList.add("out"); setTimeout(() => { if (fx.classList.contains("out")) fx.hidden = true; }, 1000);
+    Snd.beep(false);
+  }
   function tickRun(dt, auto) {
     const R = Rc.R, L = Rc.L;
+    if (Rc.phase === "intro") { if (Rc.pt >= INTRO_T) endIntro(); return; }
     if (Rc.phase === "count") {
       const n = 3 - Math.floor(Rc.pt);
       if (n !== Rc.cd) { Rc.cd = n; if (n > 0) { $("bTitle").textContent = n; if (n < 3) Snd.beep(false); } }
@@ -8735,7 +8777,7 @@ body.era60 #hud .hint, body.era60 #rhud .hint, body.era60 .cs-hint { font-family
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
       const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost, lapD: (r.k == null ? Rc.lap : r.k) - Rc.lap })) : [];
-      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1 });
+      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1, intro: Rc.phase === "intro" ? clamp(Rc.pt / INTRO_T, 0, 1) : null });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
       // Ortswechsel (Schießstand → Strafrunde → Strecke): kurz abblenden, damit der Sprung nicht wie ein Fehler aussieht
