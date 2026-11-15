@@ -6076,14 +6076,14 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       }
       const pushing = Rn.t - G.lastAt < Math.max(1.2, G.stepT * 1.8) && !Rn.tuck && (Rn.v || 0) > 0.5;
       const fa = (tau) => 1 - Math.exp(-dt / tau);
-      G.A += ((pushing ? 1 : 0.15) - G.A) * fa(0.35);
+      G.A += ((V.still ? 0 : pushing ? 1 : 0.15) - G.A) * fa(V.still ? 0.2 : 0.35);   // 0.40: vor dem Start still (Mat)
       G.dbl += ((Rn.tech === "double" ? 1 : 0) - G.dbl) * fa(0.3);
       G.tuck += ((Rn.tuck ? 1 : Rn.matK || 0) - G.tuck) * fa(0.18);
       const corr = G.err * Math.min(1, dt / Math.max(0.2, G.stepT)) * Math.PI;
       G.err -= corr / Math.PI;
       // Abstoß gehalten: langer Schwung – die Bewegung schwingt weit aus und verweilt in der Streckung, statt in die Hocke zu gehen
       G.sw = (G.sw || 0) + ((Rn.glideHold ? 1 : 0) - (G.sw || 0)) * fa(0.22);
-      G.th += dt * Math.PI / G.stepT * (0.35 + 0.65 * G.A) * (1 - G.tuck) * (1 - 0.72 * G.sw) + corr * (1 - G.sw);
+      G.th += (V.still ? 0 : dt * Math.PI / G.stepT * (0.35 + 0.65 * G.A) * (1 - G.tuck) * (1 - 0.72 * G.sw)) + corr * (1 - G.sw);
       let J = joints({ stride: 1, th: G.th, A: G.A, dbl: G.dbl, tuck: G.tuck });
       // 0.19: im Ziel: Arme hoch (Jubel) oder auf die Stöcke gestützt; weich eingeblendet
       if (V.pose && V.poseK > 0) {
@@ -6396,20 +6396,26 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       surge += (Math.max(-0.6, Math.min(1.6, vNow - vAvg)) - surge) * (1 - Math.exp(-dt / 0.12));
       // 0.32 Einstieg: Totale (weit weg, Läuferin klein rechts im Stadion), langsames Schwenken, dann Fahrt auf die Läuferin zu
       const IN = V.intro == null ? null : V.intro, iq = IN == null ? 1 : (() => { const u = Math.max(0, Math.min(1, (IN - 0.32) / 0.68)); return u * u * (3 - 2 * u); })(), ih = 1 - iq;
-      const ppm = 15 * k * zoom, xr = W * (0.36 + ih * (0.25 - 0.09 * Math.min(1, (IN || 0) / 0.32)));   // Läuferin fest im Bild (kein Ruck, kein Vor und Zurück: das wirkte wie Hüpfen)
+      // 0.40 (Mat: mindestens drei Varianten): 0 Totale über dem Stadion, 1 Flug die Loipe entlang zurück zum Start,
+      // 2 Nahaufnahme, die langsam aufzieht, 3 Schwenk vom Schießstand herüber. iv: Variante, ie: weicher Verlauf 0 → 1 über die ganze Zeit
+      const iv = V.introV || 0, ie = IN == null ? 1 : (() => { const u = Math.min(1, IN / 0.92); return u * u * (3 - 2 * u); })();
+      const iZoom = IN == null ? 1 : iv === 1 ? 0.55 + 0.45 * ie : iv === 2 ? 2.5 - 1.5 * ie : iv === 3 ? 1.5 - 0.5 * ie : 0.34 + 0.66 * iq;
+      const off = IN == null ? 0 : iv === 1 ? 170 * (1 - ie) : iv === 3 ? -17 * (1 - ie) : 0;   // Kamera-Mitte vor (+) oder hinter (−) der Läuferin, m
+      const sC = V.s + off;
+      const ppm = 15 * k * zoom, xr = W * (iv === 0 || IN == null ? 0.36 + ih * (0.25 - 0.09 * Math.min(1, (IN || 0) / 0.32)) : iv === 2 ? 0.36 + 0.14 * (1 - ie) : 0.36);   // Läuferin fest im Bild (kein Ruck, kein Vor und Zurück: das wirkte wie Hüpfen)
       const hRaw = V.T && !V.pen ? (s) => V.T.h(s) : () => 0;
       const hAt = (s) => { let a = 0, w = 0; for (let i = -5; i <= 5; i++) { const g = GW[i + 5]; a += hRaw(s + i * 2.5) * g; w += g; } return a / w; };
-      const h0 = hAt(V.s);
+      const h0 = hAt(sC);
       // Kamera: folgt der Höhe vor der Läuferin, ruhig
-      let ahead = 0; for (let d = -4; d <= 14; d += 3) ahead += hAt(V.s + d); ahead /= 7;
+      let ahead = 0; for (let d = -4; d <= 14; d += 3) ahead += hAt(sC + d); ahead /= 7;
       // 0.19: Kameranähe: bergauf und langsam näher, bergab mit Tempo weiter weg; weich nachgeführt
-      const camT = CAM * zoom * (V.camK || 1) * (0.34 + 0.66 * iq);
+      const camT = CAM * zoom * (V.camK || 1) * iZoom;
       cam = cam == null || IN != null ? camT : cam + (camT - cam) * (1 - Math.exp(-dt / 0.6));
       const C = cam;
       const want = (ahead - h0) * ppm * EX * 0.6 * C;
       camY = camY == null ? want : camY + (want - camY) * (1 - Math.exp(-dt / 0.28));
-      const yr = H * (0.72 + 0.06 * ih) + camY;
-      const X = (s) => xr + (s - V.s) * ppm, Y = (s) => yr - (hAt(s) - h0) * ppm * EX;
+      const yr = H * (0.72 + (iv === 0 ? 0.06 * ih : iv === 2 ? 0.1 * (1 - ie) : 0)) + camY;
+      const X = (s) => xr + (s - sC) * ppm, Y = (s) => yr - (hAt(s) - h0) * ppm * EX, xP = X(V.s);   // xP: Läuferin (beim Einstieg evtl. außerhalb der Mitte)
       // Ski liegt als gerades Brett auf dem Schnee: Winkel aus Ende und Spitze (Sehne), in einer Mulde überbrückt er sie,
       // auf einer Kuppe liegt er in der Mitte auf; so taucht er nie in den Schnee ein. Ski: 36 hinter, 44 vor dem Knöchel (Figur-Einheiten).
       const skiFit = (s, h) => {
@@ -6418,7 +6424,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
         return [Math.min(Y(s), ym), Math.atan2(yb - ya, (b + f) * ppm)];
       };
       const hor = H * 0.4 + camY * 0.25;
-      drawPano(V.f - ih * 0.035 * (1 + (IN || 0)), hor, V.t);   // Einstieg: die Berge ziehen langsam mit (Schwenk)
+      drawPano(V.f - (iv === 0 ? ih * 0.035 * (1 + (IN || 0)) : 0) + (V.T && V.T.L ? off / V.T.L * 0.05 : 0), hor, V.t);   // Einstieg: die Berge ziehen langsam mit (Schwenk)
       wxFog(hor, V.t);
       skyLight(V, hor, V.t);
       drawMid(V, hor, ppm, V.t);
@@ -6426,7 +6432,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       const HB = yr + (H - yr) / C + 4 * k;
       ctx.save(); ctx.translate(xr, yr); ctx.scale(C, C); ctx.translate(-xr, -yr);
       // 0.35 (Mat: Zaun und Kanten „flackern“): alle Stützpunkte auf einem festen Raster der Welt, nicht ab dem Bildrand gezählt
-      const step = 1.2 / k, s0 = Math.floor((V.s - xr / C / ppm - 2) / step) * step, s1 = Math.ceil((V.s + (W - xr) / C / ppm + 2) / step) * step;
+      const step = 1.2 / k, s0 = Math.floor((sC - xr / C / ppm - 2) / step) * step, s1 = Math.ceil((sC + (W - xr) / C / ppm + 2) / step) * step;
       // 0.23.1 (Mat: „alles schwebt“): Schneefeld hinter der Loipe. Die Spur liegt in einer Wiese, die nach hinten ansteigt und
       // weich in den Talboden übergeht, statt als dünne Linie vor dem fernen Tal zu hängen. Oben unregelmäßig (Schneewellen).
       if (!V.pen) {
@@ -6435,7 +6441,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
         for (let s = s0; s <= s1; s += step) ctx.lineTo(X(s), top(s));
         for (let s = s1; s >= s0; s -= step) ctx.lineTo(X(s), Y(s) + 4 * k);
         ctx.closePath();
-        const yt = Y(V.s) - 72 * k, g = ctx.createLinearGradient(0, yt, 0, Y(V.s) + 4 * k);
+        const yt = Y(sC) - 72 * k, g = ctx.createLinearGradient(0, yt, 0, Y(sC) + 4 * k);
         const sTint = WX && WX.tod === "evening" ? "#C6B4D6" : WX && WX.tod === "morning" ? "#D6C6DA" : "#C4D3EA";   // 0.33: Schnee im Schatten blau-lila
         g.addColorStop(0, mix(mix(I.papier, I.dunst, 0.45), sTint, 0.45)); g.addColorStop(0.35, mix(mix(I.papier, I.dunst, 0.2), sTint, 0.25)); g.addColorStop(1, I.papier);
         ctx.fillStyle = g; ctx.fill();
@@ -6537,7 +6543,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       // 0.31: von hinten nach vorn zeichnen (Tiefe = Abstand hinter der Loipe an dieser Stelle), sonst steht z. B. der Hochsitz vor den Bäumen davor
       // 0.33.1 (Mat: „flackert“): Tiefe exakt aus der Lage (X ist linear, also s = V.s + (x − xr)/ppm), nicht aus Stützstellen;
       // sonst sprang die Reihenfolge naher Bäume von Bild zu Bild. Gleiche Tiefe: feste Reihenfolge nach Ort in der Welt.
-      for (const T of trees) { const sw = V.s + (T[1] - xr) / ppm; T.dep = Math.round((Y(sw) - T[2]) * 100 / k); T.sw = Math.round(sw * 100); }
+      for (const T of trees) { const sw = sC + (T[1] - xr) / ppm; T.dep = Math.round((Y(sw) - T[2]) * 100 / k); T.sw = Math.round(sw * 100); }
       trees.sort((a, b) => b.dep - a.dep || a.sw - b.sw);
       for (const T of trees) {
         const [kind, x, y] = T;
@@ -6669,8 +6675,9 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
         // eigener Schrittzyklus je Gegner, fortlaufend (ein Modulo mit wechselnder Zykluslänge würde springen), Hocke und Technik weich
         const cyc = root.BIPhys.cycle(gs), fa = 1 - Math.exp(-dt / 0.18);
         A.tuck += ((gs < -0.04 ? 1 : 0) - A.tuck) * fa; A.dbl += ((Math.abs(gs) < 0.035 ? 1 : 0) - A.dbl) * fa;
-        A.ph += dt / cyc * (1 - A.tuck); if (A.ph >= 1) { A.ph -= 1; A.n++; }
-        const P = { J: joints({ stride: 1, th: (A.ph + A.n) * Math.PI, A: 1 - A.tuck, dbl: A.dbl, tuck: A.tuck }) };
+        A.st = (A.st || 0) + ((V.still ? 1 : 0) - (A.st || 0)) * (1 - Math.exp(-dt / 0.25));   // vor dem Start still
+        A.ph += dt / cyc * (1 - A.tuck) * (1 - A.st); if (A.ph >= 1) { A.ph -= 1; A.n++; }
+        const P = { J: joints({ stride: 1, th: (A.ph + A.n) * Math.PI, A: (1 - A.tuck) * (1 - A.st), dbl: A.dbl, tuck: A.tuck }) };
         // Geister (Gruppen): im Aussehen aus ihrem Pass, halb durchsichtig
         // Läufer aus einer anderen Runde (überrundet oder vor dir eine Runde weiter): blass, mit „+1“ / „−1“ über dem Kopf
         ctx.globalAlpha = (o.ghost ? 0.55 : 1) * (o.lapD ? 0.38 : 1);
@@ -6701,20 +6708,20 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       for (const m of marks) { ctx.beginPath(); ctx.ellipse(X(m), Y(m) + 6.5 * k, 1.6 * k, 0.8 * k, 0, 0, TAU); ctx.fill(); }
       // Läuferin
       const [yP, aP] = skiFit(V.s, 62 * k);
-      R.player = { x: xr, y: yr + (yP - yr) * C, h: 62 * k * C };   // für die Taktleiste über der Figur (oberflaeche/steuerung.js)
+      R.player = { x: xP, y: yr + (yP - yr) * C, h: 62 * k * C };   // für die Taktleiste über der Figur (oberflaeche/steuerung.js)
       // Schatten im Schnee unter den Ski: verbindet die Läuferin mit dem Boden
-      ctx.fillStyle = "rgba(30,39,52,0.2)"; ctx.beginPath(); ctx.ellipse(xr + 2 * k, yP + 2 * k, 30 * k, 3.2 * k, aP, 0, TAU); ctx.fill();
+      ctx.fillStyle = "rgba(30,39,52,0.2)"; ctx.beginPath(); ctx.ellipse(xP + 2 * k, yP + 2 * k, 30 * k, 3.2 * k, aP, 0, TAU); ctx.fill();
       // 0.30: langer Sonnenschatten nach vorn links (wie bei den Bäumen) und Gegenlicht hinter der Läuferin
       const SL = sunAt(hor), PPp = playerPose(V, dt), lookP = V.look ? [V.look.suit, V.look.accent] : V.suit, faceP = V.look || faceFor(V.name || "Ich");
-      if (shadowA && !V.pen) { ctx.save(); ctx.translate(xr, yP + 1.5 * k); ctx.transform(1, 0, -1.1, 0.5, 0, 0); ctx.fillStyle = `rgba(70,96,140,${shadowA * 1.15})`;
+      if (shadowA && !V.pen) { ctx.save(); ctx.translate(xP, yP + 1.5 * k); ctx.transform(1, 0, -1.1, 0.5, 0, 0); ctx.fillStyle = `rgba(70,96,140,${shadowA * 1.15})`;
         ctx.beginPath(); ctx.ellipse(0, 28 * k, 8 * k, 28 * k, 0, 0, TAU); ctx.fill(); ctx.restore(); }
-      if (SL.L > 0.3 && !R.lite) { ctx.save(); ctx.globalCompositeOperation = "lighter"; const cy = yP - 36 * k, gh = ctx.createRadialGradient(xr + 6 * k, cy, 4 * k, xr + 6 * k, cy, 46 * k);
-        gh.addColorStop(0, SL.rgb(0.2 * SL.L * (SL.tod === "afternoon" ? 0.6 : 1))); gh.addColorStop(1, SL.rgb(0)); ctx.fillStyle = gh; ctx.fillRect(xr - 50 * k, cy - 50 * k, 112 * k, 100 * k); ctx.restore(); }
+      if (SL.L > 0.3 && !R.lite) { ctx.save(); ctx.globalCompositeOperation = "lighter"; const cy = yP - 36 * k, gh = ctx.createRadialGradient(xP + 6 * k, cy, 4 * k, xP + 6 * k, cy, 46 * k);
+        gh.addColorStop(0, SL.rgb(0.2 * SL.L * (SL.tod === "afternoon" ? 0.6 : 1))); gh.addColorStop(1, SL.rgb(0)); ctx.fillStyle = gh; ctx.fillRect(xP - 50 * k, cy - 50 * k, 112 * k, 100 * k); ctx.restore(); }
       // Bewegungsunschärfe bei Tempo: zwei blasse Nachbilder nach hinten
       const vb = Math.max(0, Math.min(1, ((V.run.v || 0) - 9) / 5));
-      if (vb > 0 && !R.lite) for (let i = 2; i >= 1; i--) { ctx.globalAlpha = 0.12 * vb / i; skier(xr - i * (4 + 5 * vb) * k, yP, 62 * k, aP, PPp, lookP, V.retro, faceP); }
+      if (vb > 0 && !R.lite) for (let i = 2; i >= 1; i--) { ctx.globalAlpha = 0.12 * vb / i; skier(xP - i * (4 + 5 * vb) * k, yP, 62 * k, aP, PPp, lookP, V.retro, faceP); }
       ctx.globalAlpha = 1;
-      skier(xr, yP, 62 * k, aP, PPp, lookP, V.retro, faceP);
+      skier(xP, yP, 62 * k, aP, PPp, lookP, V.retro, faceP);
       if (beastFront) beastDraw();
       // Pulverschnee hinter den Ski: je schneller, desto mehr; in der Sonne funkeln einzelne Körner
       // 0.39 (Mat: große Schneebälle flackern): Pulverschnee nur noch fein und selten, kleine Körner, kein Wachsen, kein Funkeln
@@ -6728,18 +6735,18 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       // vorderes Brückengeländer (vor der Läuferin)
       if (LL) for (const base of [Math.floor(s0 / LL) * LL, Math.ceil(s0 / LL) * LL]) { const sc = base + 0.5 * LL; if (sc > s0 - 8 && sc < s1 + 8) bridgeRail(sc, X, Y, 15, 9); }
       // Markierung über dir, sobald andere auf der Strecke sind
-      if (others.length) { const yy = yr - (V.run.tuck ? 52 : 80) * k, mk = k / Math.sqrt(C); poly([[xr - 6 * mk, yy - 8 * mk], [xr + 6 * mk, yy - 8 * mk], [xr, yy]], I.ocker); }
+      if (others.length) { const yy = yr - (V.run.tuck ? 52 : 80) * k, mk = k / Math.sqrt(C); poly([[xP - 6 * mk, yy - 8 * mk], [xP + 6 * mk, yy - 8 * mk], [xP, yy]], I.ocker); }
       ctx.restore();
       // vorn: vereinzelte verschneite Fichten am unteren Rand (ziehen schneller vorbei, geben Tiefe)
       for (let s = Math.floor((s0 - 20) / 9) * 9; s < s1 + 20; s += 9) {
         const q = hsh(Math.round(s) + 9091), zf = zoneAt(s, true); if (q < (zf === "wald" ? 0.4 : zf === "birke" ? 0.6 : 0.8)) continue;
-        const x = xr + (s - V.s) * ppm * 1.35 * C; if (x < -80 * k || x > W + 80 * k ) continue;
+        const x = xr + (s - sC) * ppm * 1.35 * C; if (x < -80 * k || x > W + 80 * k ) continue;
         // nie höher als bis knapp unter die Ski der Läuferin (sonst verdecken sie sie)
         const fh = Math.min((70 + 50 * q) * k * (0.5 + 0.5 * C), H + 18 * k - (yr + (yP - yr) * C) - 14 * k);
         if (fh > 30 * k) spruce(x, H + 18 * k, fh, true, hsh(Math.round(s) + 4));
       }
       // Wetter über der Szene (kulisse/wetter.js): Glitzern, Flocken, Sturmnebel, Schneefahnen ab der Loipe
-      wxOver(V.t, V.s * ppm * C, yr + 6 * k);
+      wxOver(V.t, sC * ppm * C, yr + 6 * k);
       grade(hor, V.t, V.run.v);
       // 0.37 Sturmböe (Jagd): Schnee peitscht waagrecht durchs Bild, die Kamera ruckelt leicht
       if (V.gust > 0.05) { const g = Math.min(1, V.gust), n = R.lite ? 25 : 70; ctx.save(); ctx.strokeStyle = "#FFFFFF"; ctx.lineCap = "round";
@@ -7658,7 +7665,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
 /* COLD MEDAL BIATHLON – Ablauf, Bildschirme, Steuerung, HUD, Wertung, Training. */
 (function () {
   "use strict";
-  const VERSION = "0.39.0";
+  const VERSION = "0.40.0";
   // Seiten-Einstellungen aus dem Build (eigenes Hosting: Adresse, Hoster, Impressum); im claude.ai-Artefakt leer
   const SITE = Object.assign({ web: false, url: "", impressum: null }, {"web": true, "url": "https://matpeins-debug.github.io/cold-medal-biathlon/", "hoster": "GitHub Pages (GitHub Inc., USA)", "drittland": "GitHub ist nach dem EU-US Data Privacy Framework zertifiziert; die Übermittlung in die USA stützt sich auf den Angemessenheitsbeschluss der EU-Kommission dazu.", "impressum": {"name": "", "adresse": "", "mail": ""}, "sb": {"url": "https://pqpvgkslozsekjywpdrf.supabase.co", "key": "sb_publishable_KkKe9jchmXYp_-OEmB8WLQ_gZLXrRhF"}} || {});
   const T = window.BITrack, Ph = window.BIPhys, C = window.BIComp, RM = window.BIRender;
@@ -8477,6 +8484,8 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
   const INTRO_T = 6.5, TOD_I = { morning: "Morgen", afternoon: "Nachmittag", evening: "Abend" };
   function startIntro(kind) {
     Rc.phase = "intro"; Rc.pt = 0;
+    // 0.40: vier Kamerafahrten, abwechselnd (nie zweimal dieselbe hintereinander); Jagd ohne Schießstand-Schwenk
+    { const opts = kind === "jagd" ? [0, 1, 2] : [0, 1, 2, 3], prev = S.lastIntro; let v = opts[Math.floor(Math.random() * opts.length)]; if (v === prev) v = opts[(opts.indexOf(v) + 1) % opts.length]; Rc.introV = v; S.lastIntro = v; }
     document.body.classList.add("intro");
     const fx = $("introFx"); fx.classList.remove("out"); fx.hidden = false;
     const venue = ($("venueName").textContent || "Hochfilzen").toUpperCase();
@@ -9029,7 +9038,7 @@ body.era60 .tip b, body.era60 .cs-hint b { color: #F1E7CF; font-weight: 600; }
       const going = mode === "run" && !paused && (Rc.phase === "go" || Rc.phase === "pen");
       const rest = going ? acc : 0, sNow = (pen ? Rc.penS : Rc.R.s) + Rc.R.v * rest;
       const others = Rc.ai && mode === "run" ? rivals().map((r) => ({ s: sNow + gap(r) + (r.v || 0) * rest, nat: r.a.nat, name: r.a.name, bib: r.a.bib, look: r.a.look, ghost: r.a.ghost, lapD: (r.k == null ? Rc.lap : r.k) - Rc.lap })) : [];
-      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1, intro: Rc.phase === "intro" ? clamp(Rc.pt / INTRO_T, 0, 1) : null, gust: Rc.hunt ? Rc.gustNow || 0 : 0, beast: Rc.beast && Rc.beast.t != null && !pen ? { kind: Rc.beast.kind, s: Rc.beast.s + (sNow - Rc.R.s), p: clamp(Rc.beast.t / BEAST_T, 0, 1), dir: Rc.beast.dir } : null });
+      renderer.drawRun({ T: L, s: sNow, pen, lap: Rc.lap, f: pen ? 0.5 : clamp(Rc.R.s / L.L, 0, 1), run: Rc.R, suit: RM.SUIT[myNat()] || RM.SUIT.AUT, look: Rc.watch ? Rc.watch.look || null : myLook(), t, decor: Rc.dec.decor, stadium: Rc.dec.stadium, others, bib: Rc.bib, classic: !!Rc.classic, retro: !!Rc.hunt, name: S.name, pose: Rc.fin ? Rc.fin.pose : null, poseK: Rc.fin ? clamp(Rc.fin.t / 0.6, 0, 1) : 0, camK: Rc.fin ? 1 + 0.12 * clamp(Rc.fin.t / 1.5, 0, 1) : 1, intro: Rc.phase === "intro" ? clamp(Rc.pt / INTRO_T, 0, 1) : null, introV: Rc.introV || 0, still: Rc.phase === "intro" || Rc.phase === "count", gust: Rc.hunt ? Rc.gustNow || 0 : 0, beast: Rc.beast && Rc.beast.t != null && !pen ? { kind: Rc.beast.kind, s: Rc.beast.s + (sNow - Rc.R.s), p: clamp(Rc.beast.t / BEAST_T, 0, 1), dir: Rc.beast.dir } : null });
       if (Rc.ai && mode === "run" && Rc.phase !== "count") overtakes();
       void s;
       // Ortswechsel (Schießstand → Strafrunde → Strecke): kurz abblenden, damit der Sprung nicht wie ein Fehler aussieht
